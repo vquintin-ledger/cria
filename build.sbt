@@ -33,7 +33,7 @@ lazy val buildInfoSettings = Seq(
 
 lazy val dockerSettings = Seq(
   dockerBaseImage := "openjdk:14.0.2",
-  dockerRepository := Some("docker.pkg.github.com/ledgerhq/lama"),
+  dockerRepository := Some("docker.pkg.github.com/ledgerhq/cria"),
   dockerUpdateLatest := true, //should always update latest
   javaAgents += "com.datadoghq" % "dd-java-agent" % "0.78.3"
 )
@@ -46,31 +46,31 @@ lazy val coverageSettings = Seq(
 lazy val sharedSettings =
   dockerSettings ++ Defaults.itSettings ++ coverageSettings ++ disableDocGeneration
 
-lazy val lamaProtobuf = (project in file("protobuf"))
+lazy val criaProtobuf = (project in file("protobuf"))
   .enablePlugins(Fs2Grpc)
   .settings(
-    name := "lama-protobuf",
+    name := "cria-protobuf",
     scalapbCodeGeneratorOptions += CodeGeneratorOption.FlatPackage,
     libraryDependencies ++= Dependencies.commonProtos
   )
   .settings(disableDocGeneration)
 
-// Common lama library
+// Common cria library
 lazy val common = (project in file("common"))
   .enablePlugins(BuildInfoPlugin)
   .configs(IntegrationTest)
   .settings(
-    name := "lama-common",
-    libraryDependencies ++= (Dependencies.lamaCommon ++ Dependencies.test)
+    name := "cria-common",
+    libraryDependencies ++= (Dependencies.criaCommon ++ Dependencies.test)
   )
   .settings(disableDocGeneration, buildInfoSettings)
-  .dependsOn(lamaProtobuf)
+  .dependsOn(criaProtobuf)
 
 lazy val accountManager = (project in file("account-manager"))
   .enablePlugins(JavaAgent, JavaServerAppPackaging, DockerPlugin)
   .configs(IntegrationTest)
   .settings(
-    name := "lama-account-manager",
+    name := "cria-account-manager",
     sharedSettings,
     libraryDependencies ++= (Dependencies.accountManager ++ Dependencies.test)
   )
@@ -79,7 +79,7 @@ lazy val accountManager = (project in file("account-manager"))
 lazy val bitcoinProtobuf = (project in file("coins/bitcoin/protobuf"))
   .enablePlugins(Fs2Grpc)
   .settings(
-    name := "lama-bitcoin-protobuf",
+    name := "cria-bitcoin-protobuf",
     scalapbCodeGeneratorOptions += CodeGeneratorOption.FlatPackage,
     libraryDependencies ++= Dependencies.commonProtos,
     PB.protoSources in Compile ++= Seq(
@@ -88,20 +88,10 @@ lazy val bitcoinProtobuf = (project in file("coins/bitcoin/protobuf"))
   )
   .settings(disableDocGeneration)
 
-lazy val bitcoinApi = (project in file("coins/bitcoin/api"))
-  .enablePlugins(JavaAgent, JavaServerAppPackaging, DockerPlugin)
-  .configs(IntegrationTest)
-  .settings(
-    name := "lama-bitcoin-api",
-    libraryDependencies ++= (Dependencies.btcApi ++ Dependencies.test),
-    sharedSettings
-  )
-  .dependsOn(accountManager, bitcoinCommon, common, bitcoinProtobuf)
-
 lazy val bitcoinCommon = (project in file("coins/bitcoin/common"))
   .configs(IntegrationTest)
   .settings(
-    name := "lama-bitcoin-common",
+    name := "cria-bitcoin-common",
     libraryDependencies ++= Dependencies.btcCommon
   )
   .settings(disableDocGeneration)
@@ -111,7 +101,7 @@ lazy val bitcoinWorker = (project in file("coins/bitcoin/worker"))
   .enablePlugins(JavaAgent, JavaServerAppPackaging, DockerPlugin)
   .configs(IntegrationTest)
   .settings(
-    name := "lama-bitcoin-worker",
+    name := "cria-bitcoin-worker",
     sharedSettings,
     libraryDependencies ++= (Dependencies.btcWorker ++ Dependencies.test)
   )
@@ -121,24 +111,9 @@ lazy val bitcoinInterpreter = (project in file("coins/bitcoin/interpreter"))
   .enablePlugins(JavaAgent, JavaServerAppPackaging, DockerPlugin)
   .configs(IntegrationTest)
   .settings(
-    name := "lama-bitcoin-interpreter",
+    name := "cria-bitcoin-interpreter",
     sharedSettings,
     libraryDependencies ++= (Dependencies.btcInterpreter ++ Dependencies.test),
     parallelExecution in IntegrationTest := false
-  )
-  .dependsOn(common, bitcoinCommon)
-
-lazy val bitcoinTransactor = (project in file("coins/bitcoin/transactor"))
-  .enablePlugins(Fs2Grpc, JavaAgent, JavaServerAppPackaging, DockerPlugin)
-  .configs(IntegrationTest)
-  .settings(
-    name := "lama-bitcoin-transactor",
-    sharedSettings,
-    libraryDependencies ++= (Dependencies.btcCommon ++ Dependencies.commonProtos ++ Dependencies.test),
-    // Proto config
-    scalapbCodeGeneratorOptions += CodeGeneratorOption.FlatPackage,
-    PB.protoSources in Compile := Seq(
-      file("coins/bitcoin/lib-grpc/pb/bitcoin")
-    )
   )
   .dependsOn(common, bitcoinCommon)

@@ -5,7 +5,6 @@ import co.ledger.lama.bitcoin.common.Exceptions.ExplorerClientException
 import co.ledger.lama.bitcoin.common.clients.http.ExplorerClient.Address
 import co.ledger.lama.bitcoin.common.config.ExplorerConfig
 import co.ledger.lama.bitcoin.common.models.explorer._
-import co.ledger.lama.bitcoin.common.models.transactor.FeeInfo
 import co.ledger.lama.common.logging.{ContextLogging, LamaLogContext}
 import co.ledger.lama.common.models.Coin
 import co.ledger.lama.common.models.Coin.{Btc, BtcRegtest, BtcTestnet, Ltc}
@@ -53,8 +52,6 @@ trait ExplorerClient {
       t: Timer[IO],
       lc: LamaLogContext
   ): Stream[IO, UnconfirmedTransaction]
-
-  def getSmartFees(implicit lc: LamaLogContext): IO[FeeInfo]
 
   def broadcastTransaction(tx: String)(implicit lc: LamaLogContext): IO[String]
 
@@ -193,42 +190,6 @@ class ExplorerHttpClient(httpClient: Client[IO], conf: ExplorerConfig, coin: Coi
         conf.uri.withPath(s"$coinBasePath/transactions/$transactionHash")
       )
     } yield rawResponse
-
-  def getSmartFees(implicit lc: LamaLogContext): IO[FeeInfo] = {
-    val feeUri = conf.uri.withPath(s"$coinBasePath/fees")
-
-    for {
-
-      json <- callExpect[Json](feeUri)
-
-      feeInfo <- IO.fromOption {
-        json.asObject
-          .flatMap { o =>
-            val sortedFees = o
-              .filterKeys(_.toIntOption.isDefined)
-              .toList
-              .flatMap { case (_, v) =>
-                v.asNumber.flatMap(_.toLong)
-              }
-              .sorted
-
-            sortedFees match {
-              case slow :: normal :: fast :: Nil => Some(FeeInfo(slow, normal, fast))
-              case _                             => None
-            }
-          }
-      }(
-        ExplorerClientException(
-          feeUri,
-          new Exception(
-            s"Explorer.fees did not conform to expected format. payload :\n${json.spaces2SortKeys}"
-          )
-        )
-      )
-
-    } yield feeInfo
-
-  }
 
   def broadcastTransaction(tx: String)(implicit lc: LamaLogContext): IO[String] =
     callExpect[SendTransactionResult](
