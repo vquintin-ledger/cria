@@ -1,0 +1,173 @@
+name: build
+
+on:
+  push:
+    branches:
+      - 'master'
+    tags:
+      - '*'
+  pull_request:
+
+jobs:
+  unit-tests:
+    name: unit-test-${{ matrix.component }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        component: [common, accountManager, bitcoinApi, bitcoinWorker, bitcoinInterpreter, bitcoinTransactor]
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: 'recursive'
+      - name: Cache
+        uses: actions/cache@v2
+        with:
+          path: |
+            .ivy2
+            .sbt
+          key: lama-docker-cache-${{github.ref}}-${{ hashFiles('build.sbt') }}
+          restore-keys: |
+            lama-docker-cache-${{github.ref}}-${{ hashFiles('build.sbt') }}
+            lama-docker-cache-${{github.ref}}
+            lama-docker-cache-
+      - name: Run ${{ matrix.component }} unit tests
+        run: SBT_OPTS="-Xss512m" sbt -Dsbt.ivy.home=.ivy2 -sbt-dir .sbt ${{ matrix.component }}/test
+    env:
+      LOG_APPENDER: STDOUT
+
+  it-tests:
+    name: it-test-${{ matrix.component }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        component: [accountManager, bitcoinWorker, bitcoinInterpreter, bitcoinTransactor]
+    services:
+      rabbitmq:
+        image: rabbitmq:3.8.5
+        env:
+          RABBITMQ_DEFAULT_USER: lama
+          RABBITMQ_DEFAULT_PASS: serge
+        options: >-
+          --health-cmd "rabbitmq-diagnostics -q ping"
+          --health-interval 5s
+          --health-timeout 15s
+          --health-retries 10
+        ports:
+          - 5672:5672
+      redis:
+        image: redis:6.0.6-alpine
+        env:
+          REDIS_HOST: localhost
+          REDIS_PORT: 6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+      postgres:
+        image: postgres:12
+        env:
+          POSTGRES_DB: lama
+          POSTGRES_USER: lama
+          POSTGRES_PASSWORD: serge
+        # Set health checks to wait until postgres has started
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+    env:
+      POSTGRES_DB: lama
+      POSTGRES_USER: lama
+      POSTGRES_PASSWORD: serge
+      REDIS_PASSWORD: ""
+      ACCOUNT_MANAGER_JDBC_URL: jdbc:postgresql:test_lama
+      BITCOIN_INTERPRETER_JDBC_URL: jdbc:postgresql:test_lama_btc
+      LOG_APPENDER: STDOUT
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: 'recursive'
+      - name: Cache
+        uses: actions/cache@v2
+        with:
+          path: |
+            .ivy2
+            .sbt
+          key: lama-docker-cache-${{github.ref}}-${{ hashFiles('build.sbt') }}
+          restore-keys: |
+            lama-docker-cache-${{github.ref}}-${{ hashFiles('build.sbt') }}
+            lama-docker-cache-${{github.ref}}
+            lama-docker-cache-
+      - name: Install postgresql-client
+        run: sudo apt update && sudo apt install -y postgresql-client
+      - name: Create dbs
+        run: |
+          PGPASSWORD=${POSTGRES_PASSWORD} createdb -h localhost -p 5432 -w -U $POSTGRES_USER lama_btc
+          PGPASSWORD=${POSTGRES_PASSWORD} createdb -h localhost -p 5432 -w -U $POSTGRES_USER test_lama
+          PGPASSWORD=${POSTGRES_PASSWORD} createdb -h localhost -p 5432 -w -U $POSTGRES_USER test_lama_btc
+      - name: Run ${{ matrix.component }} it tests
+        run: SBT_OPTS="-Xss512m" sbt -Dsbt.ivy.home=.ivy2 -sbt-dir .sbt clean coverage ${{ matrix.component }}/it:test coverageReport
+
+  e2e-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: 'recursive'
+      - name: Cache
+        uses: actions/cache@v2
+        with:
+          path: |
+            .ivy2
+            .sbt
+          key: lama-docker-cache-${{github.ref}}-${{ hashFiles('build.sbt') }}
+          restore-keys: |
+            lama-docker-cache-${{github.ref}}-${{ hashFiles('build.sbt') }}
+            lama-docker-cache-${{github.ref}}
+            lama-docker-cache-
+      - name: Login to GitHub Packages Docker Registry
+        uses: docker/login-action@v1
+        with:
+          registry: docker.pkg.github.com
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build and publish lama images locally
+        run: sbt docker:publishLocal
+      - name: Run dockerized lama components
+        run: docker-compose up -d
+      - name: Waiting for GRPC servers to be up
+        run: |
+          apt-get update && apt-get install -y wget
+          wget https://github.com/jwilder/dockerize/releases/download/v0.6.1/dockerize-linux-amd64-v0.6.1.tar.gz \
+          && sudo tar -C /usr/local/bin -xzvf dockerize-linux-amd64-v0.6.1.tar.gz \
+          && rm dockerize-linux-amd64-v0.6.1.tar.gz
+          dockerize -wait http://localhost:8080/_health -timeout 120s
+      - name: Sync Test — Xpub Scan Analysis (prototype)
+        continue-on-error: true
+        run: |
+          mkdir -p ${{ github.workspace }}/xpub_scan_report
+          cd ./tooling/xpub-scan
+          echo "API_URL=https://api.cryptoapis.io/v1/bc/{coin}/mainnet/address/{address}" > .env
+          echo "API_KEY=${{ secrets.XPUB_SCAN_API_KEY }}" >> .env
+          docker login
+          docker build -t xpub-scan .
+          docker run --network=host -v ${{ github.workspace }}/xpub_scan_report:/xpub-scan/report xpub-scan --xpub ${{ secrets.XPUB_TEST_BIP44 }} --scheme BIP44 --base-url http://localhost:8080
+      - name: Sync Test — Xpub Scan Report (artifact)
+        continue-on-error: true
+        uses: actions/upload-artifact@v2
+        with:
+          name: xpub_scan_report
+          path: |
+            ${{ github.workspace }}/xpub_scan_report/**.*
+      - name: Run e2e tests
+        run: SBT_OPTS="-Xss512m" sbt -Dsbt.ivy.home=.ivy2 -sbt-dir .sbt bitcoinApi/it:test
+    env:
+      LOG_APPENDER: STDOUT
+

@@ -1,0 +1,44 @@
+name: publish
+
+on:
+  push:
+    branches:
+      - 'master'
+    tags:
+      - '*'
+
+jobs:
+  docker-publish:
+    name: docker-publish-${{ matrix.component }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        component: [accountManager, bitcoinApi, bitcoinWorker, bitcoinInterpreter, bitcoinTransactor]
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+          submodules: 'recursive'
+      - name: Cache
+        uses: actions/cache@v2
+        with:
+          path: |
+            .ivy2
+            .sbt
+          key: lama-docker-cache-${{github.ref}}-${{ hashFiles('build.sbt') }}
+          restore-keys: |
+            lama-docker-cache-${{github.ref}}-${{ hashFiles('build.sbt') }}
+            lama-docker-cache-${{github.ref}}
+            lama-docker-cache-
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v1
+        with:
+          registry: docker.pkg.github.com
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Create docker image
+        run: sbt "${{ matrix.component }}/docker:publish"
+    env:
+      LOG_APPENDER: STDOUT
+
