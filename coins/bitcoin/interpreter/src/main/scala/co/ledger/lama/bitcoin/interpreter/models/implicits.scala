@@ -73,28 +73,4 @@ object implicits {
       )
     }
 
-  implicit lazy val readUtxos: Read[Utxo] =
-    Read[(String, Int, BigInt, String, String, Option[ChangeType], NonEmptyList[Int], Instant)]
-      .map {
-        case (hash, outputIndex, value, address, scriptHex, changeType, derivation, blockTime) =>
-          Utxo(hash, outputIndex, value, address, scriptHex, changeType, derivation, blockTime)
-      }
-
-  implicit lazy val readConfirmedUtxos: Read[ConfirmedUtxo] =
-    Read[(Long, Int, Utxo)]
-      .map { case (height, confirmations, utxo) =>
-        ConfirmedUtxo(
-          height,
-          confirmations,
-          utxo.transactionHash,
-          utxo.outputIndex,
-          utxo.value,
-          utxo.address,
-          utxo.scriptHex,
-          utxo.changeType,
-          utxo.derivation,
-          utxo.time
-        )
-      }
-
 }

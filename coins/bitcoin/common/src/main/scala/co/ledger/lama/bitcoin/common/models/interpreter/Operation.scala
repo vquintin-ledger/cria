@@ -1,8 +1,6 @@
 package co.ledger.lama.bitcoin.common.models.interpreter
 
-import co.ledger.lama.bitcoin.interpreter.protobuf
 import co.ledger.lama.common.models.implicits._
-import co.ledger.lama.common.utils.{TimestampProtoUtils, UuidUtils}
 import io.circe.generic.extras.semiauto.{deriveConfiguredDecoder, deriveConfiguredEncoder}
 import io.circe.{Decoder, Encoder}
 import java.security.MessageDigest
@@ -19,21 +17,7 @@ case class Operation(
     fees: BigInt,
     time: Instant,
     blockHeight: Option[Long]
-) {
-  def toProto: protobuf.Operation = {
-    protobuf.Operation(
-      UuidUtils.uuidToBytes(accountId),
-      hash,
-      Some(transaction.toProto),
-      operationType.toProto,
-      amount.toString,
-      fees.toString,
-      Some(TimestampProtoUtils.serialize(time)),
-      blockHeight.getOrElse(-1L),
-      uid = uid.hex
-    )
-  }
-}
+)
 
 object Operation {
   case class UID(hex: String)       extends AnyVal
@@ -47,20 +31,6 @@ object Operation {
 
   implicit val decoder: Decoder[Operation] = deriveConfiguredDecoder[Operation]
   implicit val encoder: Encoder[Operation] = deriveConfiguredEncoder[Operation]
-
-  def fromProto(proto: protobuf.Operation): Operation = {
-    Operation(
-      UID(proto.uid),
-      UuidUtils.unsafeBytesToUuid(proto.accountId),
-      proto.hash,
-      proto.transaction.map(TransactionView.fromProto).get, // An operation has a transaction
-      OperationType.fromProto(proto.operationType),
-      BigInt(proto.amount),
-      BigInt(proto.fees),
-      proto.time.map(TimestampProtoUtils.deserialize).getOrElse(Instant.now),
-      if (proto.blockHeight >= 0) Some(proto.blockHeight) else None
-    )
-  }
 
   def uid(
       accountId: AccountId,

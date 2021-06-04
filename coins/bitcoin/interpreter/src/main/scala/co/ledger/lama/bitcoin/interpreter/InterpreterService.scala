@@ -5,8 +5,7 @@ import co.ledger.lama.bitcoin.common.models.interpreter._
 import co.ledger.lama.bitcoin.common.utils.BtcProtoUtils._
 import co.ledger.lama.bitcoin.interpreter.models.AccountTxView
 import co.ledger.lama.bitcoin.interpreter.protobuf.SaveTransactionRequest
-import co.ledger.lama.common.models.PaginationToken
-import co.ledger.lama.common.utils.{TimestampProtoUtils, UuidUtils}
+import co.ledger.lama.common.utils.UuidUtils
 import io.grpc.{Metadata, ServerServiceDefinition}
 import fs2.Stream
 
@@ -45,55 +44,6 @@ class InterpreterGrpcService(
     } yield protobuf.GetLastBlocksResult(blocks.map(_.toProto))
   }
 
-  def getOperations(
-      request: protobuf.GetOperationsRequest,
-      ctx: Metadata
-  ): IO[protobuf.GetOperationsResult] = {
-    for {
-      accountId <- UuidUtils.bytesToUuidIO(request.accountId)
-      sort   = Sort.fromProto(request.sort)
-      cursor = PaginationToken.fromBase64[OperationPaginationState](request.cursor)
-      opResult <- interpreter.getOperations(
-        accountId,
-        request.limit,
-        sort,
-        cursor
-      )
-    } yield opResult.toProto
-  }
-
-  def getOperation(
-      request: protobuf.GetOperationRequest,
-      ctx: Metadata
-  ): IO[protobuf.GetOperationResult] = {
-    for {
-      accountId   <- UuidUtils.bytesToUuidIO(request.accountId).map(Operation.AccountId)
-      operationId <- IO.pure(Operation.UID(request.operationUid))
-      operation   <- interpreter.getOperation(accountId, operationId)
-    } yield protobuf.GetOperationResult(operation.map(_.toProto))
-  }
-
-  def getUtxos(request: protobuf.GetUtxosRequest, ctx: Metadata): IO[protobuf.GetUtxosResult] = {
-    for {
-      accountId <- UuidUtils.bytesToUuidIO(request.accountId)
-      sort = Sort.fromProto(request.sort)
-      res <- interpreter.getUtxos(accountId, request.limit, request.offset, sort)
-    } yield {
-      res.toProto
-    }
-  }
-
-  def getUnconfirmedUtxos(
-      request: protobuf.GetUnconfirmedUtxosRequest,
-      ctx: Metadata
-  ): IO[protobuf.GetUnconfirmedUtxosResult] =
-    for {
-      accountId        <- UuidUtils.bytesToUuidIO(request.accountId)
-      unconfirmedUtxos <- interpreter.getUnconfirmedUtxos(accountId)
-    } yield {
-      protobuf.GetUnconfirmedUtxosResult(unconfirmedUtxos.map(_.toProto))
-    }
-
   def removeDataFromCursor(
       request: protobuf.DeleteTransactionsRequest,
       ctx: Metadata
@@ -117,23 +67,4 @@ class InterpreterGrpcService(
       nbOps     <- interpreter.compute(account, syncId, addresses)
     } yield protobuf.ResultCount(nbOps)
 
-  def getBalance(
-      request: protobuf.GetBalanceRequest,
-      ctx: Metadata
-  ): IO[protobuf.CurrentBalance] =
-    for {
-      accountId <- UuidUtils.bytesToUuidIO(request.accountId)
-      info      <- interpreter.getBalance(accountId)
-    } yield info.toProto
-
-  def getBalanceHistory(
-      request: protobuf.GetBalanceHistoryRequest,
-      ctx: Metadata
-  ): IO[protobuf.GetBalanceHistoryResult] =
-    for {
-      accountId <- UuidUtils.bytesToUuidIO(request.accountId)
-      start = request.start.map(TimestampProtoUtils.deserialize)
-      end   = request.end.map(TimestampProtoUtils.deserialize)
-      balances <- interpreter.getBalanceHistory(accountId, start, end, request.interval)
-    } yield protobuf.GetBalanceHistoryResult(balances.map(_.toProto))
 }

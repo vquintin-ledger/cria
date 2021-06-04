@@ -6,26 +6,9 @@ import "google/protobuf/timestamp.proto";
 
 package pb.v1;
 
-enum OperationType {
-  SEND = 0;
-  RECEIVE = 1;
-}
-
 enum ChangeType {
   EXTERNAL = 0; // normal addresses
   INTERNAL = 1; // change addresses
-}
-
-message Operation {
-  bytes account_id = 1;
-  string hash = 2;
-  TransactionView transaction = 3;
-  OperationType operation_type = 4;
-  string amount = 5;
-  string fees = 6;
-  google.protobuf.Timestamp time = 7;
-  int64 block_height = 8;
-  string uid = 9;
 }
 
 message TransactionView {
@@ -61,30 +44,6 @@ message OutputView {
   repeated uint32 derivation = 6;
 }
 
-message Utxo {
-  string transaction_hash = 1;
-  int32 output_index = 2;
-  string value = 3;
-  string address = 4;
-  string script_hex = 5;
-  ChangeType change_type = 6;
-  repeated uint32 derivation = 7;
-  google.protobuf.Timestamp time = 8;
-}
-
-message ConfirmedUtxo {
-  int64 height = 1;
-  int32 confirmations = 2;
-  string transaction_hash = 3;
-  int32 output_index = 4;
-  string value = 5;
-  string address = 6;
-  string script_hex = 7;
-  ChangeType change_type = 8;
-  repeated uint32 derivation = 9;
-  google.protobuf.Timestamp time = 10;
-}
-
 message BlockView {
   string hash = 1;
   int64 height = 2;
@@ -96,19 +55,3 @@ message AccountAddress {
   ChangeType change_type = 2;
   repeated int32 derivation = 3;
 }
-
-message CurrentBalance {
-  string balance = 1;
-  int32 utxos = 2;
-  string received = 3;
-  string sent = 4;
-  string unconfirmed_balance = 5;
-}
-
-message BalanceHistory {
-  bytes account_id = 1;
-  string balance = 2;
-  int64 block_height = 3;
-  google.protobuf.Timestamp time = 4;
-}
-

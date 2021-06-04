@@ -31,9 +31,6 @@ object App extends IOApp {
 
       // define rpc service definitions
       serviceDefinitions = List(
-        new AccountManagerGrpcService(
-          accountManager
-        ).definition,
         new HealthService().definition
       )
 

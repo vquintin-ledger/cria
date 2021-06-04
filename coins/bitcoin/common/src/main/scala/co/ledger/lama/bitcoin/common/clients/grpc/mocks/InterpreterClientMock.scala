@@ -3,7 +3,7 @@ package co.ledger.lama.bitcoin.common.clients.grpc.mocks
 import cats.effect.IO
 import co.ledger.lama.bitcoin.common.clients.grpc.InterpreterClient
 import co.ledger.lama.bitcoin.common.models.interpreter._
-import co.ledger.lama.common.models.{Account, Sort}
+import co.ledger.lama.common.models.Account
 import java.time.Instant
 import java.util.UUID
 
@@ -175,89 +175,4 @@ class InterpreterClientMock extends InterpreterClient {
     )
   }
 
-  def getOperations(
-      accountId: UUID,
-      limit: Int,
-      sort: Option[Sort],
-      cursor: Option[String]
-  ): IO[GetOperationsResult] = {
-
-    val ops: List[Operation] = operations(accountId)
-      //.filter(_.transaction.block.exists(_.height > blockHeight))
-      .sortBy(_.transaction.block.get.height)
-      .slice(0, limit)
-
-    val total = operations(accountId).count(_.transaction.block.isDefined)
-
-    IO(
-      new GetOperationsResult(
-        ops,
-        total,
-        None
-      )
-    )
-  }
-
-  def getOperation(
-      accountId: UUID,
-      operationId: String
-  ): IO[Option[Operation]] = IO.pure(None)
-
-  def getUtxos(
-      accountId: UUID,
-      limit: Int,
-      offset: Int,
-      sort: Option[Sort]
-  ): IO[GetUtxosResult] = {
-
-    val inputs = transactions(accountId)
-      .flatMap(_.inputs)
-      .filter(_.belongs)
-
-    val utxos = transactions(accountId)
-      .flatMap(tx => tx.outputs.map(o => (tx, o)))
-      .filter(o =>
-        o._2.belongs && !inputs.exists(i =>
-          i.outputHash == o._1.hash && i.address == o._2.address && i.outputIndex == o._2.outputIndex
-        )
-      )
-      .map { case (tx, output) =>
-        ConfirmedUtxo(
-          tx.block.map(_.height).getOrElse(-1),
-          tx.confirmations,
-          tx.hash,
-          output.outputIndex,
-          output.value,
-          output.address,
-          output.scriptHex,
-          output.changeType,
-          output.derivation.get,
-          tx.block.map(_.time).getOrElse(Instant.now())
-        )
-      }
-
-    val total = transactions(accountId).size
-
-    IO(
-      new GetUtxosResult(
-        utxos,
-        total,
-        false
-      )
-    )
-
-  }
-
-  def getUnconfirmedUtxos(accountId: UUID): IO[List[Utxo]] = IO.pure(Nil)
-
-  def getBalance(accountId: UUID): IO[CurrentBalance] =
-    IO.raiseError(new Exception("Not implements Yet"))
-
-  def getBalanceHistory(
-      accountId: UUID,
-      start: Option[Instant],
-      end: Option[Instant],
-      interval: Option[Int] = None
-  ): IO[GetBalanceHistoryResult] =
-    IO.raiseError(new Exception("Not implements Yet"))
 }
