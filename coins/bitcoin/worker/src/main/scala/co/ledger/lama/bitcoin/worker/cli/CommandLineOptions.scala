@@ -1,5 +1,6 @@
 package co.ledger.lama.bitcoin.worker.cli
 
+import com.monovore.decline._
 
 import java.util.UUID
 
