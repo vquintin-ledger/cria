@@ -4,6 +4,7 @@ import cats.effect.{ContextShift, IO, Timer}
 import cats.implicits._
 import co.ledger.lama.bitcoin.common.clients.grpc.{InterpreterClient, KeychainClient}
 import co.ledger.lama.bitcoin.common.clients.http.ExplorerClient
+import co.ledger.lama.bitcoin.common.models.{BitcoinLikeNetwork, BitcoinNetwork, LitecoinNetwork}
 import co.ledger.lama.bitcoin.common.models.explorer.{
   Block,
   ConfirmedTransaction,
@@ -11,58 +12,52 @@ import co.ledger.lama.bitcoin.common.models.explorer.{
 }
 import co.ledger.lama.bitcoin.worker.services._
 import co.ledger.lama.common.logging.{ContextLogging, LamaLogContext}
-import co.ledger.lama.common.models.Status.{Registered, Unregistered}
-import co.ledger.lama.common.models.{Account, Coin, ReportError, ReportableEvent, WorkableEvent}
+import co.ledger.lama.common.models.{Account, Coin, CoinFamily}
 import fs2.Stream
-import io.circe.syntax._
-import java.util.UUID
 
+import java.util.UUID
 import co.ledger.lama.bitcoin.common.models.interpreter.ChangeType
+import co.ledger.lama.bitcoin.common.models.keychain.AccountKey.Xpub
+import co.ledger.lama.common.models.Coin.{Btc, BtcRegtest, BtcTestnet, Ltc}
 
 import scala.math.Ordering.Implicits._
 import scala.util.Try
 
 class Worker(
-    syncEventService: SyncEventService,
+    args: SynchronizationParameters,
     keychainClient: KeychainClient,
     explorerClient: Coin => ExplorerClient,
     interpreterClient: InterpreterClient,
     cursorService: Coin => CursorStateService[IO]
 ) extends ContextLogging {
 
-  def run(implicit cs: ContextShift[IO], t: Timer[IO]): Stream[IO, Unit] =
-    syncEventService.consumeWorkerEvents
-      .evalMap { autoAckMsg =>
-        autoAckMsg.unwrap { event =>
-          implicit val lc: LamaLogContext =
-            LamaLogContext().withAccount(event.account).withFollowUpId(event.syncId)
+  def run(implicit cs: ContextShift[IO], t: Timer[IO]): IO[SynchronizationResult] =
+    getOrCreateAccount(args.xpub).flatMap { account =>
+      implicit val lc: LamaLogContext =
+        LamaLogContext().withAccount(account).withFollowUpId(args.syncId)
 
-          val reportableEvent = event.status match {
-            case Registered   => synchronizeAccount(event)
-            case Unregistered => deleteAccount(event)
+      val result = for {
+        cursorBlock <- args.cursor.flatTraverse(explorerClient(Coin.Btc).getBlock)
+        res         <- synchronizeAccount(account, cursorBlock)
+      } yield res
+
+      // In case of error, fallback to a reportable failed event.
+      log.info(s"Received event: ${args.toString}") *>
+        result
+          .handleError(error => SynchronizationResult.SynchronizationFailure(args, error))
+          .flatTap {
+            case s: SynchronizationResult.SynchronizationSuccess =>
+              log.info(s"Synchronization success: $s")
+            case f: SynchronizationResult.SynchronizationFailure =>
+              log.error(s"Synchronization failure: $f", f.throwable)
           }
+    }
 
-          // In case of error, fallback to a reportable failed event.
-          log.info(s"Received event: ${event.asJson.toString}") *>
-            reportableEvent
-              .handleErrorWith { error =>
-                val failedEvent = event.asReportableFailureEvent(
-                  ReportError.fromThrowable(error)
-                )
-
-                log.error(s"Failed event: $failedEvent", error) *>
-                  IO.pure(failedEvent)
-              }
-              // Always report the event at the end.
-              .flatMap { reportableEvent =>
-                syncEventService.reportEvent(reportableEvent)
-              }
-        }
-      }
-
-  def synchronizeAccount(
-      workerEvent: WorkableEvent[Block]
-  )(implicit cs: ContextShift[IO], t: Timer[IO], lc: LamaLogContext): IO[ReportableEvent[Block]] = {
+  def synchronizeAccount(account: Account, previousBlockState: Option[Block])(implicit
+      cs: ContextShift[IO],
+      t: Timer[IO],
+      lc: LamaLogContext
+  ): IO[SynchronizationResult] = {
 
     val keychain = new Keychain(keychainClient)
 
@@ -71,9 +66,6 @@ class Worker(
       explorerClient,
       interpreterClient
     )
-
-    val account            = workerEvent.account
-    val previousBlockState = workerEvent.cursor
 
     // sync the whole account per streamed batch
     for {
@@ -105,7 +97,7 @@ class Worker(
           case None           => true
         }
         .evalTap(b => log.info(s"Syncing from cursor state: $b"))
-        .evalMap(b => b.map(rewindToLastValidBlock(account, _, workerEvent.syncId)).sequence)
+        .evalMap(b => b.map(rewindToLastValidBlock(account, _, args.syncId)).sequence)
         .evalMap { lastValidBlock =>
           (bookkeeper
             .record[ConfirmedTransaction](
@@ -131,7 +123,7 @@ class Worker(
 
       opsCount <- interpreterClient.compute(
         account,
-        workerEvent.syncId,
+        args.syncId,
         (addressesUsed ++ addressesUsedByMempool).distinct
       )
 
@@ -139,7 +131,7 @@ class Worker(
 
     } yield {
       // Create the reportable successful event.
-      workerEvent.asReportableSuccessEvent(Some(lastMinedBlock.block))
+      SynchronizationResult.SynchronizationSuccess(args, lastMinedBlock.block)
     }
   }
 
@@ -168,12 +160,18 @@ class Worker(
         }
     } yield lvb
 
-  def deleteAccount(
-      event: WorkableEvent[Block]
-  )(implicit lc: LamaLogContext): IO[ReportableEvent[Block]] = {
-    log.info("Delete Account") *>
-      interpreterClient
-        .removeDataFromCursor(event.account.id, None, event.syncId)
-        .map(_ => event.asReportableSuccessEvent(None))
-  }
+  private def getOrCreateAccount(xpub: Xpub): IO[Account] =
+    keychainClient
+      .create(xpub, args.scheme, args.lookahead, coinToNetwork(args.coin))
+      .map { info =>
+        Account(info.keychainId.toString, CoinFamily.Bitcoin, args.coin)
+      }
+
+  private def coinToNetwork(coin: Coin): BitcoinLikeNetwork =
+    coin match {
+      case BtcTestnet => BitcoinNetwork.TestNet3
+      case BtcRegtest => BitcoinNetwork.RegTest
+      case Btc        => BitcoinNetwork.MainNet
+      case Ltc        => LitecoinNetwork.MainNet
+    }
 }

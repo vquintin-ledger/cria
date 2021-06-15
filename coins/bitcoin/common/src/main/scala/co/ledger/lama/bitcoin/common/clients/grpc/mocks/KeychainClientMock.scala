@@ -10,7 +10,7 @@ import co.ledger.lama.bitcoin.common.clients.grpc.KeychainClient
 
 import scala.collection.mutable
 
-class KeychainClientMock extends KeychainClient {
+class KeychainClientMock(createdKeychainId: Option[UUID] = None) extends KeychainClient {
 
   var usedAddresses: mutable.Seq[String] = mutable.Seq.empty
 
@@ -69,7 +69,7 @@ class KeychainClientMock extends KeychainClient {
   ): IO[KeychainInfo] =
     IO.delay(
       KeychainInfo(
-        UUID.randomUUID(),
+        createdKeychainId.getOrElse(UUID.randomUUID()),
         "",
         "",
         "",

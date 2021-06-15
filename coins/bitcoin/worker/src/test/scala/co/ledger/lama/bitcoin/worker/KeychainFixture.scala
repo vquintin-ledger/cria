@@ -19,7 +19,8 @@ object KeychainFixture {
 
   def keychainClient(
       addresses: LazyList[Address],
-      lookaheadSize: Int = 20
+      lookaheadSize: Int = 20,
+      keyChainId: Option[UUID] = None
   ): KeychainClient with UsedAddressesTracker =
     new KeychainClient with UsedAddressesTracker {
 
@@ -28,7 +29,19 @@ object KeychainFixture {
           scheme: Scheme,
           lookaheadSize: Int,
           network: BitcoinLikeNetwork
-      ): IO[KeychainInfo] = ???
+      ): IO[KeychainInfo] =
+        IO.delay(
+          KeychainInfo(
+            keyChainId.getOrElse(UUID.randomUUID()),
+            "",
+            "",
+            "",
+            "",
+            lookaheadSize,
+            scheme,
+            network
+          )
+        )
 
       override def getKeychainInfo(keychainId: UUID): IO[KeychainInfo] =
         IO.delay(
