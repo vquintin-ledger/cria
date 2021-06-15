@@ -11,9 +11,6 @@ import co.ledger.lama.common.services.grpc.HealthService
 import co.ledger.lama.common.models.Coin
 import co.ledger.lama.common.utils.ResourceUtils
 import co.ledger.lama.common.utils.ResourceUtils.grpcManagedChannel
-import co.ledger.lama.common.utils.rabbitmq.RabbitUtils
-import dev.profunktor.fs2rabbit.interpreter.RabbitClient
-import dev.profunktor.fs2rabbit.model.ExchangeType
 import io.grpc.{ManagedChannel, Server}
 import org.http4s.client.Client
 import pureconfig.ConfigSource
@@ -21,7 +18,6 @@ import pureconfig.ConfigSource
 object App extends IOApp with DefaultContextLogging {
 
   case class WorkerResources(
-      rabbitClient: RabbitClient[IO],
       httpClient: Client[IO],
       keychainGrpcChannel: ManagedChannel,
       interpreterGrpcChannel: ManagedChannel,
@@ -35,14 +31,12 @@ object App extends IOApp with DefaultContextLogging {
       httpClient             <- Clients.htt4s
       keychainGrpcChannel    <- grpcManagedChannel(conf.keychain)
       interpreterGrpcChannel <- grpcManagedChannel(conf.interpreter)
-      rabbitClient           <- Clients.rabbit(conf.rabbit)
 
       serviceDefinitions = List(new HealthService().definition)
 
       grcpService <- ResourceUtils.grpcServer(conf.grpcServer, serviceDefinitions)
 
     } yield WorkerResources(
-      rabbitClient,
       httpClient,
       keychainGrpcChannel,
       interpreterGrpcChannel,
@@ -50,13 +44,6 @@ object App extends IOApp with DefaultContextLogging {
     )
 
     resources.use { res =>
-      val syncEventService = new RabbitSyncEventService(
-        res.rabbitClient,
-        conf.queueName(conf.workerEventsExchangeName),
-        conf.lamaEventsExchangeName,
-        conf.routingKey
-      )
-
       val keychainClient    = new KeychainGrpcClient(res.keychainGrpcChannel)
       val interpreterClient = new InterpreterGrpcClient(res.interpreterGrpcChannel)
       val explorerClient    = new ExplorerHttpClient(res.httpClient, conf.explorer, _)
@@ -65,40 +52,16 @@ object App extends IOApp with DefaultContextLogging {
         c => CursorStateService(explorerClient(c), interpreterClient).getLastValidState(_, _, _)
 
       val worker = new Worker(
-        syncEventService,
+        ???,
         keychainClient,
         explorerClient,
         interpreterClient,
         cursorStateService
       )
-
       for {
-        _ <- RabbitUtils.declareExchanges(
-          res.rabbitClient,
-          List(
-            (conf.workerEventsExchangeName, ExchangeType.Topic),
-            (conf.lamaEventsExchangeName, ExchangeType.Topic)
-          )
-        )
-        _ <- RabbitUtils.declareBindings(
-          res.rabbitClient,
-          List(
-            (
-              conf.workerEventsExchangeName,
-              conf.routingKey,
-              conf.queueName(conf.workerEventsExchangeName)
-            ),
-            (
-              conf.lamaEventsExchangeName,
-              conf.routingKey,
-              conf.queueName(conf.lamaEventsExchangeName)
-            )
-          )
-        )
-
         _ <- IO(res.server.start()) *> log.info("Worker started")
 
-        res <- worker.run.compile.lastOrError.as(ExitCode.Success)
+        res <- worker.run.as(ExitCode.Success)
       } yield res
     }
   }

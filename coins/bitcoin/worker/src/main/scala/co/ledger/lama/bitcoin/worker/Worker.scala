@@ -23,42 +23,41 @@ import scala.math.Ordering.Implicits._
 import scala.util.Try
 
 class Worker(
-    syncEventService: SyncEventService,
+    event: WorkableEvent[Block],
     keychainClient: KeychainClient,
     explorerClient: Coin => ExplorerClient,
     interpreterClient: InterpreterClient,
     cursorService: Coin => CursorStateService[IO]
 ) extends ContextLogging {
 
-  def run(implicit cs: ContextShift[IO], t: Timer[IO]): Stream[IO, Unit] =
-    syncEventService.consumeWorkerEvents
-      .evalMap { autoAckMsg =>
-        autoAckMsg.unwrap { event =>
-          implicit val lc: LamaLogContext =
-            LamaLogContext().withAccount(event.account).withFollowUpId(event.syncId)
+  def run(implicit cs: ContextShift[IO], t: Timer[IO]): IO[Unit] = {
 
-          val reportableEvent = event.status match {
-            case Registered   => synchronizeAccount(event)
-            case Unregistered => deleteAccount(event)
-          }
+    implicit val lc: LamaLogContext =
+      LamaLogContext().withAccount(event.account).withFollowUpId(event.syncId)
 
-          // In case of error, fallback to a reportable failed event.
-          log.info(s"Received event: ${event.asJson.toString}") *>
-            reportableEvent
-              .handleErrorWith { error =>
-                val failedEvent = event.asReportableFailureEvent(
-                  ReportError.fromThrowable(error)
-                )
+    val reportableEvent = event.status match {
+      case Registered   => synchronizeAccount(event)
+      case Unregistered => deleteAccount(event)
+    }
 
-                log.error(s"Failed event: $failedEvent", error) *>
-                  IO.pure(failedEvent)
-              }
-              // Always report the event at the end.
-              .flatMap { reportableEvent =>
-                syncEventService.reportEvent(reportableEvent)
-              }
+    // In case of error, fallback to a reportable failed event.
+    log.info(s"Received event: ${event.asJson.toString}") *>
+      reportableEvent
+        .handleErrorWith { error =>
+          val failedEvent = event.asReportableFailureEvent(
+            ReportError.fromThrowable(error)
+          )
+
+          log.error(s"Failed event: $failedEvent", error) *>
+            IO.pure(failedEvent)
         }
-      }
+        // Always report the event at the end.
+        .flatMap { reportableEvent =>
+          //TODO
+          val _ = reportableEvent
+          IO.unit
+        }
+  }
 
   def synchronizeAccount(
       workerEvent: WorkableEvent[Block]
