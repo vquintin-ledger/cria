@@ -11,57 +11,47 @@ import co.ledger.lama.bitcoin.common.models.explorer.{
 }
 import co.ledger.lama.bitcoin.worker.services._
 import co.ledger.lama.common.logging.{ContextLogging, LamaLogContext}
-import co.ledger.lama.common.models.Status.{Registered, Unregistered}
-import co.ledger.lama.common.models.{Account, Coin, ReportError, ReportableEvent, WorkableEvent}
+import co.ledger.lama.common.models.{Account, Coin}
 import fs2.Stream
 import io.circe.syntax._
-import java.util.UUID
 
+import java.util.UUID
 import co.ledger.lama.bitcoin.common.models.interpreter.ChangeType
 
 import scala.math.Ordering.Implicits._
 import scala.util.Try
 
 class Worker(
-    event: WorkableEvent[Block],
+    args: SynchronizationParameters,
     keychainClient: KeychainClient,
     explorerClient: Coin => ExplorerClient,
     interpreterClient: InterpreterClient,
     cursorService: Coin => CursorStateService[IO]
 ) extends ContextLogging {
 
-  def run(implicit cs: ContextShift[IO], t: Timer[IO]): IO[Unit] = {
+  def run(implicit cs: ContextShift[IO], t: Timer[IO]): IO[Unit] =
+      getOrCreateAccount(args.xpub).flatMap { account =>
+        implicit val lc: LamaLogContext =
+          LamaLogContext().withAccount(account).withFollowUpId(args.syncId)
 
-    implicit val lc: LamaLogContext =
-      LamaLogContext().withAccount(event.account).withFollowUpId(event.syncId)
+        val result = for {
+          cursorBlock <- args.cursor.flatTraverse(explorerClient(Coin.Btc).getBlock)
+          res <- synchronizeAccount(account, cursorBlock)
+        } yield res
 
-    val reportableEvent = event.status match {
-      case Registered   => synchronizeAccount(event)
-      case Unregistered => deleteAccount(event)
-    }
+        // In case of error, fallback to a reportable failed event.
+        log.info(s"Received event: ${args.asJson.toString}") *>
+          result
+            .handleError(error => SynchronizationResult.SynchronizationFailure(args, error))
+            .map {
+            case s: SynchronizationResult.SynchronizationSuccess =>
+              log.info(s"Synchronization success: $s")
+            case f: SynchronizationResult.SynchronizationFailure =>
+              log.error(s"Synchronization failure: $f", f.throwable)
+          }
+      }
 
-    // In case of error, fallback to a reportable failed event.
-    log.info(s"Received event: ${event.asJson.toString}") *>
-      reportableEvent
-        .handleErrorWith { error =>
-          val failedEvent = event.asReportableFailureEvent(
-            ReportError.fromThrowable(error)
-          )
-
-          log.error(s"Failed event: $failedEvent", error) *>
-            IO.pure(failedEvent)
-        }
-        // Always report the event at the end.
-        .flatMap { reportableEvent =>
-          //TODO
-          val _ = reportableEvent
-          IO.unit
-        }
-  }
-
-  def synchronizeAccount(
-      workerEvent: WorkableEvent[Block]
-  )(implicit cs: ContextShift[IO], t: Timer[IO], lc: LamaLogContext): IO[ReportableEvent[Block]] = {
+  def synchronizeAccount(account: Account, previousBlockState: Option[Block])(implicit cs: ContextShift[IO], t: Timer[IO], lc: LamaLogContext): IO[SynchronizationResult] = {
 
     val keychain = new Keychain(keychainClient)
 
@@ -70,9 +60,6 @@ class Worker(
       explorerClient,
       interpreterClient
     )
-
-    val account            = workerEvent.account
-    val previousBlockState = workerEvent.cursor
 
     // sync the whole account per streamed batch
     for {
@@ -104,7 +91,7 @@ class Worker(
           case None           => true
         }
         .evalTap(b => log.info(s"Syncing from cursor state: $b"))
-        .evalMap(b => b.map(rewindToLastValidBlock(account, _, workerEvent.syncId)).sequence)
+        .evalMap(b => b.map(rewindToLastValidBlock(account, _, args.syncId)).sequence)
         .evalMap { lastValidBlock =>
           (bookkeeper
             .record[ConfirmedTransaction](
@@ -130,7 +117,7 @@ class Worker(
 
       opsCount <- interpreterClient.compute(
         account,
-        workerEvent.syncId,
+        args.syncId,
         (addressesUsed ++ addressesUsedByMempool).distinct
       )
 
@@ -138,7 +125,7 @@ class Worker(
 
     } yield {
       // Create the reportable successful event.
-      workerEvent.asReportableSuccessEvent(Some(lastMinedBlock.block))
+      SynchronizationResult.SynchronizationSuccess(args, lastMinedBlock.block)
     }
   }
 
@@ -167,12 +154,5 @@ class Worker(
         }
     } yield lvb
 
-  def deleteAccount(
-      event: WorkableEvent[Block]
-  )(implicit lc: LamaLogContext): IO[ReportableEvent[Block]] = {
-    log.info("Delete Account") *>
-      interpreterClient
-        .removeDataFromCursor(event.account.id, None, event.syncId)
-        .map(_ => event.asReportableSuccessEvent(None))
-  }
+  private def getOrCreateAccount(xpub: String): IO[Account] = ???
 }
