@@ -11,7 +11,7 @@ import co.ledger.lama.bitcoin.common.models.interpreter.{BlockView, TransactionV
 import co.ledger.lama.bitcoin.worker.config.Config
 import co.ledger.lama.bitcoin.worker.services.CursorStateService
 import co.ledger.lama.common.logging.DefaultContextLogging
-import co.ledger.lama.common.models.{Account, AccountGroup, Coin, CoinFamily}
+import co.ledger.lama.common.models.{Account, Coin, CoinFamily}
 import co.ledger.lama.common.services.Clients
 import co.ledger.lama.common.models.Coin.Btc
 import co.ledger.lama.common.utils.IOAssertion
@@ -39,7 +39,7 @@ class CursorStateServiceIT extends AnyFlatSpecLike with Matchers with DefaultCon
       val cursorStateService = CursorStateService(explorerClient, interpreterClient)
 
       val account =
-        Account(UUID.randomUUID().toString, CoinFamily.Bitcoin, Coin.Btc, AccountGroup("group"))
+        Account(UUID.randomUUID().toString, CoinFamily.Bitcoin, Coin.Btc)
       val accountId = account.id
       val syncId    = UUID.randomUUID()
 

@@ -8,19 +8,13 @@ import java.util.UUID
 import io.circe.{Decoder, Encoder}
 import io.circe.generic.extras.semiauto._
 
-case class Account(
-    identifier: String,
-    coinFamily: CoinFamily,
-    coin: Coin,
-    group: AccountGroup
-) {
-  lazy val id: UUID = UUID.nameUUIDFromBytes((identifier + coinFamily + coin + group).getBytes)
+case class Account(identifier: String, coinFamily: CoinFamily, coin: Coin) {
+  lazy val id: UUID = UUID.nameUUIDFromBytes((identifier + coinFamily + coin).getBytes)
 
   def toProto: protobuf.Account = protobuf.Account(
     identifier,
     coinFamily.toProto,
-    coin.toProto,
-    Some(group.toProto)
+    coin.toProto
   )
 }
 
@@ -32,7 +26,6 @@ object Account {
     Account(
       proto.identifier,
       CoinFamily.fromProto(proto.coinFamily),
-      Coin.fromProto(proto.coin),
-      AccountGroup.fromProto(proto.getGroup)
+      Coin.fromProto(proto.coin)
     )
 }

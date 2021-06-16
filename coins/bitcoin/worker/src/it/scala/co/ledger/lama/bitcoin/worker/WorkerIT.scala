@@ -75,8 +75,7 @@ class WorkerIT extends AnyFlatSpecLike with Matchers {
           val account = Account(
             keychainId.toString,
             CoinFamily.Bitcoin,
-            Coin.Btc,
-            AccountGroup("TestGroup")
+            Coin.Btc
           )
 
           val syncId = UUID.randomUUID()

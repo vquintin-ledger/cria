@@ -2,14 +2,13 @@ package co.ledger.lama.common.logging
 
 import java.util.UUID
 
-import co.ledger.lama.common.models.{Account, AccountGroup, Coin, CoinFamily}
+import co.ledger.lama.common.models.{Account, Coin, CoinFamily}
 
 case class LamaLogContext(
     accountId: Option[UUID] = None,
     identifier: Option[String] = None,
     coinFamily: Option[CoinFamily] = None,
     coin: Option[Coin] = None,
-    group: Option[AccountGroup] = None,
     followUpId: Option[UUID] = None,
     customFields: List[Option[(String, String)]] = List()
 ) extends LogContext {
@@ -19,8 +18,7 @@ case class LamaLogContext(
       accountId = Some(account.id),
       identifier = Some(account.identifier),
       coinFamily = Some(account.coinFamily),
-      coin = Some(account.coin),
-      group = Some(account.group)
+      coin = Some(account.coin)
     )
 
   def withAccountId(accountId: UUID): LamaLogContext =
@@ -35,9 +33,6 @@ case class LamaLogContext(
   def withCoin(coin: Coin): LamaLogContext =
     copy(coin = Some(coin))
 
-  def withGroup(group: AccountGroup): LamaLogContext =
-    copy(group = Some(group))
-
   def withFollowUpId(followUpId: UUID): LamaLogContext =
     copy(followUpId = Some(followUpId))
 
@@ -49,7 +44,6 @@ case class LamaLogContext(
     identifier.map(id => ("identifier", id)),
     coinFamily.map(cf => ("coin_family", cf.name)),
     coin.map(c => ("coin", c.name)),
-    group.map(g => ("group", g.name)),
     followUpId.map(id => ("followUpId", id.toString))
   ) ::: customFields).flatten.toMap
 

@@ -1,1 +1,0 @@
-ALTER TYPE coin ADD VALUE 'ltc';
