@@ -9,14 +9,7 @@ import co.ledger.lama.bitcoin.common.models.explorer.Block
 import co.ledger.lama.bitcoin.worker.SyncEventServiceFixture.{End, QueueInputOps, registered}
 import co.ledger.lama.bitcoin.worker.services.{CursorStateService, SyncEventService}
 import co.ledger.lama.common.models.Status.Registered
-import co.ledger.lama.common.models.{
-  Account,
-  AccountGroup,
-  Coin,
-  CoinFamily,
-  ReportableEvent,
-  WorkableEvent
-}
+import co.ledger.lama.common.models.{Account, Coin, CoinFamily, ReportableEvent, WorkableEvent}
 import co.ledger.lama.common.utils.IOAssertion
 import fs2.concurrent.Queue
 import org.scalatest.flatspec.AnyFlatSpec
@@ -39,8 +32,7 @@ class WorkerSpec extends AnyFlatSpec with Matchers {
     Account(
       UUID.randomUUID().toString,
       CoinFamily.Bitcoin,
-      Coin.Btc,
-      AccountGroup("TestGroup")
+      Coin.Btc
     )
   val accountAddresses = LazyList.from(1).map(_.toString)
   val blockchain = LazyList

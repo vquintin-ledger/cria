@@ -42,7 +42,7 @@ object RabbitNotificationService extends ContextLogging {
 
   def routingKey(notification: Notification): RoutingKey =
     RoutingKey(
-      s"${notification.account.group.name}.${notification.account.coinFamily.name}.${notification.account.coin.name}.${notification.account.id.toString}"
+      s"${notification.account.coinFamily.name}.${notification.account.coin.name}.${notification.account.id.toString}"
     )
 
 }

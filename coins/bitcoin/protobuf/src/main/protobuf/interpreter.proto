@@ -26,7 +26,6 @@ message Account {
   string identifier = 1;
   string coinFamily = 2;
   string coin = 3;
-  string group = 4;
 }
 
 message SaveTransactionRequest {

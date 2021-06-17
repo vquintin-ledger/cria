@@ -27,8 +27,7 @@ object BtcProtoUtils {
       protobuf.Account(
         account.identifier,
         account.coinFamily.name,
-        account.coin.name,
-        account.group.name
+        account.coin.name
       )
     }
   }
@@ -38,8 +37,7 @@ object BtcProtoUtils {
       models.Account(
         proto.identifier,
         models.CoinFamily.fromKey(proto.coinFamily).get,
-        models.Coin.fromKey(proto.coin).get,
-        models.AccountGroup(proto.group)
+        models.Coin.fromKey(proto.coin).get
       )
   }
 }
