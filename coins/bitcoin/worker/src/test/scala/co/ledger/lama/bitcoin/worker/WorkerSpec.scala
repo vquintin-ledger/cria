@@ -58,11 +58,9 @@ class WorkerSpec extends AnyFlatSpec with Matchers {
   val alreadyValidBlockCursorService: CursorStateService[IO] = (_, b, _) => IO.pure(b)
 
   def worker(
-      args: SynchronizationParameters,
       interpreter: InterpreterClient = new InterpreterClientMock,
       explorer: ExplorerClient = defaultExplorer
   ) = new Worker(
-    args,
     KeychainFixture.keychainClient(accountAddresses, keyChainId = Some(keychainId)),
     _ => explorer,
     interpreter,
@@ -75,10 +73,10 @@ class WorkerSpec extends AnyFlatSpec with Matchers {
 
     assert(interpreter.getSavedTransaction(accountIdentifier.id).isEmpty)
 
-    val args = mkArgs(None)
+    val syncParams = mkSyncParams(None)
 
     for {
-      _ <- worker(args, interpreter).run
+      _ <- worker(interpreter).run(syncParams)
     } yield {
       val txs: List[TransactionView] = interpreter.getSavedTransaction(accountIdentifier.id)
       txs should have size 4
@@ -94,10 +92,10 @@ class WorkerSpec extends AnyFlatSpec with Matchers {
 
     assert(interpreter.getSavedTransaction(accountIdentifier.id).isEmpty)
 
-    val args = mkArgs(Some(lastMinedBlock))
+    val syncParams = mkSyncParams(Some(lastMinedBlock))
 
     for {
-      _ <- worker(args, interpreter, explorer).run
+      _ <- worker(interpreter, explorer).run(syncParams)
     } yield {
 
       interpreter.getSavedTransaction(accountIdentifier.id) shouldBe empty
@@ -111,17 +109,17 @@ class WorkerSpec extends AnyFlatSpec with Matchers {
     val explorer =
       new ExplorerClientMock(blockchain.flatMap(_._2).toMap, mempool.toMap)
 
-    val args = mkArgs(Some(lastMinedBlock))
-    val w    = worker(args, explorer = explorer)
+    val syncParams = mkSyncParams(Some(lastMinedBlock))
+    val w          = worker(explorer = explorer)
     for {
-      _ <- w.run
-      _ <- w.run
+      _ <- w.run(syncParams)
+      _ <- w.run(syncParams)
     } yield {
       explorer.getUnConfirmedTransactionsCount = 2
     }
   }
 
-  def mkArgs(
+  def mkSyncParams(
       cursor: Option[Block]
   ): SynchronizationParameters =
     SynchronizationParameters(
@@ -129,8 +127,8 @@ class WorkerSpec extends AnyFlatSpec with Matchers {
       syncId = UUID.randomUUID(),
       scheme = Bip44,
       coin = Coin.Btc,
-      cursor = cursor.map(_.hash),
-      walletId = UUID.randomUUID(),
+      blockHash = cursor.map(_.hash),
+      walletUid = UUID.randomUUID(),
       lookahead = 20
     )
 }

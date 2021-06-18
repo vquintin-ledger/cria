@@ -12,11 +12,11 @@ class CommandLineOptionsTest extends AnyFlatSpec {
     val xpub = Xpub(
       "xpub6CUGRUonZSQ4TWtTMmzXdrXDtypWKiKrhko4egpiMZbpiaQL2jkwSB1icqYh2cfDfVxdx4df189oLKnC5fSwqPfgyP3hooxujYzAu3fDVmz"
     )
-    val scheme   = Scheme.Bip44
-    val coin     = Coin.Btc
-    val syncId   = UUID.randomUUID()
-    val hash     = "00000000000000000004bd803d1489f7df4d139987ed2ee761d0eb0726d2c088"
-    val walletId = UUID.randomUUID()
+    val scheme    = Scheme.Bip44
+    val coin      = Coin.Btc
+    val syncId    = UUID.randomUUID()
+    val hash      = "00000000000000000004bd803d1489f7df4d139987ed2ee761d0eb0726d2c088"
+    val walletUid = UUID.randomUUID()
     val rawArgs: List[String] = List(
       "--xpub",
       xpub.extendedPublicKey,
@@ -26,12 +26,12 @@ class CommandLineOptionsTest extends AnyFlatSpec {
       coin.toString,
       "--syncId",
       syncId.toString,
-      "--cursor",
+      "--blockHash",
       hash,
-      "--walletId",
-      walletId.toString
+      "--walletUid",
+      walletUid.toString
     )
-    val expected = Right(CommandLineOptions(xpub, scheme, coin, syncId, Some(hash), walletId, 20))
+    val expected = Right(CommandLineOptions(xpub, scheme, coin, syncId, Some(hash), walletUid, 20))
 
     val actual = CommandLineOptions.command.parse(rawArgs)
 

@@ -58,18 +58,17 @@ object App extends IOApp with DefaultContextLogging {
 
       val cliOptions = res.args
 
-      val args = SynchronizationParameters(
+      val syncParams = SynchronizationParameters(
         cliOptions.xpub,
         cliOptions.scheme,
         cliOptions.coin,
         cliOptions.syncId,
-        cliOptions.cursor,
-        cliOptions.walletId,
+        cliOptions.blockHash,
+        cliOptions.walletUid,
         cliOptions.lookahead
       )
 
       val worker = new Worker(
-        args,
         keychainClient,
         explorerClient,
         interpreterClient,
@@ -78,7 +77,7 @@ object App extends IOApp with DefaultContextLogging {
       for {
         _ <- IO(res.server.start()) *> log.info("Worker started")
 
-        res <- worker.run.as(ExitCode.Success)
+        res <- worker.run(syncParams).as(ExitCode.Success)
       } yield res
     }
   }

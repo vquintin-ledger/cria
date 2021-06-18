@@ -11,7 +11,7 @@ case class SynchronizationParameters(
     scheme: Scheme,
     coin: Coin,
     syncId: UUID,
-    cursor: Option[String],
-    walletId: UUID,
+    blockHash: Option[String],
+    walletUid: UUID,
     lookahead: Int
 )

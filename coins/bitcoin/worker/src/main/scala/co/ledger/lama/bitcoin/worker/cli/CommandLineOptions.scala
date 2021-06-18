@@ -14,8 +14,8 @@ case class CommandLineOptions(
     scheme: Scheme,
     coin: Coin,
     syncId: UUID,
-    cursor: Option[String],
-    walletId: UUID,
+    blockHash: Option[String],
+    walletUid: UUID,
     lookahead: Int
 )
 
@@ -27,9 +27,9 @@ object CommandLineOptions {
       .mapValidated(s =>
         Validated.fromOption(Scheme.fromKey(s), NonEmptyList.one(s"$s is not a valid scheme"))
       )
-    val syncId   = Opts.option[UUID]("syncId", "The synchronization id")
-    val cursor   = Opts.option[String]("cursor", "The current hash of the blockchain").orNone
-    val walletId = Opts.option[UUID]("walletId", "The id of the wallet the xpub belongs to")
+    val syncId    = Opts.option[UUID]("syncId", "The synchronization id")
+    val blockHash = Opts.option[String]("blockHash", "The current hash of the blockchain").orNone
+    val walletUid = Opts.option[UUID]("walletUid", "The id of the wallet the xpub belongs to")
     val coin = Opts
       .option[String]("coin", "The coin to synchronize")
       .mapValidated(c =>
@@ -38,7 +38,7 @@ object CommandLineOptions {
     val lookahead =
       Opts.option[Int]("lookahead", "The HD wallet (BIP-32) lookahead").withDefault(20)
 
-    (xpub, scheme, coin, syncId, cursor, walletId, lookahead).mapN(
+    (xpub, scheme, coin, syncId, blockHash, walletUid, lookahead).mapN(
       CommandLineOptions(_, _, _, _, _, _, _)
     )
   }

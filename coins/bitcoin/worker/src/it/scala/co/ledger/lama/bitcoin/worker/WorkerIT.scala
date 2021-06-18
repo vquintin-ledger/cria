@@ -52,7 +52,6 @@ class WorkerIT extends AnyFlatSpecLike with Matchers {
           )
 
         val worker = new Worker(
-          args,
           keychainClient,
           explorerClient,
           interpreterClient,
@@ -65,7 +64,8 @@ class WorkerIT extends AnyFlatSpecLike with Matchers {
           Coin.Btc
         )
 
-        worker.run
+        worker
+          .run(args)
           .map { result =>
             it should "have 35 used addresses for the account" in {
               keychainClient.usedAddresses.size shouldBe 19 + 35

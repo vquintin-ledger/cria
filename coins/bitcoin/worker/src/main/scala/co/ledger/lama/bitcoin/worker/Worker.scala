@@ -4,7 +4,6 @@ import cats.effect.{ContextShift, IO, Timer}
 import cats.implicits._
 import co.ledger.lama.bitcoin.common.clients.grpc.{InterpreterClient, KeychainClient}
 import co.ledger.lama.bitcoin.common.clients.http.ExplorerClient
-import co.ledger.lama.bitcoin.common.models.{BitcoinLikeNetwork, BitcoinNetwork, LitecoinNetwork}
 import co.ledger.lama.bitcoin.common.models.explorer.{
   Block,
   ConfirmedTransaction,
@@ -17,34 +16,34 @@ import fs2.Stream
 
 import java.util.UUID
 import co.ledger.lama.bitcoin.common.models.interpreter.ChangeType
-import co.ledger.lama.bitcoin.common.models.keychain.AccountKey.Xpub
-import co.ledger.lama.common.models.Coin.{Btc, BtcRegtest, BtcTestnet, Ltc}
+import co.ledger.lama.bitcoin.common.utils.CoinImplicits._
 
 import scala.math.Ordering.Implicits._
 import scala.util.Try
 
 class Worker(
-    args: SynchronizationParameters,
     keychainClient: KeychainClient,
     explorerClient: Coin => ExplorerClient,
     interpreterClient: InterpreterClient,
     cursorService: Coin => CursorStateService[IO]
 ) extends ContextLogging {
 
-  def run(implicit cs: ContextShift[IO], t: Timer[IO]): IO[SynchronizationResult] =
-    getOrCreateAccount(args.xpub).flatMap { account =>
+  def run(
+      syncParams: SynchronizationParameters
+  )(implicit cs: ContextShift[IO], t: Timer[IO]): IO[SynchronizationResult] =
+    getOrCreateAccount(syncParams).flatMap { account =>
       implicit val lc: LamaLogContext =
-        LamaLogContext().withAccount(account).withFollowUpId(args.syncId)
+        LamaLogContext().withAccount(account).withFollowUpId(syncParams.syncId)
 
       val result = for {
-        cursorBlock <- args.cursor.flatTraverse(explorerClient(Coin.Btc).getBlock)
-        res         <- synchronizeAccount(account, cursorBlock)
+        cursorBlock <- syncParams.blockHash.flatTraverse(explorerClient(syncParams.coin).getBlock)
+        res         <- synchronizeAccount(syncParams, account, cursorBlock)
       } yield res
 
       // In case of error, fallback to a reportable failed event.
-      log.info(s"Received event: ${args.toString}") *>
+      log.info(s"Received event: ${syncParams.toString}") *>
         result
-          .handleError(error => SynchronizationResult.SynchronizationFailure(args, error))
+          .handleError(error => SynchronizationResult.SynchronizationFailure(syncParams, error))
           .flatTap {
             case s: SynchronizationResult.SynchronizationSuccess =>
               log.info(s"Synchronization success: $s")
@@ -53,7 +52,11 @@ class Worker(
           }
     }
 
-  def synchronizeAccount(account: Account, previousBlockState: Option[Block])(implicit
+  def synchronizeAccount(
+      syncParams: SynchronizationParameters,
+      account: Account,
+      previousBlockState: Option[Block]
+  )(implicit
       cs: ContextShift[IO],
       t: Timer[IO],
       lc: LamaLogContext
@@ -97,7 +100,7 @@ class Worker(
           case None           => true
         }
         .evalTap(b => log.info(s"Syncing from cursor state: $b"))
-        .evalMap(b => b.map(rewindToLastValidBlock(account, _, args.syncId)).sequence)
+        .evalMap(b => b.map(rewindToLastValidBlock(account, _, syncParams.syncId)).sequence)
         .evalMap { lastValidBlock =>
           (bookkeeper
             .record[ConfirmedTransaction](
@@ -123,7 +126,7 @@ class Worker(
 
       opsCount <- interpreterClient.compute(
         account,
-        args.syncId,
+        syncParams.syncId,
         (addressesUsed ++ addressesUsedByMempool).distinct
       )
 
@@ -131,7 +134,7 @@ class Worker(
 
     } yield {
       // Create the reportable successful event.
-      SynchronizationResult.SynchronizationSuccess(args, lastMinedBlock.block)
+      SynchronizationResult.SynchronizationSuccess(syncParams, lastMinedBlock.block)
     }
   }
 
@@ -160,18 +163,15 @@ class Worker(
         }
     } yield lvb
 
-  private def getOrCreateAccount(xpub: Xpub): IO[Account] =
+  private def getOrCreateAccount(syncParams: SynchronizationParameters): IO[Account] =
     keychainClient
-      .create(xpub, args.scheme, args.lookahead, coinToNetwork(args.coin))
+      .create(
+        syncParams.xpub,
+        syncParams.scheme,
+        syncParams.lookahead,
+        syncParams.coin.toNetwork
+      )
       .map { info =>
-        Account(info.keychainId.toString, CoinFamily.Bitcoin, args.coin)
+        Account(info.keychainId.toString, CoinFamily.Bitcoin, syncParams.coin)
       }
-
-  private def coinToNetwork(coin: Coin): BitcoinLikeNetwork =
-    coin match {
-      case BtcTestnet => BitcoinNetwork.TestNet3
-      case BtcRegtest => BitcoinNetwork.RegTest
-      case Btc        => BitcoinNetwork.MainNet
-      case Ltc        => LitecoinNetwork.MainNet
-    }
 }
