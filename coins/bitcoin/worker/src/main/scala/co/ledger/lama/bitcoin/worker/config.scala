@@ -14,7 +14,6 @@ object config {
   case class Config(
       workerEventsExchangeName: ExchangeName,
       lamaEventsExchangeName: ExchangeName,
-      rabbit: Fs2RabbitConfig,
       explorer: ExplorerConfig,
       keychain: GrpcClientConfig,
       interpreter: GrpcClientConfig,

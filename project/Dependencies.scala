@@ -49,6 +49,12 @@ object Dependencies extends DependencyBuilders with LibraryManagementSyntax {
     "com.github.pureconfig"      %% "pureconfig-cats"          % pureconfigVersion
   )
 
+  val declineVersion      = "2.0.0"
+
+  val cli: Seq[ModuleID] = Seq(
+    "com.monovore" %% "decline" % declineVersion
+  )
+
   val fs2RabbitVersion = "3.0.1"
   val rabbit: Seq[ModuleID] = Seq(
     "dev.profunktor" %% "fs2-rabbit" % fs2RabbitVersion
@@ -88,7 +94,7 @@ object Dependencies extends DependencyBuilders with LibraryManagementSyntax {
   val criaCommon: Seq[ModuleID] = circe ++ rabbit ++ utilities ++ postgres ++ http4s
 
   val btcCommon: Seq[ModuleID]      = criaCommon
-  val btcWorker: Seq[ModuleID]      = btcCommon
+  val btcWorker: Seq[ModuleID]      = btcCommon ++ cli
   val btcInterpreter: Seq[ModuleID] = btcCommon ++ crypto
   val btcApi: Seq[ModuleID]         = btcCommon
   val btcTransactor: Seq[ModuleID]  = btcCommon

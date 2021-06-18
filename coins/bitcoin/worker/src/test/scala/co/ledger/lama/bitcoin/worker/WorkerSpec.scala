@@ -5,22 +5,18 @@ import co.ledger.lama.bitcoin.common.clients.grpc.InterpreterClient
 import co.ledger.lama.bitcoin.common.clients.grpc.mocks.InterpreterClientMock
 import co.ledger.lama.bitcoin.common.clients.http.ExplorerClient
 import co.ledger.lama.bitcoin.common.clients.http.mocks.ExplorerClientMock
+import co.ledger.lama.bitcoin.common.models.Scheme.Bip44
 import co.ledger.lama.bitcoin.common.models.explorer.Block
-import co.ledger.lama.bitcoin.worker.SyncEventServiceFixture.{End, QueueInputOps, registered}
-import co.ledger.lama.bitcoin.worker.services.{CursorStateService, SyncEventService}
-import co.ledger.lama.common.models.Status.Registered
-import co.ledger.lama.common.models.{Account, Coin, CoinFamily, ReportableEvent, WorkableEvent}
+import co.ledger.lama.bitcoin.common.models.interpreter.TransactionView
+import co.ledger.lama.bitcoin.common.models.keychain.AccountKey.Xpub
+import co.ledger.lama.bitcoin.worker.services.CursorStateService
+import co.ledger.lama.common.models.{Account, Coin, CoinFamily}
 import co.ledger.lama.common.utils.IOAssertion
-import fs2.concurrent.Queue
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
+
 import java.time.Instant
 import java.util.UUID
-
-import co.ledger.lama.bitcoin.common.models.interpreter.TransactionView
-import co.ledger.lama.common.utils.rabbitmq.AutoAckMessage
-import dev.profunktor.fs2rabbit.model.DeliveryTag
-
 import scala.concurrent.ExecutionContext
 
 class WorkerSpec extends AnyFlatSpec with Matchers {
@@ -28,9 +24,11 @@ class WorkerSpec extends AnyFlatSpec with Matchers {
   implicit val cs: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
   implicit val t: Timer[IO]         = IO.timer(ExecutionContext.global)
 
+  val keychainId = UUID.randomUUID()
+
   val accountIdentifier =
     Account(
-      UUID.randomUUID().toString,
+      keychainId.toString,
       CoinFamily.Bitcoin,
       Coin.Btc
     )
@@ -60,52 +58,26 @@ class WorkerSpec extends AnyFlatSpec with Matchers {
   val alreadyValidBlockCursorService: CursorStateService[IO] = (_, b, _) => IO.pure(b)
 
   def worker(
-      messages: Queue[IO, Option[WorkableEvent[Block]]],
       interpreter: InterpreterClient = new InterpreterClientMock,
       explorer: ExplorerClient = defaultExplorer
   ) = new Worker(
-    SyncEventServiceFixture.syncEventService(receiving = messages),
-    KeychainFixture.keychainClient(accountAddresses),
+    KeychainFixture.keychainClient(accountAddresses, keyChainId = Some(keychainId)),
     _ => explorer,
     interpreter,
     _ => alreadyValidBlockCursorService
   )
 
-  "Worker" should "run on each Registered event received" in IOAssertion {
-
-    for {
-      events <- SyncEventServiceFixture.workableEvents
-
-      runs = worker(events).run
-
-      _ <- registered(accountIdentifier, cursor = None) >> events
-      _ <- registered(accountIdentifier, cursor = None) >> events
-      _ <- End >> events
-
-      nbRuns <- runs.compile.toList.map(_.size)
-
-    } yield {
-      nbRuns shouldBe 2
-    }
-  }
-
-  it should "synchronize on registered event" in IOAssertion {
+  it should "synchronize on given parameters" in IOAssertion {
 
     val interpreter = new InterpreterClientMock
 
     assert(interpreter.getSavedTransaction(accountIdentifier.id).isEmpty)
 
+    val syncParams = mkSyncParams(None)
+
     for {
-      events <- SyncEventServiceFixture.workableEvents
-      runs = worker(events, interpreter).run
-
-      _ <- registered(accountIdentifier, cursor = None) >> events
-      _ <- End >> events
-
-      _ <- runs.compile.drain
-
+      _ <- worker(interpreter).run(syncParams)
     } yield {
-
       val txs: List[TransactionView] = interpreter.getSavedTransaction(accountIdentifier.id)
       txs should have size 4
     }
@@ -120,15 +92,10 @@ class WorkerSpec extends AnyFlatSpec with Matchers {
 
     assert(interpreter.getSavedTransaction(accountIdentifier.id).isEmpty)
 
+    val syncParams = mkSyncParams(Some(lastMinedBlock))
+
     for {
-      events <- SyncEventServiceFixture.workableEvents
-      runs = worker(events, interpreter, explorer).run
-
-      _ <- registered(accountIdentifier, cursor = Some(lastMinedBlock)) >> events
-      _ <- End >> events
-
-      _ <- runs.compile.drain
-
+      _ <- worker(interpreter, explorer).run(syncParams)
     } yield {
 
       interpreter.getSavedTransaction(accountIdentifier.id) shouldBe empty
@@ -142,63 +109,26 @@ class WorkerSpec extends AnyFlatSpec with Matchers {
     val explorer =
       new ExplorerClientMock(blockchain.flatMap(_._2).toMap, mempool.toMap)
 
+    val syncParams = mkSyncParams(Some(lastMinedBlock))
+    val w          = worker(explorer = explorer)
     for {
-      events <- SyncEventServiceFixture.workableEvents
-      runs = worker(messages = events, explorer = explorer).run
-
-      _ <- registered(accountIdentifier, cursor = Some(lastMinedBlock)) >> events
-      _ <- registered(accountIdentifier, cursor = Some(lastMinedBlock)) >> events
-      _ <- End >> events
-
-      _ <- runs.compile.drain
-
+      _ <- w.run(syncParams)
+      _ <- w.run(syncParams)
     } yield {
       explorer.getUnConfirmedTransactionsCount = 2
     }
-
   }
-}
 
-object SyncEventServiceFixture {
-
-  def workableEvents(implicit
-      cs: ContextShift[IO]
-  ): IO[Queue[IO, Option[WorkableEvent[Block]]]] =
-    Queue.bounded[IO, Option[WorkableEvent[Block]]](5)
-
-  def registered(
-      accountId: Account,
+  def mkSyncParams(
       cursor: Option[Block]
-  ): WorkableEvent[Block] =
-    WorkableEvent(
-      accountId,
+  ): SynchronizationParameters =
+    SynchronizationParameters(
+      Xpub("xpubtoto"),
       syncId = UUID.randomUUID(),
-      status = Registered,
-      cursor,
-      error = None,
-      Instant.now()
+      scheme = Bip44,
+      coin = Coin.Btc,
+      blockHash = cursor.map(_.hash),
+      walletUid = UUID.randomUUID(),
+      lookahead = 20
     )
-
-  def syncEventService(
-      receiving: Queue[IO, Option[WorkableEvent[Block]]]
-  ): SyncEventService = {
-    new SyncEventService {
-      override def consumeWorkerEvents: fs2.Stream[IO, AutoAckMessage[WorkableEvent[Block]]] = {
-        receiving.dequeue.unNoneTerminate
-          .evalMap { event =>
-            AutoAckMessage.wrap(event, DeliveryTag(0L))(_ => IO.unit)
-          }
-      }
-
-      override def reportEvent(message: ReportableEvent[Block]): IO[Unit] = IO.unit
-    }
-  }
-
-  object End {
-    def >>[T](queue: Queue[IO, Option[T]]): IO[Unit] = queue.enqueue1(None)
-  }
-  implicit class QueueInputOps[M](e: M) {
-    def >>(queue: Queue[IO, Option[M]]): IO[Unit] = queue.enqueue1(Some(e))
-  }
-
 }
