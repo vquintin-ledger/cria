@@ -1,39 +1,6 @@
 version: '3'
 
 services:
-  account-manager:
-    image: docker.pkg.github.com/ledgerhq/cria/cria-account-manager:${CRIA_VERSION}
-    environment:
-      JAVA_OPTS: ${ACCOUNT_MANAGER_JAVA_OPTS}
-      ACCOUNT_MANAGER_PORT: ${ACCOUNT_MANAGER_PORT}
-      ACCOUNT_MANAGER_JDBC_URL: ${ACCOUNT_MANAGER_JDBC_URL}
-      ACCOUNT_MANAGER_POSTGRES_USER: ${ACCOUNT_MANAGER_POSTGRES_USER}
-      ACCOUNT_MANAGER_POSTGRES_PASSWORD: ${ACCOUNT_MANAGER_POSTGRES_PASSWORD}
-      WORKER_EVENTS_EXCHANGE_NAME: ${WORKER_EVENTS_EXCHANGE_NAME}
-      CRIA_EVENTS_EXCHANGE_NAME: ${CRIA_EVENTS_EXCHANGE_NAME}
-      RABBIT_HOST: ${RABBIT_HOST}
-      RABBIT_PORT: ${RABBIT_PORT}
-      RABBIT_VIRTUAL_HOST: ${RABBIT_VIRTUAL_HOST}
-      RABBIT_CONNECTION_TIMEOUT: ${RABBIT_CONNECTION_TIMEOUT}
-      RABBIT_SSL: ${RABBIT_SSL}
-      RABBIT_USERNAME: ${RABBIT_USERNAME}
-      RABBIT_PASSWORD: ${RABBIT_PASSWORD}
-      REDIS_HOST: ${REDIS_HOST}
-      REDIS_PORT: ${REDIS_PORT}
-      REDIS_SSL: ${REDIS_SSL}
-      REDIS_PASSWORD: ${REDIS_PASSWORD}
-      REDIS_DB: ${ACCOUNT_MANAGER_REDIS_DB}
-      BITCOIN_SYNC_FREQUENCY: ${BITCOIN_SYNC_FREQUENCY}
-      LOG_APPENDER: ${LOG_APPENDER}
-      LOG_LEVEL: ${LOG_LEVEL}
-      DD_TRACE_ENABLED: "false"
-    ports:
-      - ${ACCOUNT_MANAGER_PORT}:${ACCOUNT_MANAGER_PORT}
-    depends_on:
-      - postgres
-      - rabbitmq
-      - redis
-
   postgres:
     image: postgres:${POSTGRES_VERSION}
     environment:
@@ -50,26 +17,19 @@ services:
       timeout: 5s
       retries: 5
 
-  rabbitmq:
-    image: rabbitmq:${RABBITMQ_VERSION}
-    environment:
-      RABBITMQ_DEFAULT_USER: ${RABBIT_USERNAME}
-      RABBITMQ_DEFAULT_PASS: ${RABBIT_PASSWORD}
-    command: rabbitmq-server
-    ports:
-      - "5672:5672"
-      - "15672:15672" # RabbitMQ management UI
-    healthcheck:
-      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
-      interval: 5s
-      timeout: 15s
-      retries: 10
-
   redis:
     image: redis:${REDIS_VERSION}
     command: redis-server --requirepass ${REDIS_PASSWORD}
     ports:
       - 6379:6379
+
+  bitcoin-lib-grpc:
+    image: docker.pkg.github.com/ledgerhq/bitcoin-lib-grpc/bitcoin-lib-grpc:${BITCOIN_LIB_GRPC_VERSION}
+    environment:
+      BITCOIN_HOST: ${BITCOIN_LIB_GRPC_HOST}
+      BITCOIN_PORT: ${BITCOIN_LIB_GRPC_PORT}
+    ports:
+      - ${BITCOIN_LIB_GRPC_PORT}:${BITCOIN_LIB_GRPC_PORT}
 
   bitcoin-keychain:
     image: docker.pkg.github.com/ledgerhq/bitcoin-keychain/bitcoin-keychain:${BITCOIN_KEYCHAIN_VERSION}
@@ -90,35 +50,6 @@ services:
       - bitcoin-lib-grpc
     ports:
       - ${BITCOIN_KEYCHAIN_PORT}:${BITCOIN_KEYCHAIN_PORT}
-
-  bitcoin-interpreter:
-    image: docker.pkg.github.com/ledgerhq/cria/cria-bitcoin-interpreter:${CRIA_VERSION}
-    environment:
-      JAVA_OPTS: ${BITCOIN_INTERPRETER_JAVA_OPTS}
-      BITCOIN_INTERPRETER_JDBC_URL: ${BITCOIN_INTERPRETER_JDBC_URL}
-      BITCOIN_INTERPRETER_POSTGRES_USER: ${BITCOIN_INTERPRETER_POSTGRES_USER}
-      BITCOIN_INTERPRETER_POSTGRES_PASSWORD: ${BITCOIN_INTERPRETER_POSTGRES_PASSWORD}
-      BITCOIN_INTERPRETER_PORT: ${BITCOIN_INTERPRETER_PORT}
-      CRIA_NOTIFICATIONS_EXCHANGE_NAME: ${CRIA_NOTIFICATIONS_EXCHANGE_NAME}
-      RABBIT_HOST: ${RABBIT_HOST}
-      RABBIT_PORT: ${RABBIT_PORT}
-      RABBIT_VIRTUAL_HOST: ${RABBIT_VIRTUAL_HOST}
-      RABBIT_CONNECTION_TIMEOUT: ${RABBIT_CONNECTION_TIMEOUT}
-      RABBIT_SSL: ${RABBIT_SSL}
-      RABBIT_USERNAME: ${RABBIT_USERNAME}
-      RABBIT_PASSWORD: ${RABBIT_PASSWORD}
-      BITCOIN_EXPLORER_URI: ${BITCOIN_EXPLORER_URI}
-      BITCOIN_EXPLORER_ADDRESSES_SIZE: ${BITCOIN_EXPLORER_ADDRESSES_SIZE}
-      BITCOIN_EXPLORER_TXS_BATCH_SIZE: ${BITCOIN_EXPLORER_TXS_BATCH_SIZE}
-      BITCOIN_EXPLORER_TIMEOUT: ${BITCOIN_EXPLORER_TIMEOUT}
-      LOG_APPENDER: ${LOG_APPENDER}
-      LOG_LEVEL: ${LOG_LEVEL}
-      DD_TRACE_ENABLED: "false"
-    depends_on:
-      - postgres
-      - rabbitmq
-    ports:
-      - ${BITCOIN_INTERPRETER_PORT}:${BITCOIN_INTERPRETER_PORT}
 
   bitcoin-worker:
     image: docker.pkg.github.com/ledgerhq/cria/cria-bitcoin-worker:${CRIA_VERSION}
@@ -141,6 +72,9 @@ services:
       BITCOIN_EXPLORER_ADDRESSES_SIZE: ${BITCOIN_EXPLORER_ADDRESSES_SIZE}
       BITCOIN_EXPLORER_TXS_BATCH_SIZE: ${BITCOIN_EXPLORER_TXS_BATCH_SIZE}
       BITCOIN_EXPLORER_TIMEOUT: ${BITCOIN_EXPLORER_TIMEOUT}
+      BITCOIN_INTERPRETER_JDBC_URL: ${BITCOIN_INTERPRETER_JDBC_URL}
+      BITCOIN_INTERPRETER_POSTGRES_USER: ${BITCOIN_INTERPRETER_POSTGRES_USER}
+      BITCOIN_INTERPRETER_POSTGRES_PASSWORD: ${BITCOIN_INTERPRETER_POSTGRES_PASSWORD}
       BITCOIN_INTERPRETER_HOST: ${BITCOIN_INTERPRETER_HOST}
       BITCOIN_INTERPRETER_PORT: ${BITCOIN_INTERPRETER_PORT}
       BITCOIN_INTERPRETER_SSL: ${BITCOIN_INTERPRETER_SSL}
@@ -148,8 +82,7 @@ services:
       LOG_LEVEL: ${LOG_LEVEL}
       DD_TRACE_ENABLED: "false"
     depends_on:
-      - rabbitmq
       - bitcoin-keychain
-      - bitcoin-interpreter
+      - postgres
     ports:
       - ${BITCOIN_WORKER_PORT}:${BITCOIN_WORKER_PORT}
