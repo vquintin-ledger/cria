@@ -1,20 +1,21 @@
-package co.ledger.lama.bitcoin.interpreter.services
+package co.ledger.lama.bitcoin.worker.services
 
 import cats.data.NonEmptyList
-import java.util.UUID
 import co.ledger.lama.bitcoin.common.models.interpreter.{
   BlockView,
   InputView,
   OutputView,
   TransactionView
 }
-import co.ledger.lama.bitcoin.interpreter.models.implicits._
+import co.ledger.lama.bitcoin.worker.models.implicits._
 import co.ledger.lama.common.logging.DoobieLogHandler
 import co.ledger.lama.common.models.{Sort, TxHash}
 import doobie._
 import doobie.implicits._
 import doobie.postgres.implicits._
 import fs2._
+
+import java.util.UUID
 
 object TransactionQueries extends DoobieLogHandler {
 
