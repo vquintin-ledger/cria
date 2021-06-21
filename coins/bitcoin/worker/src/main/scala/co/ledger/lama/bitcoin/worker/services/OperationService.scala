@@ -1,10 +1,11 @@
-package co.ledger.lama.bitcoin.interpreter.services
+package co.ledger.lama.bitcoin.worker.services
 
 import cats.effect.IO
-import co.ledger.lama.bitcoin.interpreter.models.OperationToSave
+import co.ledger.lama.bitcoin.worker.models.OperationToSave
 import co.ledger.lama.common.logging.ContextLogging
 import doobie._
 import doobie.implicits._
+
 import java.util.UUID
 
 class OperationService(

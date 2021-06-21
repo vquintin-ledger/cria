@@ -1,39 +1,44 @@
-package co.ledger.lama.bitcoin.interpreter
+package co.ledger.lama.bitcoin.worker.services
 
 import cats.effect.{Clock, ContextShift, IO}
-import co.ledger.lama.bitcoin.common.models.interpreter._
-import co.ledger.lama.bitcoin.interpreter.Config.Db
-import co.ledger.lama.bitcoin.interpreter.services._
-import co.ledger.lama.common.logging.{ContextLogging, LamaLogContext}
-import co.ledger.lama.common.models._
-import fs2._
-import doobie.Transactor
-import java.util.UUID
-import java.util.concurrent.TimeUnit
-
+import co.ledger.lama.bitcoin.common.clients.grpc.InterpreterClient
 import co.ledger.lama.bitcoin.common.clients.http.ExplorerClient
-import co.ledger.lama.bitcoin.interpreter.models.{
+import co.ledger.lama.bitcoin.common.models.interpreter._
+import co.ledger.lama.bitcoin.worker.models.{
   AccountTxView,
   Action,
   Delete,
   Save,
   TransactionAmounts
 }
+import co.ledger.lama.common.logging.{ContextLogging, LamaLogContext}
+import co.ledger.lama.common.models._
+import doobie.Transactor
+import fs2._
+import cats.implicits._
 
-class Interpreter(
+import java.util.UUID
+import java.util.concurrent.TimeUnit
+
+class InterpreterClientImpl(
     explorer: Coin => ExplorerClient,
     db: Transactor[IO],
     maxConcurrent: Int,
     batchConcurrency: Db.BatchConcurrency
 )(implicit cs: ContextShift[IO], clock: Clock[IO])
-    extends ContextLogging {
+    extends InterpreterClient
+    with ContextLogging {
 
   val transactionService = new TransactionService(db, maxConcurrent)
   val operationService   = new OperationService(db)
   val flaggingService    = new FlaggingService(db)
 
-  def saveTransactions: Pipe[IO, AccountTxView, Int] =
-    transactionService.saveTransactions
+  def saveTransactions(accountId: UUID): Pipe[IO, TransactionView, Unit] = { views =>
+    views
+      .map(v => AccountTxView(accountId, v))
+      .through(transactionService.saveTransactions)
+      .void
+  }
 
   def getLastBlocks(
       accountId: UUID
@@ -49,7 +54,7 @@ class Interpreter(
 
   def removeDataFromCursor(
       accountId: UUID,
-      blockHeight: Long,
+      blockHeight: Option[Long],
       followUpId: UUID
   ): IO[Int] = {
     implicit val lc: LamaLogContext =
@@ -58,7 +63,7 @@ class Interpreter(
     for {
       _     <- log.info(s"""Deleting data with parameters:
                       - blockHeight: $blockHeight""")
-      txRes <- transactionService.removeFromCursor(accountId, blockHeight)
+      txRes <- transactionService.removeFromCursor(accountId, blockHeight.getOrElse(0L))
       _     <- log.info(s"Deleted $txRes operations")
     } yield txRes
   }

@@ -1,6 +1,4 @@
-package co.ledger.lama.bitcoin.interpreter.services
-
-import java.util.UUID
+package co.ledger.lama.bitcoin.worker.services
 
 import cats.data.NonEmptyList
 import cats.effect.{ContextShift, IO}
@@ -8,6 +6,8 @@ import cats.implicits._
 import co.ledger.lama.bitcoin.common.models.interpreter.{AccountAddress, ChangeType}
 import doobie._
 import doobie.implicits._
+
+import java.util.UUID
 
 class FlaggingService(db: Transactor[IO]) {
 

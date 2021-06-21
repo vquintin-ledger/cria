@@ -1,4 +1,4 @@
-package co.ledger.lama.bitcoin.interpreter.models
+package co.ledger.lama.bitcoin.worker.models
 
 import co.ledger.lama.bitcoin.common.models.interpreter.TransactionView
 

@@ -1,4 +1,4 @@
-package co.ledger.lama.bitcoin.interpreter.models
+package co.ledger.lama.bitcoin.worker.models
 
 import cats.effect.IO
 import co.ledger.lama.common.models.implicits._

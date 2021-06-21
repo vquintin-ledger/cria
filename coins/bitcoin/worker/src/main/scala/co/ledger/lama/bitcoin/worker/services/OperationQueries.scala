@@ -1,10 +1,10 @@
-package co.ledger.lama.bitcoin.interpreter.services
+package co.ledger.lama.bitcoin.worker.services
 
 import cats.data.NonEmptyList
 import cats.implicits._
 import co.ledger.lama.bitcoin.common.models.interpreter._
-import co.ledger.lama.bitcoin.interpreter.models.{OperationToSave, TransactionAmounts}
-import co.ledger.lama.bitcoin.interpreter.models.implicits._
+import co.ledger.lama.bitcoin.worker.models.{OperationToSave, TransactionAmounts}
+import co.ledger.lama.bitcoin.worker.models.implicits._
 import co.ledger.lama.common.logging.DoobieLogHandler
 import co.ledger.lama.common.models.TxHash
 import doobie._
