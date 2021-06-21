@@ -1,12 +1,13 @@
-package co.ledger.lama.bitcoin.interpreter.services
+package co.ledger.lama.bitcoin.worker.services
 
 import cats.effect.{ContextShift, IO}
 import co.ledger.lama.bitcoin.common.models.interpreter.BlockView
-import co.ledger.lama.bitcoin.interpreter.models.AccountTxView
+import co.ledger.lama.bitcoin.worker.models.AccountTxView
 import co.ledger.lama.common.logging.DefaultContextLogging
 import doobie.Transactor
 import doobie.implicits._
 import fs2._
+
 import java.util.UUID
 
 class TransactionService(db: Transactor[IO], maxConcurrent: Int) extends DefaultContextLogging {

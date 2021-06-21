@@ -92,7 +92,7 @@ lazy val bitcoinCommon = (project in file("coins/bitcoin/common"))
   .configs(IntegrationTest)
   .settings(
     name := "cria-bitcoin-common",
-    libraryDependencies ++= Dependencies.btcCommon
+    libraryDependencies ++= (Dependencies.btcCommon ++ Dependencies.test)
   )
   .settings(disableDocGeneration)
   .dependsOn(common, bitcoinProtobuf)
@@ -104,16 +104,5 @@ lazy val bitcoinWorker = (project in file("coins/bitcoin/worker"))
     name := "cria-bitcoin-worker",
     sharedSettings,
     libraryDependencies ++= (Dependencies.btcWorker ++ Dependencies.test)
-  )
-  .dependsOn(common, bitcoinCommon)
-
-lazy val bitcoinInterpreter = (project in file("coins/bitcoin/interpreter"))
-  .enablePlugins(JavaAgent, JavaServerAppPackaging, DockerPlugin)
-  .configs(IntegrationTest)
-  .settings(
-    name := "cria-bitcoin-interpreter",
-    sharedSettings,
-    libraryDependencies ++= (Dependencies.btcInterpreter ++ Dependencies.test),
-    parallelExecution in IntegrationTest := false
   )
   .dependsOn(common, bitcoinCommon)

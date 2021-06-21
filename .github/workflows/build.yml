@@ -15,7 +15,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        component: [common, bitcoinWorker, bitcoinInterpreter]
+        component: [common, bitcoinWorker]
     steps:
       - uses: actions/checkout@v2
         with:
