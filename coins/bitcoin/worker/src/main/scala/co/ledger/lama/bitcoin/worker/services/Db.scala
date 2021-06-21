@@ -3,6 +3,7 @@ package co.ledger.lama.bitcoin.worker.services
 import co.ledger.lama.common.utils.PostgresConfig
 import pureconfig.ConfigReader
 import pureconfig.error.CannotConvert
+import pureconfig.generic.semiauto.deriveReader
 
 case class Db(batchConcurrency: Db.BatchConcurrency, postgres: PostgresConfig)
 
@@ -20,4 +21,6 @@ object Db {
         }
       }
   }
+
+  implicit val dbConfigReader: ConfigReader[Db] = deriveReader[Db]
 }

@@ -2,6 +2,7 @@ package co.ledger.lama.bitcoin.worker
 
 import cats.implicits._
 import co.ledger.lama.bitcoin.common.config.ExplorerConfig
+import co.ledger.lama.bitcoin.worker.services.Db
 import co.ledger.lama.common.utils.{GrpcClientConfig, GrpcServerConfig}
 import dev.profunktor.fs2rabbit.config.{Fs2RabbitConfig, Fs2RabbitNodeConfig}
 import dev.profunktor.fs2rabbit.model.{ExchangeName, QueueName, RoutingKey}
@@ -17,7 +18,9 @@ object config {
       explorer: ExplorerConfig,
       keychain: GrpcClientConfig,
       interpreter: GrpcClientConfig,
-      grpcServer: GrpcServerConfig
+      grpcServer: GrpcServerConfig,
+      maxConcurrent: Int = 50, // TODO : bench [Runtime.getRuntime.availableProcessors() * x]
+      db: Db
   ) {
     val routingKey: RoutingKey = RoutingKey("bitcoin.*")
 

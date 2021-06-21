@@ -1,7 +1,7 @@
 package co.ledger.lama.bitcoin.worker
 
 import cats.effect.{ExitCode, IO, IOApp, Resource}
-import co.ledger.lama.bitcoin.common.clients.grpc.{InterpreterGrpcClient, KeychainGrpcClient}
+import co.ledger.lama.bitcoin.common.clients.grpc.KeychainGrpcClient
 import co.ledger.lama.bitcoin.common.clients.http.ExplorerHttpClient
 import co.ledger.lama.bitcoin.worker.cli.CommandLineOptions
 import co.ledger.lama.bitcoin.worker.config.Config
@@ -16,6 +16,7 @@ import io.grpc.{ManagedChannel, Server}
 import org.http4s.client.Client
 import pureconfig.ConfigSource
 import cats.implicits._
+import doobie.util.transactor.Transactor
 
 object App extends IOApp with DefaultContextLogging {
 
@@ -24,7 +25,8 @@ object App extends IOApp with DefaultContextLogging {
       httpClient: Client[IO],
       keychainGrpcChannel: ManagedChannel,
       interpreterGrpcChannel: ManagedChannel,
-      server: Server
+      server: Server,
+      transactor: Transactor[IO]
   )
 
   def run(args: List[String]): IO[ExitCode] = {
@@ -39,19 +41,25 @@ object App extends IOApp with DefaultContextLogging {
       serviceDefinitions = List(new HealthService().definition)
 
       grcpService <- ResourceUtils.grpcServer(conf.grpcServer, serviceDefinitions)
-
+      transactor  <- ResourceUtils.postgresTransactor(conf.db.postgres)
     } yield WorkerResources(
       args,
       httpClient,
       keychainGrpcChannel,
       interpreterGrpcChannel,
-      grcpService
+      grcpService,
+      transactor
     )
 
     resources.use { res =>
-      val keychainClient    = new KeychainGrpcClient(res.keychainGrpcChannel)
-      val interpreterClient = new InterpreterGrpcClient(res.interpreterGrpcChannel)
-      val explorerClient    = new ExplorerHttpClient(res.httpClient, conf.explorer, _)
+      val keychainClient = new KeychainGrpcClient(res.keychainGrpcChannel)
+      val explorerClient = new ExplorerHttpClient(res.httpClient, conf.explorer, _)
+      val interpreterClient = new InterpreterClientImpl(
+        explorerClient,
+        res.transactor,
+        conf.maxConcurrent,
+        conf.db.batchConcurrency
+      )
 
       val cursorStateService: Coin => CursorStateService[IO] =
         c => CursorStateService(explorerClient(c), interpreterClient).getLastValidState(_, _, _)
