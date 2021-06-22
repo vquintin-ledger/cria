@@ -41,9 +41,10 @@ class InterpreterImpl(
     extends Interpreter
     with ContextLogging {
 
-  val transactionService = new TransactionService(db, maxConcurrent)
-  val operationService   = new OperationService(db)
-  val flaggingService    = new FlaggingService(db)
+  val transactionService   = new TransactionService(db, maxConcurrent)
+  val operationService     = new OperationService(db)
+  val flaggingService      = new FlaggingService(db)
+  val postSyncCheckService = new PostSyncCheckService(db)
 
   def saveTransactions(accountId: UUID): Pipe[IO, TransactionView, Unit] = { views =>
     views
@@ -104,7 +105,7 @@ class InterpreterImpl(
         .compile
         .foldMonoid
       _ <- log.info(s"$nbSavedOps operations saved")
-
+      _ <- postSyncCheckService.check(account.id)
     } yield nbSavedOps
   }
 
