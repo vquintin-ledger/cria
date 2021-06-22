@@ -38,7 +38,6 @@ object Dependencies extends DependencyBuilders with LibraryManagementSyntax {
   val fs2GrpcVersion      = "0.9.0"
   val protobufJava        = "3.15.8"
   val scalaLoggingVersion = "3.9.3"
-
   val utilities: Seq[ModuleID] = Seq(
     "com.typesafe.scala-logging" %% "scala-logging"            % scalaLoggingVersion,
     "co.fs2"                     %% "fs2-core"                 % fs2Version,
@@ -49,20 +48,9 @@ object Dependencies extends DependencyBuilders with LibraryManagementSyntax {
     "com.github.pureconfig"      %% "pureconfig-cats"          % pureconfigVersion
   )
 
-  val declineVersion      = "2.0.0"
-
+  val declineVersion = "2.0.0"
   val cli: Seq[ModuleID] = Seq(
     "com.monovore" %% "decline" % declineVersion
-  )
-
-  val fs2RabbitVersion = "3.0.1"
-  val rabbit: Seq[ModuleID] = Seq(
-    "dev.profunktor" %% "fs2-rabbit" % fs2RabbitVersion
-  )
-
-  val scalaRedisVersion = "3.30"
-  val redis: Seq[ModuleID] = Seq(
-    "net.debasishg" %% "redisclient" % scalaRedisVersion
   )
 
   val scalaTestVersion     = "3.2.8"
@@ -86,18 +74,5 @@ object Dependencies extends DependencyBuilders with LibraryManagementSyntax {
     "com.google.protobuf"   % "protobuf-java"     % protobufJava
   )
 
-  val bouncyCastleCryptoVersion = "1.68"
-  val crypto: Seq[ModuleID] = Seq(
-    "org.bouncycastle" % "bcprov-jdk15on" % bouncyCastleCryptoVersion
-  )
-
-  val criaCommon: Seq[ModuleID] = circe ++ rabbit ++ utilities ++ postgres ++ http4s
-
-  val btcCommon: Seq[ModuleID]      = criaCommon
-  val btcWorker: Seq[ModuleID]      = btcCommon ++ cli
-  val btcInterpreter: Seq[ModuleID] = btcCommon ++ crypto
-  val btcApi: Seq[ModuleID]         = btcCommon
-  val btcTransactor: Seq[ModuleID]  = btcCommon
-
-  val accountManager: Seq[ModuleID] = criaCommon ++ redis
+  val cria: Seq[ModuleID] = circe ++ utilities ++ postgres ++ http4s ++ cli
 }

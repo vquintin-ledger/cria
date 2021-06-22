@@ -15,7 +15,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        component: [common, bitcoinWorker]
+        component: [cria]
     steps:
       - uses: actions/checkout@v2
         with:
@@ -42,7 +42,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        component: [bitcoinWorker]
+        component: [cria]
     services:
       rabbitmq:
         image: rabbitmq:3.8.5

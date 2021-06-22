@@ -46,63 +46,25 @@ lazy val coverageSettings = Seq(
 lazy val sharedSettings =
   dockerSettings ++ Defaults.itSettings ++ coverageSettings ++ disableDocGeneration
 
-lazy val criaProtobuf = (project in file("protobuf"))
-  .enablePlugins(Fs2Grpc)
-  .settings(
-    name := "cria-protobuf",
-    scalapbCodeGeneratorOptions += CodeGeneratorOption.FlatPackage,
-    libraryDependencies ++= Dependencies.commonProtos
-  )
-  .settings(disableDocGeneration)
-
-// Common cria library
-lazy val common = (project in file("common"))
-  .enablePlugins(BuildInfoPlugin)
-  .configs(IntegrationTest)
-  .settings(
-    name := "cria-common",
-    libraryDependencies ++= (Dependencies.criaCommon ++ Dependencies.test)
-  )
-  .settings(disableDocGeneration, buildInfoSettings)
-  .dependsOn(criaProtobuf)
-
-lazy val accountManager = (project in file("account-manager"))
-  .enablePlugins(JavaAgent, JavaServerAppPackaging, DockerPlugin)
-  .configs(IntegrationTest)
-  .settings(
-    name := "cria-account-manager",
-    sharedSettings,
-    libraryDependencies ++= (Dependencies.accountManager ++ Dependencies.test)
-  )
-  .dependsOn(common)
-
-lazy val bitcoinProtobuf = (project in file("coins/bitcoin/protobuf"))
+lazy val bitcoinProtobuf = (project in file("protobuf"))
   .enablePlugins(Fs2Grpc)
   .settings(
     name := "cria-bitcoin-protobuf",
     scalapbCodeGeneratorOptions += CodeGeneratorOption.FlatPackage,
     libraryDependencies ++= Dependencies.commonProtos,
     PB.protoSources in Compile ++= Seq(
-      file("coins/bitcoin/keychain/pb/keychain")
+      file("keychain/pb/keychain")
     )
   )
   .settings(disableDocGeneration)
 
-lazy val bitcoinCommon = (project in file("coins/bitcoin/common"))
-  .configs(IntegrationTest)
-  .settings(
-    name := "cria-bitcoin-common",
-    libraryDependencies ++= (Dependencies.btcCommon ++ Dependencies.test)
-  )
-  .settings(disableDocGeneration)
-  .dependsOn(common, bitcoinProtobuf)
-
-lazy val bitcoinWorker = (project in file("coins/bitcoin/worker"))
+lazy val cria = (project in file("."))
   .enablePlugins(JavaAgent, JavaServerAppPackaging, DockerPlugin)
   .configs(IntegrationTest)
+  .settings(buildInfoSettings)
   .settings(
-    name := "cria-bitcoin-worker",
+    name := "cria",
     sharedSettings,
-    libraryDependencies ++= (Dependencies.btcWorker ++ Dependencies.test)
+    libraryDependencies ++= (Dependencies.cria ++ Dependencies.test)
   )
-  .dependsOn(common, bitcoinCommon)
+  .dependsOn(bitcoinProtobuf)
