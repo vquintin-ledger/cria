@@ -11,7 +11,7 @@ import co.ledger.cria.clients.Exceptions.ExplorerClientException
 import co.ledger.cria.clients.http.ExplorerClient.Address
 import co.ledger.cria.config.ExplorerConfig
 import co.ledger.cria.models.explorer._
-import co.ledger.cria.logging.{ContextLogging, LamaLogContext}
+import co.ledger.cria.logging.{ContextLogging, CriaLogContext}
 import co.ledger.cria.models.account.Coin
 import co.ledger.cria.models.circeImplicits._
 import co.ledger.cria.utils
@@ -35,11 +35,11 @@ object TransactionHex {
 
 trait ExplorerClient {
 
-  def getCurrentBlock(implicit lc: LamaLogContext): IO[Block]
+  def getCurrentBlock(implicit lc: CriaLogContext, t: Timer[IO]): IO[Block]
 
-  def getBlock(hash: String)(implicit lc: LamaLogContext): IO[Option[Block]]
+  def getBlock(hash: String)(implicit lc: CriaLogContext, t: Timer[IO]): IO[Option[Block]]
 
-  def getBlock(height: Long)(implicit lc: LamaLogContext): IO[Block]
+  def getBlock(height: Long)(implicit lc: CriaLogContext, t: Timer[IO]): IO[Block]
 
   def getConfirmedTransactions(
       addresses: Seq[Address],
@@ -47,7 +47,7 @@ trait ExplorerClient {
   )(implicit
       cs: ContextShift[IO],
       t: Timer[IO],
-      lc: LamaLogContext
+      lc: CriaLogContext
   ): Stream[IO, ConfirmedTransaction]
 
   def getUnconfirmedTransactions(
@@ -55,14 +55,18 @@ trait ExplorerClient {
   )(implicit
       cs: ContextShift[IO],
       t: Timer[IO],
-      lc: LamaLogContext
+      lc: CriaLogContext
   ): Stream[IO, UnconfirmedTransaction]
 
-  def broadcastTransaction(tx: String)(implicit lc: LamaLogContext): IO[String]
+  def broadcastTransaction(tx: String)(implicit lc: CriaLogContext, t: Timer[IO]): IO[String]
 
-  def getRawTransactionHex(transactionHash: String)(implicit lc: LamaLogContext): IO[String]
+  def getRawTransactionHex(
+      transactionHash: String
+  )(implicit lc: CriaLogContext, t: Timer[IO]): IO[String]
 
-  def getTransaction(transactionHash: String)(implicit lc: LamaLogContext): IO[Option[Transaction]]
+  def getTransaction(
+      transactionHash: String
+  )(implicit lc: CriaLogContext, t: Timer[IO]): IO[Option[Transaction]]
 }
 
 object ExplorerClient {
@@ -82,27 +86,35 @@ class ExplorerHttpClient(httpClient: Client[IO], conf: ExplorerConfig, coin: Coi
 
   private def callExpect[A](
       uri: Uri
-  )(implicit d: EntityDecoder[IO, A], lc: LamaLogContext): IO[A] =
-    log.debug(s"call explorer with uri : ${uri.toString()}") *>
-      httpClient
-        .expect[A](uri)
-        .handleErrorWith(e => IO.raiseError(ExplorerClientException(uri, e)))
+  )(implicit d: EntityDecoder[IO, A], t: Timer[IO], lc: CriaLogContext): IO[A] =
+    for {
+      _ <- log.debug(s"Calling explorer with uri : ${uri.toString()}")
+      response <- IOUtils.withTimer(s"Call explorer on : ${uri.toString()}")(
+        httpClient
+          .expect[A](uri)
+          .handleErrorWith(e => IO.raiseError(ExplorerClientException(uri, e)))
+      )
+    } yield response
 
   private def callExpect[A](
       req: Request[IO]
-  )(implicit c: EntityDecoder[IO, A], lc: LamaLogContext): IO[A] =
-    log.debug(s"call explorer with request : ${req.toString()}") *>
-      httpClient
-        .expect[A](req)
-        .handleErrorWith(e => IO.raiseError(ExplorerClientException(req.uri, e)))
+  )(implicit d: EntityDecoder[IO, A], t: Timer[IO], lc: CriaLogContext): IO[A] =
+    for {
+      _ <- log.debug(s"Call explorer with request : ${req.toString()}")
+      response <- IOUtils.withTimer(s"Call explorer on : ${req.uri.toString()}")(
+        httpClient
+          .expect[A](req)
+          .handleErrorWith(e => IO.raiseError(ExplorerClientException(req.uri, e)))
+      )
+    } yield response
 
   private def callExpectWithRetry[A](
       req: Request[IO]
   )(implicit
       cs: ContextShift[IO],
-      c: EntityDecoder[IO, A],
+      d: EntityDecoder[IO, A],
       t: Timer[IO],
-      lc: LamaLogContext
+      lc: CriaLogContext
   ): IO[A] =
     IOUtils
       .retry(
@@ -115,14 +127,14 @@ class ExplorerHttpClient(httpClient: Client[IO], conf: ExplorerConfig, coin: Coi
           IO.raiseError(explorerException)
       }
 
-  def getCurrentBlock(implicit lc: LamaLogContext): IO[Block] =
+  def getCurrentBlock(implicit lc: CriaLogContext, t: Timer[IO]): IO[Block] =
     callExpect[Block](conf.uri.withPath(s"$coinBasePath/blocks/current"))
 
-  def getBlock(hash: String)(implicit lc: LamaLogContext): IO[Option[Block]] =
+  def getBlock(hash: String)(implicit lc: CriaLogContext, t: Timer[IO]): IO[Option[Block]] =
     callExpect[List[Block]](conf.uri.withPath(s"$coinBasePath/blocks/$hash"))
       .map(_.headOption)
 
-  def getBlock(height: Long)(implicit lc: LamaLogContext): IO[Block] =
+  def getBlock(height: Long)(implicit lc: CriaLogContext, t: Timer[IO]): IO[Block] =
     callExpect[Block](conf.uri.withPath(s"$coinBasePath/blocks/$height"))
 
   def getConfirmedTransactions(
@@ -131,11 +143,15 @@ class ExplorerHttpClient(httpClient: Client[IO], conf: ExplorerConfig, coin: Coi
   )(implicit
       cs: ContextShift[IO],
       t: Timer[IO],
-      lc: LamaLogContext
+      lc: CriaLogContext
   ): Stream[IO, ConfirmedTransaction] =
     Stream
       .emits(addresses)
       .chunkN(conf.addressesSize)
+      .evalTap(addressChunk =>
+        log.info(s"Fetching chunk of ${addressChunk.size} addresses") *>
+          log.debug(s"addresses: ${addressChunk.toList.mkString(",")}")
+      )
       .map { chunk =>
         fetchPaginatedTransactions(chunk.toList, blockHash).stream
           .flatMap { res =>
@@ -153,7 +169,7 @@ class ExplorerHttpClient(httpClient: Client[IO], conf: ExplorerConfig, coin: Coi
   )(implicit
       cs: ContextShift[IO],
       t: Timer[IO],
-      lc: LamaLogContext
+      lc: CriaLogContext
   ): Stream[IO, UnconfirmedTransaction] = {
 
     val getPendingTransactionRequest = (as: Chunk[Address]) => {
@@ -163,23 +179,21 @@ class ExplorerHttpClient(httpClient: Client[IO], conf: ExplorerConfig, coin: Coi
       Request[IO](Method.GET, baseUri)
     }
 
-    val logInfo = (as: Chunk[Address]) => {
-      log.info(
-        s"Getting pending txs for addresses: ${as.toList.mkString(",")}"
-      )
-    }
-
     Stream
       .emits(addresses.toSeq)
       .chunkN(conf.addressesSize)
-      .evalTap(logInfo)
+      .evalTap(addresses =>
+        log.info(s"Getting pending txs for ${addresses.size} addresses") *>
+          log.debug(s"addresses: ${addresses.toList.mkString(",")}")
+      )
       .map(getPendingTransactionRequest)
-      .evalTap(r => log.debug(s"$r"))
       .evalMap(request => callExpectWithRetry[List[UnconfirmedTransaction]](request))
       .flatMap(Stream.emits(_))
   }
 
-  def getRawTransactionHex(transactionHash: String)(implicit lc: LamaLogContext): IO[String] =
+  def getRawTransactionHex(
+      transactionHash: String
+  )(implicit lc: CriaLogContext, t: Timer[IO]): IO[String] =
     for {
       rawResponse <- callExpect[List[TransactionHex]](
         conf.uri.withPath(s"$coinBasePath/transactions/$transactionHash/hex")
@@ -189,14 +203,14 @@ class ExplorerHttpClient(httpClient: Client[IO], conf: ExplorerConfig, coin: Coi
 
   def getTransaction(
       transactionHash: String
-  )(implicit lc: LamaLogContext): IO[Option[Transaction]] =
+  )(implicit lc: CriaLogContext, t: Timer[IO]): IO[Option[Transaction]] =
     for {
       rawResponse <- callExpect[Option[Transaction]](
         conf.uri.withPath(s"$coinBasePath/transactions/$transactionHash")
       )
     } yield rawResponse
 
-  def broadcastTransaction(tx: String)(implicit lc: LamaLogContext): IO[String] =
+  def broadcastTransaction(tx: String)(implicit lc: CriaLogContext, t: Timer[IO]): IO[String] =
     callExpect[SendTransactionResult](
       Request[IO](
         Method.POST,
@@ -228,13 +242,11 @@ class ExplorerHttpClient(httpClient: Client[IO], conf: ExplorerConfig, coin: Coi
       cs: ContextShift[IO],
       t: Timer[IO],
       decoder: Decoder[GetTransactionsResponse],
-      lc: LamaLogContext
+      lc: CriaLogContext
   ): Pull[IO, GetTransactionsResponse, Unit] =
     Pull
       .eval(
-        log.info(
-          s"Getting txs with block_hash=$blockHash for addresses: ${addresses.mkString(",")}"
-        ) *>
+        log.info(s"Blockchain tx pagination at block_hash=$blockHash") *>
           callExpectWithRetry[GetTransactionsResponse](GetOperationsRequest(addresses, blockHash))
       )
       .flatMap { res =>

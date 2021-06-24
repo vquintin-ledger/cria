@@ -1,34 +1,36 @@
 package co.ledger.cria.services.interpreter
 
 import java.util.UUID
-import java.util.concurrent.TimeUnit
 
-import cats.effect.{Clock, ContextShift, IO}
+import cats.effect.{ContextShift, IO, Timer}
 import cats.implicits._
 import co.ledger.cria.models.interpreter.{AccountAddress, Action, BlockView, TransactionView}
 import co.ledger.cria.clients.http.ExplorerClient
-import co.ledger.cria.logging.{ContextLogging, LamaLogContext}
+import co.ledger.cria.logging.{ContextLogging, CriaLogContext}
 import co.ledger.cria.models.account.{Account, Coin}
 import co.ledger.cria.models.interpreter._
+import co.ledger.cria.utils.IOUtils
 import doobie.Transactor
 import fs2._
 
 trait Interpreter {
-  def saveTransactions(accountId: UUID): Pipe[IO, TransactionView, Unit]
+  def saveTransactions(accountId: UUID)(implicit
+      lc: CriaLogContext
+  ): Pipe[IO, TransactionView, Unit]
 
   def removeDataFromCursor(
       accountId: UUID,
       blockHeightCursor: Option[Long],
       followUpId: UUID
-  ): IO[Int]
+  )(implicit lc: CriaLogContext): IO[Int]
 
-  def getLastBlocks(accountId: UUID): IO[List[BlockView]]
+  def getLastBlocks(accountId: UUID)(implicit lc: CriaLogContext): IO[List[BlockView]]
 
   def compute(
       account: Account,
       syncId: UUID,
       addresses: List[AccountAddress]
-  ): IO[Int]
+  )(implicit lc: CriaLogContext): IO[Int]
 
 }
 
@@ -37,7 +39,7 @@ class InterpreterImpl(
     db: Transactor[IO],
     maxConcurrent: Int,
     batchConcurrency: Db.BatchConcurrency
-)(implicit cs: ContextShift[IO], clock: Clock[IO])
+)(implicit cs: ContextShift[IO], t: Timer[IO])
     extends Interpreter
     with ContextLogging {
 
@@ -46,18 +48,18 @@ class InterpreterImpl(
   val flaggingService      = new FlaggingService(db)
   val postSyncCheckService = new PostSyncCheckService(db)
 
-  def saveTransactions(accountId: UUID): Pipe[IO, TransactionView, Unit] = { views =>
-    views
-      .map(v => AccountTxView(accountId, v))
+  def saveTransactions(
+      accountId: UUID
+  )(implicit lc: CriaLogContext): Pipe[IO, TransactionView, Unit] = { transactions =>
+    transactions
+      .map(tx => AccountTxView(accountId, tx))
       .through(transactionService.saveTransactions)
       .void
   }
 
   def getLastBlocks(
       accountId: UUID
-  ): IO[List[BlockView]] = {
-    implicit val lc: LamaLogContext = LamaLogContext().withAccountId(accountId)
-
+  )(implicit lc: CriaLogContext): IO[List[BlockView]] = {
     log.info(s"Getting last known blocks") *>
       transactionService
         .getLastBlocks(accountId)
@@ -69,10 +71,7 @@ class InterpreterImpl(
       accountId: UUID,
       blockHeight: Option[Long],
       followUpId: UUID
-  ): IO[Int] = {
-    implicit val lc: LamaLogContext =
-      LamaLogContext().withAccountId(accountId).withFollowUpId(followUpId)
-
+  )(implicit lc: CriaLogContext): IO[Int] = {
     for {
       _     <- log.info(s"""Deleting data with parameters:
                       - blockHeight: $blockHeight""")
@@ -85,11 +84,9 @@ class InterpreterImpl(
       account: Account,
       syncId: UUID,
       addresses: List[AccountAddress]
-  ): IO[Int] = {
-    implicit val lc: LamaLogContext = LamaLogContext().withAccount(account).withFollowUpId(syncId)
-
+  )(implicit lc: CriaLogContext): IO[Int] = {
     for {
-      _ <- log.info(s"Flagging inputs and outputs belong")
+      _ <- log.info(s"Flagging belonging inputs and outputs")
       _ <- flaggingService.flagInputsAndOutputs(account.id, addresses)
       _ <- operationService.deleteUnconfirmedOperations(account.id)
 
@@ -112,7 +109,7 @@ class InterpreterImpl(
   private def getAppropriateAction(
       account: Account,
       tx: TransactionAmounts
-  )(implicit lc: LamaLogContext): IO[Action] =
+  )(implicit lc: CriaLogContext): IO[Action] =
     tx.blockHeight match {
       case Some(_) => IO.pure(Save(tx))
       case None =>
@@ -124,8 +121,8 @@ class InterpreterImpl(
 
   private def saveOperationPipe(implicit
       cs: ContextShift[IO],
-      clock: Clock[IO],
-      lc: LamaLogContext
+      t: Timer[IO],
+      lc: CriaLogContext
   ): Pipe[IO, Action, Int] = {
 
     val batchSize = Math.max(1000 / batchConcurrency.value, 100)
@@ -136,12 +133,14 @@ class InterpreterImpl(
         .chunkN(batchSize)
         .parEvalMap(batchConcurrency.value) { operations =>
           for {
-            start    <- clock.monotonic(TimeUnit.MILLISECONDS)
-            savedOps <- operationService.saveOperations(operations.toList)
-            end      <- clock.monotonic(TimeUnit.MILLISECONDS)
-            _ <- log.debug(
-              s"${operations.head.map(_.uid)}: $savedOps operations saved in ${end - start} ms"
+            savedOps <- IOUtils.withTimer("Saving operations..")(
+              operationService.saveOperations(operations.toList)
             )
+
+            _ <- log.debug(
+              s"$savedOps operations saved"
+            )
+
           } yield Chunk(operations.size)
 
         }

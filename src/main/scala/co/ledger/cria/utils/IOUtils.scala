@@ -1,9 +1,12 @@
 package co.ledger.cria.utils
 
-import cats.effect.{IO, Timer}
+import java.util.concurrent.TimeUnit
+
+import cats.effect.{Bracket, Clock, IO, Timer}
+import co.ledger.cria.logging.{ContextLogging, CriaLogContext}
 import fs2.{Chunk, Pull, Stream}
 
-object IOUtils {
+object IOUtils extends ContextLogging {
 
   def fetchPaginatedItems[T](
       evaluate: (Int, Int) => IO[T],
@@ -72,4 +75,15 @@ object IOUtils {
       },
       policy
     )
+
+  def withTimer[T](logString: String)(f: => IO[T])(implicit
+      t: Timer[IO],
+      lc: CriaLogContext
+  ): IO[T] =
+    Bracket[IO, Throwable].bracket(Clock[IO].monotonic(TimeUnit.MILLISECONDS))(_ => f) {
+      start: Long =>
+        Clock[IO]
+          .monotonic(TimeUnit.MILLISECONDS)
+          .flatMap(stop => log.info(s"$logString (in ${stop - start} ms)"))
+    }
 }

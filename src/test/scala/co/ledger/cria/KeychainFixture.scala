@@ -76,7 +76,7 @@ object KeychainFixture {
         IO.unit
       }
 
-      override def getKnownAddresses(
+      override def getKnownAndNewAddresses(
           keychainId: UUID,
           changeType: Option[ChangeType]
       ): IO[List[AccountAddress]] =

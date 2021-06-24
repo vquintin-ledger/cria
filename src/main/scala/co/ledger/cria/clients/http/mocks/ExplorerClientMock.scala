@@ -9,7 +9,7 @@ import co.ledger.cria.models.explorer.{
 }
 import co.ledger.cria.clients.http.ExplorerClient
 import co.ledger.cria.clients.http.ExplorerClient.Address
-import co.ledger.cria.logging.LamaLogContext
+import co.ledger.cria.logging.CriaLogContext
 import fs2.Stream
 
 import scala.collection.mutable
@@ -24,13 +24,13 @@ class ExplorerClientMock(
   var getConfirmedTransactionsCount: Int   = 0
   var getUnConfirmedTransactionsCount: Int = 0
 
-  def getCurrentBlock(implicit lc: LamaLogContext): IO[Block] =
+  def getCurrentBlock(implicit lc: CriaLogContext, t: Timer[IO]): IO[Block] =
     IO.pure(blockchain.values.flatten.map(_.block).max)
 
-  def getBlock(hash: String)(implicit lc: LamaLogContext): IO[Option[Block]] =
+  def getBlock(hash: String)(implicit lc: CriaLogContext, t: Timer[IO]): IO[Option[Block]] =
     IO.pure(blocks.find(_.hash == hash))
 
-  def getBlock(height: Long)(implicit lc: LamaLogContext): IO[Block] =
+  def getBlock(height: Long)(implicit lc: CriaLogContext, t: Timer[IO]): IO[Block] =
     IO.pure(blocks.find(_.height == height).get)
 
   def getUnconfirmedTransactions(
@@ -38,7 +38,7 @@ class ExplorerClientMock(
   )(implicit
       cs: ContextShift[IO],
       t: Timer[IO],
-      lc: LamaLogContext
+      lc: CriaLogContext
   ): Stream[IO, UnconfirmedTransaction] = {
     getUnConfirmedTransactionsCount += 1
     Stream.emits(addresses.flatMap(mempool.get).flatten.toSeq)
@@ -47,16 +47,19 @@ class ExplorerClientMock(
   def getConfirmedTransactions(addresses: Seq[String], blockHash: Option[String])(implicit
       cs: ContextShift[IO],
       t: Timer[IO],
-      lc: LamaLogContext
+      lc: CriaLogContext
   ): fs2.Stream[IO, ConfirmedTransaction] = {
     getConfirmedTransactionsCount += 1
     Stream.emits(addresses.flatMap(blockchain.get).flatten)
   }
 
-  override def broadcastTransaction(tx: String)(implicit lc: LamaLogContext): IO[String] = ???
+  override def broadcastTransaction(
+      tx: String
+  )(implicit lc: CriaLogContext, t: Timer[IO]): IO[String] = ???
 
   override def getRawTransactionHex(transactionHash: String)(implicit
-      lc: LamaLogContext
+      lc: CriaLogContext,
+      t: Timer[IO]
   ): IO[String] =
     IO.pure("raw hex for " ++ transactionHash)
 
@@ -66,7 +69,7 @@ class ExplorerClientMock(
 
   def getTransaction(
       transactionHash: String
-  )(implicit lc: LamaLogContext): IO[Option[Transaction]] = {
+  )(implicit lc: CriaLogContext, t: Timer[IO]): IO[Option[Transaction]] = {
     IO.pure(txs.get(transactionHash))
   }
 }

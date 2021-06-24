@@ -6,6 +6,7 @@ import co.ledger.cria.models.interpreter._
 import java.time.Instant
 import java.util.UUID
 
+import co.ledger.cria.logging.CriaLogContext
 import co.ledger.cria.models.account.Account
 
 import scala.collection.mutable
@@ -25,7 +26,9 @@ class InterpreterClientMock extends Interpreter {
       txs.size
     }
 
-  def saveTransactions(accountId: UUID): Pipe[IO, TransactionView, Unit] =
+  def saveTransactions(
+      accountId: UUID
+  )(implicit lc: CriaLogContext): Pipe[IO, TransactionView, Unit] =
     _.chunks.evalMap { chunk =>
       val txs = chunk.toList
 
@@ -52,7 +55,7 @@ class InterpreterClientMock extends Interpreter {
       accountId: UUID,
       blockHeightCursor: Option[Long],
       followUpId: UUID
-  ): IO[Int] = {
+  )(implicit lc: CriaLogContext): IO[Int] = {
     savedTransactions.update(
       accountId,
       savedTransactions(accountId)
@@ -74,7 +77,7 @@ class InterpreterClientMock extends Interpreter {
     IO.pure(0)
   }
 
-  def getLastBlocks(accountId: UUID): IO[List[BlockView]] = {
+  def getLastBlocks(accountId: UUID)(implicit lc: CriaLogContext): IO[List[BlockView]] = {
     val lastBlocks: List[BlockView] = savedTransactions(accountId)
       .collect { case TransactionView(_, _, _, _, _, _, _, Some(block), _) =>
         BlockView(
@@ -93,7 +96,7 @@ class InterpreterClientMock extends Interpreter {
       account: Account,
       syncId: UUID,
       addresses: List[AccountAddress]
-  ): IO[Int] = {
+  )(implicit lc: CriaLogContext): IO[Int] = {
 
     val txViews = savedTransactions
       .getOrElse(account.id, List.empty)

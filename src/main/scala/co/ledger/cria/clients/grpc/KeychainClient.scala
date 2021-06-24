@@ -29,7 +29,7 @@ trait KeychainClient {
 
   def markAddressesAsUsed(keychainId: UUID, addresses: List[String]): IO[Unit]
 
-  def getKnownAddresses(
+  def getKnownAndNewAddresses(
       keychainId: UUID,
       changeType: Option[ChangeType] = None
   ): IO[List[AccountAddress]]
@@ -123,7 +123,7 @@ class KeychainGrpcClient(
   // getAllObservableAddresses with no indexes given will always return all known addresses
   // plus 20 new addresses (for free !)
 
-  def getKnownAddresses(
+  def getKnownAndNewAddresses(
       keychainId: UUID,
       changeType: Option[ChangeType] = None
   ): IO[List[AccountAddress]] =

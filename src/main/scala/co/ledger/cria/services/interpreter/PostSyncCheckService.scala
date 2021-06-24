@@ -1,7 +1,7 @@
 package co.ledger.cria.services.interpreter
 
 import cats.effect.IO
-import co.ledger.cria.logging.{ContextLogging, LamaLogContext}
+import co.ledger.cria.logging.{ContextLogging, CriaLogContext}
 import co.ledger.cria.models.account.interpreter.CurrentBalance
 import co.ledger.cria.services.Bookkeeper.AccountId
 import doobie._
@@ -10,7 +10,7 @@ import doobie.implicits._
 class PostSyncCheckService(db: Transactor[IO]) extends ContextLogging {
 
   def check(accountId: AccountId): IO[Unit] = {
-    implicit val lc: LamaLogContext = LamaLogContext().withAccountId(accountId)
+    implicit val lc: CriaLogContext = CriaLogContext().withAccountId(accountId)
 
     for {
       currentBalance <- getCurrentBalance(accountId)

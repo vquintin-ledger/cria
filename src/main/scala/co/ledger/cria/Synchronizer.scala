@@ -4,7 +4,7 @@ import cats.effect.{ContextShift, IO, Timer}
 import cats.implicits._
 import co.ledger.cria.clients.grpc.KeychainClient
 import co.ledger.cria.clients.http.ExplorerClient
-import co.ledger.cria.logging.{ContextLogging, LamaLogContext}
+import co.ledger.cria.logging.{ContextLogging, CriaLogContext}
 import co.ledger.cria.models.account.{Account, Coin, CoinFamily}
 import co.ledger.cria.models.explorer.{Block, ConfirmedTransaction, UnconfirmedTransaction}
 import co.ledger.cria.models.interpreter.ChangeType
@@ -14,6 +14,8 @@ import co.ledger.cria.services.interpreter.Interpreter
 import co.ledger.cria.utils.CoinImplicits._
 import fs2.Stream
 import java.util.UUID
+
+import co.ledger.cria.utils.IOUtils
 
 import scala.math.Ordering.Implicits._
 import scala.util.Try
@@ -29,24 +31,26 @@ class Synchronizer(
       syncParams: SynchronizationParameters
   )(implicit cs: ContextShift[IO], t: Timer[IO]): IO[SynchronizationResult] =
     getOrCreateAccount(syncParams).flatMap { account =>
-      implicit val lc: LamaLogContext =
-        LamaLogContext().withAccount(account).withFollowUpId(syncParams.syncId)
+      implicit val lc: CriaLogContext =
+        CriaLogContext().withAccount(account).withCorrelationId(syncParams.syncId)
 
-      val result = for {
-        cursorBlock <- syncParams.blockHash.flatTraverse(explorerClient(syncParams.coin).getBlock)
-        res         <- synchronizeAccount(syncParams, account, cursorBlock)
-      } yield res
+      val result = IOUtils.withTimer("Synchronization finished")(
+        for {
+          _           <- log.info(s"Starting sync")
+          cursorBlock <- syncParams.blockHash.flatTraverse(explorerClient(syncParams.coin).getBlock)
+          res         <- synchronizeAccount(syncParams, account, cursorBlock)
+        } yield res
+      )
 
       // In case of error, fallback to a reportable failed event.
-      log.info(s"Received event: ${syncParams.toString}") *>
-        result
-          .handleError(error => SynchronizationResult.SynchronizationFailure(syncParams, error))
-          .flatTap {
-            case s: SynchronizationResult.SynchronizationSuccess =>
-              log.info(s"Synchronization success: $s")
-            case f: SynchronizationResult.SynchronizationFailure =>
-              log.error(s"Synchronization failure: $f", f.throwable)
-          }
+      result
+        .handleError(error => SynchronizationResult.SynchronizationFailure(syncParams, error))
+        .flatTap {
+          case _: SynchronizationResult.SynchronizationSuccess =>
+            log.info(s"Synchronization success !")
+          case f: SynchronizationResult.SynchronizationFailure =>
+            log.error(s"Synchronization failure : $f", f.throwable)
+        }
     }
 
   def synchronizeAccount(
@@ -56,7 +60,7 @@ class Synchronizer(
   )(implicit
       cs: ContextShift[IO],
       t: Timer[IO],
-      lc: LamaLogContext
+      lc: CriaLogContext
   ): IO[SynchronizationResult] = {
 
     val keychain = new Keychain(keychainClient)
@@ -96,7 +100,7 @@ class Synchronizer(
           case Some(previous) => previous < lastMinedBlock.block
           case None           => true
         }
-        .evalTap(b => log.info(s"Syncing from cursor state: $b"))
+        .evalTap(b => log.info(s"Syncing blockchain transactions from cursor state: $b"))
         .evalMap(b => b.map(rewindToLastValidBlock(account, _, syncParams.syncId)).sequence)
         .evalMap { lastValidBlock =>
           (bookkeeper
@@ -119,15 +123,15 @@ class Synchronizer(
         .toList
         .map(_.flatten)
 
-      _ <- log.info(s"New cursor state: ${lastMinedBlock.block}")
+      _ <- log.info(s"Last block synchronized: ${lastMinedBlock.block}")
 
-      opsCount <- interpreterClient.compute(
-        account,
-        syncParams.syncId,
-        (addressesUsed ++ addressesUsedByMempool).distinct
+      _ <- IOUtils.withTimer("Computation finished")(
+        interpreterClient.compute(
+          account,
+          syncParams.syncId,
+          (addressesUsed ++ addressesUsedByMempool).distinct
+        )
       )
-
-      _ <- log.info(s"$opsCount operations computed")
 
     } yield {
       // Create the reportable successful event.
@@ -137,11 +141,11 @@ class Synchronizer(
 
   case class LastMinedBlock(block: Block)
 
-  def lastMinedBlock(coin: Coin)(implicit lc: LamaLogContext): IO[LastMinedBlock] =
+  def lastMinedBlock(coin: Coin)(implicit t: Timer[IO], lc: CriaLogContext): IO[LastMinedBlock] =
     explorerClient(coin).getCurrentBlock.map(LastMinedBlock)
 
   private def rewindToLastValidBlock(account: Account, lastKnownBlock: Block, syncId: UUID)(implicit
-      lc: LamaLogContext
+      lc: CriaLogContext
   ): IO[Block] =
     for {
 
@@ -161,14 +165,25 @@ class Synchronizer(
     } yield lvb
 
   private def getOrCreateAccount(syncParams: SynchronizationParameters): IO[Account] =
-    keychainClient
-      .create(
-        syncParams.xpub,
-        syncParams.scheme,
-        syncParams.lookahead,
-        syncParams.coin.toNetwork
+    for {
+
+      _ <- log.info(s"""Registering account on keychain with params : 
+          - scheme    : ${syncParams.scheme}
+          - lookahead : ${syncParams.lookahead}
+          - coin      : ${syncParams.coin}""")(
+        CriaLogContext().withCorrelationId(syncParams.syncId)
       )
-      .map { info =>
-        Account(info.keychainId.toString, CoinFamily.Bitcoin, syncParams.coin)
-      }
+
+      account <- keychainClient
+        .create(
+          syncParams.xpub,
+          syncParams.scheme,
+          syncParams.lookahead,
+          syncParams.coin.toNetwork
+        )
+        .map { info =>
+          Account(info.keychainId.toString, CoinFamily.Bitcoin, syncParams.coin)
+        }
+
+    } yield account
 }

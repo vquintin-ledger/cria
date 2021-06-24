@@ -7,7 +7,7 @@ import fs2.Stream
 import java.util.UUID
 
 import co.ledger.cria.models.interpreter.{AccountAddress, ChangeType}
-import co.ledger.cria.logging.{ContextLogging, DefaultContextLogging, LamaLogContext}
+import co.ledger.cria.logging.{ContextLogging, DefaultContextLogging, CriaLogContext}
 
 class Keychain(client: KeychainClient) extends ContextLogging {
 
@@ -19,7 +19,7 @@ class Keychain(client: KeychainClient) extends ContextLogging {
       id: KeychainId,
       change: Option[ChangeType] = None,
       from: Int = 0
-  )(implicit lc: LamaLogContext): Stream[IO, List[AccountAddress]] = {
+  )(implicit lc: CriaLogContext): Stream[IO, List[AccountAddress]] = {
     Stream
       .eval(client.getKeychainInfo(id))
       .flatMap(i => addressesRanges(size = i.lookaheadSize, start = from))
@@ -33,14 +33,14 @@ class Keychain(client: KeychainClient) extends ContextLogging {
       )
   }
 
-  def knownAddresses(
+  def knownAndNewAddresses(
       id: KeychainId,
       change: Option[ChangeType] = None
-  )(implicit lc: LamaLogContext): Stream[IO, List[AccountAddress]] =
+  )(implicit lc: CriaLogContext): Stream[IO, List[AccountAddress]] =
     Stream.eval(for {
-      knownAddresses <- client.getKnownAddresses(id, change)
+      knownAddresses <- client.getKnownAndNewAddresses(id, change)
       _ <- log.info(
-        s"Number of known ${change.map(_.name + " ").getOrElse("")}addresses found : ${knownAddresses.size}"
+        s"Number of known ${change.map(_.name + " ").getOrElse("")}addresses found : ${knownAddresses.size - 21}"
       )
     } yield knownAddresses)
 

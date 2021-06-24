@@ -13,7 +13,7 @@ import co.ledger.cria.services.Keychain.KeychainId
 import fs2.{Pipe, Stream}
 import java.util.UUID
 
-import co.ledger.cria.logging.{ContextLogging, LamaLogContext}
+import co.ledger.cria.logging.{ContextLogging, CriaLogContext}
 import co.ledger.cria.models.account.Coin
 import co.ledger.cria.services.interpreter.Interpreter
 
@@ -24,7 +24,7 @@ trait Bookkeeper[F[_]] {
       keychainId: UUID,
       change: ChangeType,
       blockHash: Option[Bookkeeper.BlockHash]
-  )(implicit lc: LamaLogContext): Stream[F, AccountAddress]
+  )(implicit lc: CriaLogContext): Stream[F, AccountAddress]
 }
 
 object Bookkeeper extends ContextLogging {
@@ -44,11 +44,11 @@ object Bookkeeper extends ContextLogging {
         keychainId: AccountId,
         change: ChangeType,
         blockHash: Option[BlockHash]
-    )(implicit lc: LamaLogContext): Stream[IO, AccountAddress] = {
+    )(implicit lc: CriaLogContext): Stream[IO, AccountAddress] = {
       val keychainAddresses = for {
 
-        // knownAddresses will provided addresses previously marked as used AND 20 new addresses.
-        knownAddresses <- keychain.knownAddresses(keychainId, Some(change))
+        // knownAndNewAddresses will provided addresses previously marked as used AND $lookahead[20] new addresses.
+        knownAddresses <- keychain.knownAndNewAddresses(keychainId, Some(change))
 
         addresses <- Stream
           .emit(knownAddresses) ++ keychain.discoverAddresses(
@@ -63,6 +63,9 @@ object Bookkeeper extends ContextLogging {
         .flatMap { addresses =>
           Stream
             .emit(addresses)
+            .evalTap(addresses =>
+              log.info(s"Fetching explorer for ${change.name} ${addresses.size} addresses")
+            )
             .through(Bookkeeper.fetchTransactionRecords(explorerClient(coin), blockHash))
             .through(Bookkeeper.saveTransactionRecords(interpreterClient, accountId))
             .foldMonoid
@@ -70,8 +73,10 @@ object Bookkeeper extends ContextLogging {
         }
         .takeWhile(_.nonEmpty)
         .foldMonoid
+        .evalTap(_ =>
+          log.info(s"No tx found for ${change.name} addresses on last batch - ending search")
+        )
         .flatMap(Stream.emits(_))
-
     }
 
   }
@@ -98,7 +103,10 @@ object Bookkeeper extends ContextLogging {
   def saveTransactionRecords[Tx <: Transaction: Recordable](
       interpreter: Interpreter,
       accountId: AccountId
-  )(implicit recordable: Recordable[Tx]): Pipe[IO, TransactionRecord[Tx], List[AccountAddress]] =
+  )(implicit
+      recordable: Recordable[Tx],
+      lc: CriaLogContext
+  ): Pipe[IO, TransactionRecord[Tx], List[AccountAddress]] =
     _.chunks.flatMap { chunk =>
       Stream
         .chunk(chunk.map(_.tx))
@@ -121,9 +129,12 @@ object Bookkeeper extends ContextLogging {
   def markAddresses[Tx <: Transaction](
       keychain: Keychain,
       keychainId: KeychainId
-  ): Pipe[IO, List[AccountAddress], List[AccountAddress]] =
+  )(implicit lc: CriaLogContext): Pipe[IO, List[AccountAddress], List[AccountAddress]] =
     _.evalTap { addresses =>
-      keychain.markAsUsed(keychainId, addresses.distinct.map(_.accountAddress).toSet)
+      val usedAddresses = addresses.distinct.map(_.accountAddress).toSet
+      log.info(s"Marking ${usedAddresses.size} addresses as used") *>
+        log.debug(s"addresses : ${usedAddresses.mkString(", ")}") *>
+        keychain.markAsUsed(keychainId, usedAddresses)
     }
 
   trait Recordable[Tx <: Transaction] {
@@ -131,14 +142,16 @@ object Bookkeeper extends ContextLogging {
         explorer: ExplorerClient
     )(addresses: Set[Address], block: Option[BlockHash]): Stream[IO, Tx]
 
-    def save(interpreter: Interpreter)(accountId: AccountId): Pipe[IO, Tx, Unit] =
+    def save(interpreter: Interpreter)(accountId: AccountId)(implicit
+        lc: CriaLogContext
+    ): Pipe[IO, Tx, Unit] =
       _.map(_.toTransactionView).through(interpreter.saveTransactions(accountId))
   }
 
   implicit def confirmed(implicit
       cs: ContextShift[IO],
       t: Timer[IO],
-      lc: LamaLogContext
+      lc: CriaLogContext
   ): Recordable[ConfirmedTransaction] =
     new Recordable[ConfirmedTransaction] {
       override def fetch(
@@ -150,7 +163,7 @@ object Bookkeeper extends ContextLogging {
   implicit def unconfirmedTransaction(implicit
       cs: ContextShift[IO],
       t: Timer[IO],
-      lc: LamaLogContext
+      lc: CriaLogContext
   ): Recordable[UnconfirmedTransaction] =
     new Recordable[UnconfirmedTransaction] {
       override def fetch(

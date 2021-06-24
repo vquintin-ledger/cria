@@ -3,15 +3,18 @@ package co.ledger.cria.services.interpreter
 import java.util.UUID
 
 import cats.effect.{ContextShift, IO}
-import co.ledger.cria.logging.DefaultContextLogging
+import co.ledger.cria.logging.{ContextLogging, CriaLogContext}
 import co.ledger.cria.models.interpreter.{AccountTxView, BlockView}
 import doobie.Transactor
 import doobie.implicits._
 import fs2._
 
-class TransactionService(db: Transactor[IO], maxConcurrent: Int) extends DefaultContextLogging {
+class TransactionService(db: Transactor[IO], maxConcurrent: Int) extends ContextLogging {
 
-  def saveTransactions(implicit cs: ContextShift[IO]): Pipe[IO, AccountTxView, Int] =
+  def saveTransactions(implicit
+      cs: ContextShift[IO],
+      lc: CriaLogContext
+  ): Pipe[IO, AccountTxView, Int] =
     _.chunkN(100)
       .parEvalMapUnordered(maxConcurrent) { chunk =>
         Stream

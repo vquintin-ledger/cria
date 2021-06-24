@@ -6,7 +6,7 @@ import java.util.UUID
 import cats.effect.IO
 import co.ledger.cria.models.circeImplicits._
 import co.ledger.cria.models._
-import co.ledger.cria.logging.{ContextLogging, LamaLogContext}
+import co.ledger.cria.logging.{ContextLogging, CriaLogContext}
 import fs2.Stream
 import io.circe.generic.extras.semiauto._
 import io.circe.{Decoder, Encoder}
@@ -42,7 +42,7 @@ case class TransactionAmounts(
     changeAmount: BigInt
 ) extends ContextLogging {
 
-  def computeOperations(implicit lc: LamaLogContext): fs2.Stream[IO, OperationToSave] = {
+  def computeOperations(implicit lc: CriaLogContext): fs2.Stream[IO, OperationToSave] = {
     TransactionType.fromAmounts(inputAmount, outputAmount, changeAmount) match {
       case SendType =>
         Stream.emit(makeOperationToSave(inputAmount - changeAmount, OperationType.Send))

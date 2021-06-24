@@ -49,12 +49,12 @@ object App extends IOApp with DefaultContextLogging {
     )
 
     resources
-      .use { res =>
-        val keychainClient = new KeychainGrpcClient(res.keychainGrpcChannel)
-        val explorerClient = new ExplorerHttpClient(res.httpClient, conf.explorer, _)
+      .use { resources =>
+        val keychainClient = new KeychainGrpcClient(resources.keychainGrpcChannel)
+        val explorerClient = new ExplorerHttpClient(resources.httpClient, conf.explorer, _)
         val interpreterClient = new InterpreterImpl(
           explorerClient,
-          res.transactor,
+          resources.transactor,
           conf.maxConcurrent,
           conf.db.batchConcurrency
         )
@@ -62,7 +62,7 @@ object App extends IOApp with DefaultContextLogging {
         val cursorStateService: Coin => CursorStateService[IO] =
           c => CursorStateService(explorerClient(c), interpreterClient).getLastValidState(_, _, _)
 
-        val cliOptions = res.args
+        val cliOptions = resources.args
 
         val syncParams = SynchronizationParameters(
           cliOptions.xpub,
@@ -82,10 +82,11 @@ object App extends IOApp with DefaultContextLogging {
         )
 
         for {
-          _   <- DbUtils.flywayMigrate(conf.db.postgres)
-          _   <- IO(res.server.start()) *> log.info("Worker started")
-          res <- worker.run(syncParams)
-        } yield res
+          _          <- DbUtils.flywayMigrate(conf.db.postgres)
+          _          <- IO(resources.server.start()) *> log.info("Worker started")
+          syncResult <- worker.run(syncParams)
+          _          <- IO(resources.server.shutdown()) *> log.info("Worker stopped")
+        } yield syncResult
       }
       .attempt
       .flatMap {

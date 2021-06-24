@@ -16,6 +16,6 @@ trait ContextLogging {
     }
   }
 
-  val logger: LoggerTakingImplicit[LogContext] = Logger.takingImplicit[LogContext]("LamaLogger")
+  val logger: LoggerTakingImplicit[LogContext] = Logger.takingImplicit[LogContext]("CriaLogger")
   val log: IOLogger                            = IOLogger(logger)
 }

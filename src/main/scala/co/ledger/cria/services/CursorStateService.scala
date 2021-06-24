@@ -2,10 +2,10 @@ package co.ledger.cria.services
 
 import java.util.UUID
 
-import cats.effect.IO
+import cats.effect.{IO, Timer}
 import co.ledger.cria.models.explorer.Block
 import co.ledger.cria.clients.http.ExplorerClient
-import co.ledger.cria.logging.{ContextLogging, LamaLogContext}
+import co.ledger.cria.logging.{ContextLogging, CriaLogContext}
 import co.ledger.cria.models.account.Account
 import co.ledger.cria.services.interpreter.Interpreter
 import org.http4s.client.UnexpectedStatus
@@ -18,7 +18,8 @@ object CursorStateService {
   def apply(
       explorerClient: ExplorerClient,
       interpreterClient: Interpreter
-  ): CursorStateService[IO] = new CursorStateService[IO] with ContextLogging {
+  )(implicit t: Timer[IO]): CursorStateService[IO] = new CursorStateService[IO]
+    with ContextLogging {
 
     /* This method checks if the provided block is valid by calling "explorerClient.getBlock()"
      * If it is, the block is returned and used for the next sync
@@ -28,8 +29,8 @@ object CursorStateService {
      */
     def getLastValidState(account: Account, block: Block, syncId: UUID): IO[Block] = {
 
-      implicit val lc: LamaLogContext =
-        LamaLogContext().withAccount(account).withFollowUpId(syncId)
+      implicit val lc: CriaLogContext =
+        CriaLogContext().withAccount(account).withCorrelationId(syncId)
 
       /*
        * Unfortunately (for now), the signature of the explorer is not set in stone and recent changes made us rework this part.
@@ -54,7 +55,7 @@ object CursorStateService {
     }
 
     private def fetchLastBlocksUntilValid(accountId: UUID, block: Block)(implicit
-        lc: LamaLogContext
+        lc: CriaLogContext
     ): IO[Block] = {
       for {
         _ <- log.info(
@@ -64,16 +65,16 @@ object CursorStateService {
         blocks = blockViews.map(Block.fromBlockView)
         lastValidBlock <- getlastValidBlockRec(blocks)
         _ <- log.info(
-          s"block [hash: '${lastValidBlock.hash}', height: ${lastValidBlock.height}] is valid !"
+          s"Block [hash: '${lastValidBlock.hash}', height: ${lastValidBlock.height}] is valid !"
         )
       } yield lastValidBlock
     }
 
-    private def getlastValidBlockRec(blocks: List[Block])(implicit lc: LamaLogContext): IO[Block] =
+    private def getlastValidBlockRec(blocks: List[Block])(implicit lc: CriaLogContext): IO[Block] =
       blocks match {
         case Nil => IO.raiseError(new Exception("no valid block found in the last blocks..."))
         case block :: tail =>
-          log.info(s"testing block [hash: '${block.hash}', height: ${block.height}]") *>
+          log.info(s"Testing block [hash: '${block.hash}', height: ${block.height}]") *>
             explorerClient
               .getBlock(block.hash)
               .flatMap {
@@ -89,7 +90,7 @@ object CursorStateService {
       }
 
     private def logUnexpectedError(b: Block, serverError: UnexpectedStatus)(implicit
-        lc: LamaLogContext
+        lc: CriaLogContext
     ): IO[Block] = {
       log.error(
         s"Error ${serverError.status.code} while calling explorer with block : ${b.hash}"

@@ -113,7 +113,7 @@ class KeychainClientMock(createdKeychainId: Option[UUID] = None) extends Keychai
       IO.delay(derivedAddressesInternal.slice(fromIndex, toIndex))
     }
 
-  def getKnownAddresses(
+  def getKnownAndNewAddresses(
       keychainId: UUID,
       changeType: Option[ChangeType] = None
   ): IO[List[AccountAddress]] =
