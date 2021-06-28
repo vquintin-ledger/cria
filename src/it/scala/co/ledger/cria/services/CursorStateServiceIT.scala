@@ -1,26 +1,25 @@
-package co.ledger.cria
+package co.ledger.cria.services
 
 import java.time.Instant
 import java.util.UUID
 
 import cats.effect.{ContextShift, IO, Resource, Timer}
-import co.ledger.cria.models.account.{Account, Coin, CoinFamily}
 import co.ledger.cria.clients.Clients
-import co.ledger.cria.models.explorer.Block
 import co.ledger.cria.clients.grpc.mocks.InterpreterClientMock
 import co.ledger.cria.clients.http.ExplorerHttpClient
-import co.ledger.cria.models.interpreter.{BlockView, TransactionView}
 import co.ledger.cria.config.Config
-import co.ledger.cria.services.CursorStateService
 import co.ledger.cria.logging.DefaultContextLogging
+import co.ledger.cria.models.account.{Account, Coin, CoinFamily}
+import co.ledger.cria.models.explorer.Block
+import co.ledger.cria.models.interpreter.{BlockView, TransactionView}
 import co.ledger.cria.utils.IOAssertion
+import fs2._
 import org.http4s.client.Client
 import org.scalatest.flatspec.AnyFlatSpecLike
 import org.scalatest.matchers.should.Matchers
 import pureconfig.ConfigSource
 
 import scala.concurrent.ExecutionContext
-import fs2._
 
 class CursorStateServiceIT extends AnyFlatSpecLike with Matchers with DefaultContextLogging {
 

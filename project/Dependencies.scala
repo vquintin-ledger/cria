@@ -60,13 +60,13 @@ object Dependencies extends DependencyBuilders with LibraryManagementSyntax {
   val embeddedRedisVersion       = "0.7.3"
   val testcontainersScalaVersion = "0.39.5"
   val test: Seq[ModuleID] = Seq(
-    "org.scalatest"           %% "scalatest"                      % scalaTestVersion           % "it, test",
-    "org.scalacheck"          %% "scalacheck"                     % scalaCheckVersion          % "it, test",
-    "org.scalatestplus"       %% "scalacheck-1-14"                % scalaTestPlusVersion       % "it, test",
-    "org.tpolecat"            %% "doobie-scalatest"               % doobieVersion              % "it, test",
+    "org.scalatest"           %% "scalatest"                      % scalaTestVersion           % "it, test, e2e",
+    "org.scalacheck"          %% "scalacheck"                     % scalaCheckVersion          % "it, test, e2e",
+    "org.scalatestplus"       %% "scalacheck-1-14"                % scalaTestPlusVersion       % "it, test, e2e",
+    "org.tpolecat"            %% "doobie-scalatest"               % doobieVersion              % "it, test, e2e",
     "com.opentable.components" % "otj-pg-embedded"                % otjPgEmbeddedVersion       % Test,
     "it.ozimov"                % "embedded-redis"                 % embeddedRedisVersion       % Test,
-    "com.dimafeng"            %% "testcontainers-scala-scalatest" % testcontainersScalaVersion % "it"
+    "com.dimafeng"            %% "testcontainers-scala-scalatest" % testcontainersScalaVersion % "it, e2e"
   )
 
   // https://scalapb.github.io/docs/faq/#i-am-getting-import-was-not-found-or-had-errors

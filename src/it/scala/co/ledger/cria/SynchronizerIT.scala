@@ -9,9 +9,9 @@ import co.ledger.cria.services.CursorStateService
 import org.scalatest.flatspec.AnyFlatSpecLike
 import org.scalatest.matchers.should.Matchers
 import pureconfig.ConfigSource
-
 import java.time.Instant
 import java.util.UUID
+
 import co.ledger.cria.clients.Clients
 import co.ledger.cria.models.account.{Account, Coin, CoinFamily}
 import co.ledger.cria.utils.IOAssertion

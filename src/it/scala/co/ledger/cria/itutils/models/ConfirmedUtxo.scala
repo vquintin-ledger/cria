@@ -1,6 +1,7 @@
-package co.ledger.cria.services.interpreter
+package co.ledger.cria.itutils.models
 
 import java.time.Instant
+
 import cats.data.NonEmptyList
 import co.ledger.cria.models.interpreter.ChangeType
 

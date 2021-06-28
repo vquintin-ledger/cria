@@ -13,15 +13,16 @@ class UuidUtilsSpec extends AnyFunSuite with Matchers {
     val uuids = Gen.listOfN(1000, Gen.uuid).sample.get
     uuids.foreach { uuid =>
       val bytes = UuidUtils.uuidToBytes(uuid)
-      assert(UuidUtils.bytesToUuid(bytes).contains(uuid))
+      UuidUtils.bytesToUuid(bytes) should contain(uuid)
     }
   }
 
   test("account identifier to uuid") {
-    assert(
-      Account("xpub", CoinFamily.Bitcoin, Coin.Btc).id ==
-        UUID.fromString("281f7c1c-f92f-3144-a6b2-514d9a2080e4")
-    )
+    Account(
+      "xpub",
+      CoinFamily.Bitcoin,
+      Coin.Btc
+    ).id shouldBe UUID.fromString("281f7c1c-f92f-3144-a6b2-514d9a2080e4")
   }
 
 }

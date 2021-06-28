@@ -3,12 +3,15 @@ package co.ledger.cria.services.interpreter
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import java.util.UUID
+
 import cats.data.NonEmptyList
 import cats.effect.IO
 import cats.implicits._
 import co.ledger.cria.App.ClientResources
 import co.ledger.cria.clients.http.mocks.ExplorerClientMock
-import co.ledger.cria.common.utils.ContainerFlatSpec
+import co.ledger.cria.itutils.models.{GetOperationsResult, GetUtxosResult}
+import co.ledger.cria.itutils.{ContainerFlatSpec, TestUtils}
+import co.ledger.cria.utils.IOAssertion
 import co.ledger.cria.logging.CriaLogContext
 import co.ledger.cria.models.Sort
 import co.ledger.cria.models.account.{Account, Coin, CoinFamily}
@@ -22,7 +25,6 @@ import co.ledger.cria.models.interpreter.{
   OutputView,
   TransactionView
 }
-import co.ledger.cria.utils.IOAssertion
 import org.scalatest.matchers.should.Matchers
 import fs2.Stream
 

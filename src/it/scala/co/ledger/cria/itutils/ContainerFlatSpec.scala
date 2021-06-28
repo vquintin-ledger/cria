@@ -1,4 +1,4 @@
-package co.ledger.cria.common.utils
+package co.ledger.cria.itutils
 
 import cats.effect.{ContextShift, IO, Resource, Timer}
 import co.ledger.cria.App
@@ -7,7 +7,7 @@ import co.ledger.cria.clients.grpc.{KeychainClient, KeychainGrpcClient}
 import co.ledger.cria.clients.http.ExplorerHttpClient
 import co.ledger.cria.config.{Config, GrpcClientConfig}
 import co.ledger.cria.logging.DefaultContextLogging
-import co.ledger.cria.services.interpreter.{Interpreter, InterpreterImpl, TestUtils}
+import co.ledger.cria.services.interpreter.{Interpreter, InterpreterImpl}
 import co.ledger.cria.utils.DbUtils
 import com.dimafeng.testcontainers.{
   DockerComposeContainer,

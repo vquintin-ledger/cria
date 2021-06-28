@@ -1,17 +1,25 @@
-package co.ledger.cria.services.interpreter
-
-import cats.effect.IO
-import co.ledger.cria.models.{Sort, TxHash}
-import doobie.ConnectionIO
-import doobie.util.transactor.Transactor
-import fs2.{Pipe, Stream}
-import co.ledger.cria.models.interpreter.{Operation, TransactionView}
-import doobie.implicits._
-import OperationQueries.{OpWithoutDetails, OperationDetails}
-import co.ledger.cria.models.account.interpreter.CurrentBalance
-import fs2.Chunk
+package co.ledger.cria.itutils
 
 import java.util.UUID
+
+import cats.effect.IO
+import co.ledger.cria.itutils.models.{
+  GetOperationsResult,
+  GetUtxosResult,
+  OperationPaginationState,
+  PaginationCursor,
+  PaginationToken
+}
+import co.ledger.cria.itutils.queries.OperationTestQueries
+import co.ledger.cria.models.account.interpreter.CurrentBalance
+import co.ledger.cria.models.interpreter.{Operation, TransactionView}
+import co.ledger.cria.models.{Sort, TxHash}
+import co.ledger.cria.services.interpreter.OperationQueries.{OpWithoutDetails, OperationDetails}
+import co.ledger.cria.services.interpreter.{BalanceQueries, OperationQueries}
+import doobie.ConnectionIO
+import doobie.implicits._
+import doobie.util.transactor.Transactor
+import fs2.{Chunk, Pipe, Stream}
 
 class TestUtils(db: Transactor[IO]) {
 

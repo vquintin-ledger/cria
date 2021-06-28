@@ -70,7 +70,7 @@ class SynchronizerSpec extends AnyFlatSpec with Matchers {
 
     val interpreter = new InterpreterClientMock
 
-    assert(interpreter.getSavedTransaction(accountIdentifier.id).isEmpty)
+    interpreter.getSavedTransaction(accountIdentifier.id) shouldBe empty
 
     val syncParams = mkSyncParams(None)
 
@@ -89,7 +89,7 @@ class SynchronizerSpec extends AnyFlatSpec with Matchers {
     val explorer =
       new ExplorerClientMock(blockchain.flatMap(_._2).toMap)
 
-    assert(interpreter.getSavedTransaction(accountIdentifier.id).isEmpty)
+    interpreter.getSavedTransaction(accountIdentifier.id) shouldBe empty
 
     val syncParams = mkSyncParams(Some(lastMinedBlock))
 

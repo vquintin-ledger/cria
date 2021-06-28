@@ -1,8 +1,8 @@
-package co.ledger.cria.services.interpreter
+package co.ledger.cria.itutils.models
 
-import co.ledger.cria.models.circeImplicits._
 import io.circe.generic.extras.semiauto.{deriveConfiguredDecoder, deriveConfiguredEncoder}
 import io.circe.{Decoder, Encoder}
+import co.ledger.cria.models.circeImplicits._
 
 case class PaginationCursor(
     previous: Option[String],

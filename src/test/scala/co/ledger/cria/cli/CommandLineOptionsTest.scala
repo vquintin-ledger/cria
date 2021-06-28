@@ -1,11 +1,12 @@
 package co.ledger.cria.cli
 
-import org.scalatest.flatspec.AnyFlatSpec
 import java.util.UUID
 
-import co.ledger.cria.models.account.Coin
+import org.scalatest.flatspec.AnyFlatSpec
+import co.ledger.cria.models.account.{Coin}
+import org.scalatest.matchers.should.Matchers
 
-class CommandLineOptionsTest extends AnyFlatSpec {
+class CommandLineOptionsTest extends AnyFlatSpec with Matchers {
   it should "parse successfully" in {
     val keychainId = UUID.randomUUID()
     val coin       = Coin.Btc
@@ -28,6 +29,6 @@ class CommandLineOptionsTest extends AnyFlatSpec {
 
     val actual = CommandLineOptions.command.parse(rawArgs)
 
-    assert(actual == expected)
+    actual shouldBe expected
   }
 }

@@ -1,18 +1,24 @@
-package co.ledger.cria.services.interpreter
+package co.ledger.cria.itutils.queries
+
+import java.util.UUID
 
 import cats.data.NonEmptyList
 import cats.implicits._
+import co.ledger.cria.itutils.models.{
+  ConfirmedUtxo,
+  OperationPaginationState,
+  PaginationToken,
+  Utxo
+}
 import co.ledger.cria.logging.DoobieLogHandler
-import co.ledger.cria.models.{Sort, TxHash}
 import co.ledger.cria.models.interpreter.{InputView, Operation, OutputView}
+import co.ledger.cria.models.{Sort, TxHash}
+import co.ledger.cria.models.implicits._
+import co.ledger.cria.services.interpreter.OperationQueries
 import doobie._
 import doobie.implicits._
 import doobie.postgres.implicits._
-import co.ledger.cria.models.implicits._
-
 import fs2.{Chunk, Pipe, Stream}
-
-import java.util.UUID
 
 object OperationTestQueries extends DoobieLogHandler {
 

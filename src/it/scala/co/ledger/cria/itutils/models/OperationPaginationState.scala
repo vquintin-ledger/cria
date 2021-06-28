@@ -1,9 +1,9 @@
-package co.ledger.cria.services.interpreter
+package co.ledger.cria.itutils.models
 
 import co.ledger.cria.models.interpreter.Operation
-import co.ledger.cria.models.circeImplicits._
-import io.circe.{Decoder, Encoder}
 import io.circe.generic.extras.semiauto.{deriveConfiguredDecoder, deriveConfiguredEncoder}
+import io.circe.{Decoder, Encoder}
+import co.ledger.cria.models.circeImplicits._
 
 final case class OperationPaginationState(uid: Operation.UID, blockHeight: Long)
 

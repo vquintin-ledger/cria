@@ -1,13 +1,12 @@
-package co.ledger.cria.services.interpreter
+package co.ledger.cria.itutils.queries
+
+import java.util.UUID
 
 import co.ledger.cria.logging.DoobieLogHandler
 import co.ledger.cria.models.account.interpreter.BlockchainBalance
-
-import java.util.UUID
+import co.ledger.cria.models.implicits._
 import doobie._
 import doobie.implicits._
-import co.ledger.cria.models.implicits._
-
 import doobie.postgres.implicits._
 
 object BalanceTestQueries extends DoobieLogHandler {

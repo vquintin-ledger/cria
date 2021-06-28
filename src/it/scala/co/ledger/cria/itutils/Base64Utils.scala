@@ -1,4 +1,4 @@
-package co.ledger.cria.common.utils
+package co.ledger.cria.itutils
 
 import io.circe.parser.parse
 import io.circe.{Decoder, Encoder}

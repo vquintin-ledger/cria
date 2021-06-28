@@ -1,4 +1,4 @@
-package co.ledger.cria.services.interpreter
+package co.ledger.cria.itutils.models
 
 case class GetUtxosResult(
     utxos: List[ConfirmedUtxo],

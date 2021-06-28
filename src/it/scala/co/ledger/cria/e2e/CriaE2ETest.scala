@@ -1,22 +1,25 @@
-package co.ledger.cria
+package co.ledger.cria.e2e
+
+import java.util.UUID
 
 import cats.effect.{ExitCode, IO}
-import co.ledger.cria.AppIT.{RegisterRequest, SyncResult, TestCase}
-import co.ledger.cria.common.utils.ContainerFlatSpec
+import co.ledger.cria.App
+import co.ledger.cria.e2e.CriaE2ETest.{RegisterRequest, SyncResult, TestCase}
+import co.ledger.cria.itutils.ContainerFlatSpec
 import co.ledger.cria.models.Sort
 import co.ledger.cria.models.account.{Account, Coin, CoinFamily, Scheme}
 import co.ledger.cria.models.keychain.AccountKey.Xpub
+import co.ledger.cria.models.circeImplicits._
 import co.ledger.cria.utils.IOAssertion
 import io.circe.Decoder
 import co.ledger.cria.utils.CoinImplicits._
 import io.circe.generic.extras.semiauto.deriveConfiguredDecoder
-import co.ledger.cria.models.circeImplicits._
-
-import java.util.UUID
-import scala.io.Source
+import org.scalatest.matchers.should.Matchers
 import io.circe.parser.decode
 
-class AppIT extends ContainerFlatSpec {
+import scala.io.Source
+
+class CriaE2ETest extends ContainerFlatSpec with Matchers {
 
   readTestCases().foreach { tc =>
     val request = tc.registerRequest
@@ -28,8 +31,8 @@ class AppIT extends ContainerFlatSpec {
         exitCode <- App.run(args, conf)
         actual   <- getSyncResult(keychainId, request.coin)
       } yield {
-        assert(exitCode == ExitCode.Success)
-        assert(actual == tc.expected)
+        exitCode shouldBe ExitCode.Success
+        actual shouldBe tc.expected
       }
     }
   }
@@ -80,7 +83,7 @@ class AppIT extends ContainerFlatSpec {
   }
 }
 
-object AppIT {
+object CriaE2ETest {
   case class TestCase(registerRequest: RegisterRequest, expected: SyncResult)
 
   case class RegisterRequest(

@@ -13,6 +13,6 @@ class HexUtilsSpec extends AnyFunSuite with Matchers {
 
     val bytes = HexUtils.valueOf(rawTx)
 
-    assert(rawTx == HexUtils.valueOf(bytes))
+    rawTx shouldBe HexUtils.valueOf(bytes)
   }
 }
