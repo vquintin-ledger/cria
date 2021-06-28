@@ -3,6 +3,7 @@ package co.ledger.cria.common.utils
 import cats.effect.{ContextShift, IO, Resource, Timer}
 import co.ledger.cria.App
 import co.ledger.cria.App.ClientResources
+import co.ledger.cria.clients.grpc.{KeychainClient, KeychainGrpcClient}
 import co.ledger.cria.clients.http.ExplorerHttpClient
 import co.ledger.cria.config.{Config, GrpcClientConfig}
 import co.ledger.cria.logging.DefaultContextLogging
@@ -69,9 +70,11 @@ trait ContainerFlatSpec extends AnyFlatSpec with ForAllTestContainer with Defaul
         conf.maxConcurrent,
         conf.db.batchConcurrency
       )
+      val keychainClient = new KeychainGrpcClient(resources.keychainGrpcChannel)
       TestResources(
         resources,
         interpreterClient,
+        keychainClient,
         new TestUtils(resources.transactor)
       )
     }
@@ -79,6 +82,7 @@ trait ContainerFlatSpec extends AnyFlatSpec with ForAllTestContainer with Defaul
   case class TestResources(
       clients: ClientResources,
       interpreter: Interpreter,
+      keychainClient: KeychainClient,
       testUtils: TestUtils
   )
 
@@ -95,8 +99,7 @@ trait ContainerFlatSpec extends AnyFlatSpec with ForAllTestContainer with Defaul
       db = defaultConf.db.copy(postgres =
         defaultConf.db.postgres
           .copy(url = s"jdbc:postgresql://$mappedPostgresHost:$mappedPostgresPort/test_lama_btc")
-      ),
-      dump = true
+      )
     )
   }
 }

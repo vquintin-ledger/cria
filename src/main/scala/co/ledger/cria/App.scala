@@ -1,6 +1,6 @@
 package co.ledger.cria
 
-import cats.effect.{Blocker, ExitCode, IO, IOApp, Resource}
+import cats.effect.{ExitCode, IO, IOApp, Resource}
 import co.ledger.cria.clients.grpc.KeychainGrpcClient
 import co.ledger.cria.clients.http.ExplorerHttpClient
 import co.ledger.cria.services.{CursorStateService, HealthService}
@@ -29,8 +29,7 @@ object App extends IOApp with DefaultContextLogging {
   case class WorkerResources(
       args: CommandLineOptions,
       clients: ClientResources,
-      server: Server,
-      blocker: Blocker
+      server: Server
   )
 
   def run(args: List[String]): IO[ExitCode] =
@@ -43,12 +42,10 @@ object App extends IOApp with DefaultContextLogging {
       clients <- makeClientResources(conf)
       serviceDefinitions = List(new HealthService().definition)
       grcpService <- ResourceUtils.grpcServer(conf.grpcServer, serviceDefinitions)
-      blocker     <- Blocker[IO]
     } yield WorkerResources(
       args,
       clients,
-      grcpService,
-      blocker
+      grcpService
     )
 
     resources
@@ -69,22 +66,18 @@ object App extends IOApp with DefaultContextLogging {
         val cliOptions = resources.args
 
         val syncParams = SynchronizationParameters(
-          cliOptions.xpub,
-          cliOptions.scheme,
+          cliOptions.keychainId,
           cliOptions.coin,
           cliOptions.syncId,
           cliOptions.blockHash,
-          cliOptions.walletUid,
-          cliOptions.lookahead,
-          conf.dump
+          cliOptions.walletUid
         )
 
         val worker = new Synchronizer(
           keychainClient,
           explorerClient,
           interpreterClient,
-          cursorStateService,
-          resources.blocker
+          cursorStateService
         )
 
         for {

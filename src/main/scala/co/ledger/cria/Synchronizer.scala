@@ -1,6 +1,6 @@
 package co.ledger.cria
 
-import cats.effect.{Blocker, ContextShift, IO, Timer}
+import cats.effect.{ContextShift, IO, Timer}
 import cats.implicits._
 import co.ledger.cria.clients.grpc.KeychainClient
 import co.ledger.cria.clients.http.ExplorerClient
@@ -11,15 +11,12 @@ import co.ledger.cria.models.interpreter.ChangeType
 import co.ledger.cria.models.interpreter.ChangeType.{External, Internal}
 import co.ledger.cria.services._
 import co.ledger.cria.services.interpreter.Interpreter
-import co.ledger.cria.utils.CoinImplicits._
 import fs2.Stream
 
 import java.util.UUID
-import io.circe.syntax._
 
 import co.ledger.cria.utils.IOUtils
 
-import java.nio.file.{Paths, StandardOpenOption}
 import scala.math.Ordering.Implicits._
 import scala.util.Try
 
@@ -27,10 +24,8 @@ class Synchronizer(
     keychainClient: KeychainClient,
     explorerClient: Coin => ExplorerClient,
     interpreterClient: Interpreter,
-    cursorService: Coin => CursorStateService[IO],
-    blocker: Blocker
-)(implicit cs: ContextShift[IO])
-    extends ContextLogging {
+    cursorService: Coin => CursorStateService[IO]
+) extends ContextLogging {
 
   def run(
       syncParams: SynchronizationParameters
@@ -173,34 +168,11 @@ class Synchronizer(
     for {
 
       _ <- log.info(s"""Registering account on keychain with params : 
-          - scheme    : ${syncParams.scheme}
-          - lookahead : ${syncParams.lookahead}
+          - keychainId: ${syncParams.keychainId}
           - coin      : ${syncParams.coin}""")(
         CriaLogContext().withCorrelationId(syncParams.syncId)
       )
-
-      info <- keychainClient
-        .create(
-          syncParams.xpub,
-          syncParams.scheme,
-          syncParams.lookahead,
-          syncParams.coin.toNetwork
-        )
-      account = Account(info.keychainId.toString, CoinFamily.Bitcoin, syncParams.coin)
-      _ <- IO.whenA(syncParams.dump)(dumpAccount(account))
+      account = Account(syncParams.keychainId.toString, CoinFamily.Bitcoin, syncParams.coin)
 
     } yield account
-
-  private def dumpAccount(account: Account): IO[Unit] =
-    fs2.Stream
-      .emits(account.asJson.noSpaces.getBytes)
-      .through(
-        fs2.io.file.writeAll[IO](
-          Paths.get("account.json"),
-          blocker,
-          List(StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)
-        )
-      )
-      .compile
-      .drain
 }

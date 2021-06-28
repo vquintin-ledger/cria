@@ -1,20 +1,18 @@
 package co.ledger.cria
 
-import cats.effect.{Blocker, ContextShift, IO, Timer}
+import cats.effect.{ContextShift, IO, Timer}
 import co.ledger.cria.services.interpreter.Interpreter
 import co.ledger.cria.clients.grpc.mocks.InterpreterClientMock
 import co.ledger.cria.clients.http.ExplorerClient
 import co.ledger.cria.clients.http.mocks.ExplorerClientMock
 import co.ledger.cria.models.explorer.Block
 import co.ledger.cria.models.interpreter.TransactionView
-import co.ledger.cria.models.keychain.AccountKey.Xpub
 import co.ledger.cria.services.CursorStateService
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
 import java.time.Instant
 import java.util.UUID
-import co.ledger.cria.models.account.Scheme.Bip44
 import co.ledger.cria.models.account.{Account, Coin, CoinFamily}
 import co.ledger.cria.utils.IOAssertion
 
@@ -24,7 +22,6 @@ class SynchronizerSpec extends AnyFlatSpec with Matchers {
 
   implicit val cs: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
   implicit val t: Timer[IO]         = IO.timer(ExecutionContext.global)
-  val blocker: Blocker              = Blocker.liftExecutionContext(ExecutionContext.global)
 
   val keychainId: UUID = UUID.randomUUID()
 
@@ -63,11 +60,10 @@ class SynchronizerSpec extends AnyFlatSpec with Matchers {
       interpreter: Interpreter = new InterpreterClientMock,
       explorer: ExplorerClient = defaultExplorer
   ) = new Synchronizer(
-    KeychainFixture.keychainClient(accountAddresses, keyChainId = Some(keychainId)),
+    KeychainFixture.keychainClient(accountAddresses),
     _ => explorer,
     interpreter,
-    _ => alreadyValidBlockCursorService,
-    blocker
+    _ => alreadyValidBlockCursorService
   )
 
   it should "synchronize on given parameters" in IOAssertion {
@@ -126,13 +122,10 @@ class SynchronizerSpec extends AnyFlatSpec with Matchers {
       cursor: Option[Block]
   ): SynchronizationParameters =
     SynchronizationParameters(
-      Xpub("xpubtoto"),
+      keychainId = keychainId,
       syncId = UUID.randomUUID(),
-      scheme = Bip44,
       coin = Coin.Btc,
       blockHash = cursor.map(_.hash),
-      walletUid = UUID.randomUUID(),
-      lookahead = 20,
-      dump = false
+      walletUid = UUID.randomUUID()
     )
 }

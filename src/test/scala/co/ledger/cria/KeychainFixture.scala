@@ -20,8 +20,7 @@ object KeychainFixture {
 
   def keychainClient(
       addresses: LazyList[Address],
-      lookaheadSize: Int = 20,
-      keyChainId: Option[UUID] = None
+      lookaheadSize: Int = 20
   ): KeychainClient with UsedAddressesTracker =
     new KeychainClient with UsedAddressesTracker {
 
@@ -33,7 +32,7 @@ object KeychainFixture {
       ): IO[KeychainInfo] =
         IO.delay(
           KeychainInfo(
-            keyChainId.getOrElse(UUID.randomUUID()),
+            UUID.randomUUID(),
             "",
             "",
             "",

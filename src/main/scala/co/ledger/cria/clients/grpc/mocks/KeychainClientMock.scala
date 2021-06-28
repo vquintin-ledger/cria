@@ -12,7 +12,7 @@ import co.ledger.cria.models.account.Scheme
 
 import scala.collection.mutable
 
-class KeychainClientMock(createdKeychainId: Option[UUID] = None) extends KeychainClient {
+class KeychainClientMock extends KeychainClient {
 
   var usedAddresses: mutable.Seq[String] = mutable.Seq.empty
 
@@ -71,7 +71,7 @@ class KeychainClientMock(createdKeychainId: Option[UUID] = None) extends Keychai
   ): IO[KeychainInfo] =
     IO.delay(
       KeychainInfo(
-        createdKeychainId.getOrElse(UUID.randomUUID()),
+        UUID.randomUUID(),
         "",
         "",
         "",
