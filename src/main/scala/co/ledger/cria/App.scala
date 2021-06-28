@@ -1,6 +1,6 @@
 package co.ledger.cria
 
-import cats.effect.{ExitCode, IO, IOApp, Resource}
+import cats.effect.{Blocker, ExitCode, IO, IOApp, Resource}
 import co.ledger.cria.clients.grpc.KeychainGrpcClient
 import co.ledger.cria.clients.http.ExplorerHttpClient
 import co.ledger.cria.services.{CursorStateService, HealthService}
@@ -20,41 +20,45 @@ import doobie.util.transactor.Transactor
 
 object App extends IOApp with DefaultContextLogging {
 
-  case class WorkerResources(
-      args: CommandLineOptions,
+  case class ClientResources(
       httpClient: Client[IO],
       keychainGrpcChannel: ManagedChannel,
-      server: Server,
       transactor: Transactor[IO]
   )
 
-  def run(args: List[String]): IO[ExitCode] = {
-    val conf = ConfigSource.default.loadOrThrow[Config]
+  case class WorkerResources(
+      args: CommandLineOptions,
+      clients: ClientResources,
+      server: Server,
+      blocker: Blocker
+  )
+
+  def run(args: List[String]): IO[ExitCode] =
+    run(args, ConfigSource.default.loadOrThrow[Config])
+
+  def run(args: List[String], conf: Config): IO[ExitCode] = {
 
     val resources = for {
-      args                <- parseCommandLine(args)
-      httpClient          <- Clients.htt4s
-      keychainGrpcChannel <- grpcManagedChannel(conf.keychain)
-
+      args    <- parseCommandLine(args)
+      clients <- makeClientResources(conf)
       serviceDefinitions = List(new HealthService().definition)
-
       grcpService <- ResourceUtils.grpcServer(conf.grpcServer, serviceDefinitions)
-      transactor  <- ResourceUtils.postgresTransactor(conf.db.postgres)
+      blocker     <- Blocker[IO]
     } yield WorkerResources(
       args,
-      httpClient,
-      keychainGrpcChannel,
+      clients,
       grcpService,
-      transactor
+      blocker
     )
 
     resources
       .use { resources =>
-        val keychainClient = new KeychainGrpcClient(resources.keychainGrpcChannel)
-        val explorerClient = new ExplorerHttpClient(resources.httpClient, conf.explorer, _)
+        val clientResources = resources.clients
+        val keychainClient  = new KeychainGrpcClient(clientResources.keychainGrpcChannel)
+        val explorerClient  = new ExplorerHttpClient(clientResources.httpClient, conf.explorer, _)
         val interpreterClient = new InterpreterImpl(
           explorerClient,
-          resources.transactor,
+          clientResources.transactor,
           conf.maxConcurrent,
           conf.db.batchConcurrency
         )
@@ -71,14 +75,16 @@ object App extends IOApp with DefaultContextLogging {
           cliOptions.syncId,
           cliOptions.blockHash,
           cliOptions.walletUid,
-          cliOptions.lookahead
+          cliOptions.lookahead,
+          conf.dump
         )
 
         val worker = new Synchronizer(
           keychainClient,
           explorerClient,
           interpreterClient,
-          cursorStateService
+          cursorStateService,
+          resources.blocker
         )
 
         for {
@@ -106,4 +112,11 @@ object App extends IOApp with DefaultContextLogging {
       )
     )
   }
+
+  def makeClientResources(conf: Config): Resource[IO, ClientResources] =
+    for {
+      httpClient          <- Clients.htt4s
+      keychainGrpcChannel <- grpcManagedChannel(conf.keychain)
+      transactor          <- ResourceUtils.postgresTransactor(conf.db.postgres)
+    } yield ClientResources(httpClient, keychainGrpcChannel, transactor)
 }

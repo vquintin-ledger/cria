@@ -12,5 +12,6 @@ case class SynchronizationParameters(
     syncId: UUID,
     blockHash: Option[String],
     walletUid: UUID,
-    lookahead: Int
+    lookahead: Int,
+    dump: Boolean
 )

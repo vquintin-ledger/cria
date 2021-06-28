@@ -1,6 +1,6 @@
 package co.ledger.cria
 
-import cats.effect.{ContextShift, IO, Timer}
+import cats.effect.{Blocker, ContextShift, IO, Timer}
 import co.ledger.cria.services.interpreter.Interpreter
 import co.ledger.cria.clients.grpc.mocks.InterpreterClientMock
 import co.ledger.cria.clients.http.ExplorerClient
@@ -11,9 +11,9 @@ import co.ledger.cria.models.keychain.AccountKey.Xpub
 import co.ledger.cria.services.CursorStateService
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
+
 import java.time.Instant
 import java.util.UUID
-
 import co.ledger.cria.models.account.Scheme.Bip44
 import co.ledger.cria.models.account.{Account, Coin, CoinFamily}
 import co.ledger.cria.utils.IOAssertion
@@ -24,6 +24,7 @@ class SynchronizerSpec extends AnyFlatSpec with Matchers {
 
   implicit val cs: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
   implicit val t: Timer[IO]         = IO.timer(ExecutionContext.global)
+  val blocker: Blocker              = Blocker.liftExecutionContext(ExecutionContext.global)
 
   val keychainId: UUID = UUID.randomUUID()
 
@@ -65,7 +66,8 @@ class SynchronizerSpec extends AnyFlatSpec with Matchers {
     KeychainFixture.keychainClient(accountAddresses, keyChainId = Some(keychainId)),
     _ => explorer,
     interpreter,
-    _ => alreadyValidBlockCursorService
+    _ => alreadyValidBlockCursorService,
+    blocker
   )
 
   it should "synchronize on given parameters" in IOAssertion {
@@ -130,6 +132,7 @@ class SynchronizerSpec extends AnyFlatSpec with Matchers {
       coin = Coin.Btc,
       blockHash = cursor.map(_.hash),
       walletUid = UUID.randomUUID(),
-      lookahead = 20
+      lookahead = 20,
+      dump = false
     )
 }

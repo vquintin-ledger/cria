@@ -8,6 +8,7 @@
 
 *.iml
 assembly
+account.json
 target
 project/project
 project/target

@@ -1,6 +1,6 @@
 package co.ledger.cria
 
-import cats.effect.{ContextShift, IO, Timer}
+import cats.effect.{Blocker, ContextShift, IO, Timer}
 import co.ledger.cria.clients.grpc.mocks.{InterpreterClientMock, KeychainClientMock}
 import co.ledger.cria.clients.http.ExplorerHttpClient
 import co.ledger.cria.models.keychain.AccountKey.Xpub
@@ -10,9 +10,9 @@ import co.ledger.cria.services.CursorStateService
 import org.scalatest.flatspec.AnyFlatSpecLike
 import org.scalatest.matchers.should.Matchers
 import pureconfig.ConfigSource
+
 import java.time.Instant
 import java.util.UUID
-
 import co.ledger.cria.clients.Clients
 import co.ledger.cria.models.account.{Account, Coin, CoinFamily, Scheme}
 import co.ledger.cria.utils.IOAssertion
@@ -23,6 +23,7 @@ class SynchronizerIT extends AnyFlatSpecLike with Matchers {
 
   implicit val cs: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
   implicit val t: Timer[IO]         = IO.timer(ExecutionContext.global)
+  val blocker                       = Blocker.liftExecutionContext(ExecutionContext.global)
 
   val conf: Config = ConfigSource.default.loadOrThrow[Config]
 
@@ -48,14 +49,16 @@ class SynchronizerIT extends AnyFlatSpecLike with Matchers {
             UUID.randomUUID(),
             None,
             UUID.randomUUID(),
-            20
+            20,
+            false
           )
 
         val worker = new Synchronizer(
           keychainClient,
           explorerClient,
           interpreterClient,
-          cursorStateService
+          cursorStateService,
+          blocker
         )
 
         val account = Account(

@@ -10,7 +10,8 @@ case class Config(
     keychain: GrpcClientConfig,
     grpcServer: GrpcServerConfig,
     maxConcurrent: Int = 50, // TODO : bench [Runtime.getRuntime.availableProcessors() * x]
-    db: Db
+    db: Db,
+    dump: Boolean = false
 )
 
 object Config {

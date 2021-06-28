@@ -53,18 +53,20 @@ object Dependencies extends DependencyBuilders with LibraryManagementSyntax {
     "com.monovore" %% "decline" % declineVersion
   )
 
-  val scalaTestVersion     = "3.2.8"
-  val scalaTestPlusVersion = "3.2.2.0"
-  val scalaCheckVersion    = "1.15.3"
-  val otjPgEmbeddedVersion = "0.13.3"
-  val embeddedRedisVersion = "0.7.3"
+  val scalaTestVersion           = "3.2.8"
+  val scalaTestPlusVersion       = "3.2.2.0"
+  val scalaCheckVersion          = "1.15.3"
+  val otjPgEmbeddedVersion       = "0.13.3"
+  val embeddedRedisVersion       = "0.7.3"
+  val testcontainersScalaVersion = "0.39.5"
   val test: Seq[ModuleID] = Seq(
-    "org.scalatest"           %% "scalatest"        % scalaTestVersion     % "it, test",
-    "org.scalacheck"          %% "scalacheck"       % scalaCheckVersion    % "it, test",
-    "org.scalatestplus"       %% "scalacheck-1-14"  % scalaTestPlusVersion % "it, test",
-    "org.tpolecat"            %% "doobie-scalatest" % doobieVersion        % "it, test",
-    "com.opentable.components" % "otj-pg-embedded"  % otjPgEmbeddedVersion % Test,
-    "it.ozimov"                % "embedded-redis"   % embeddedRedisVersion % Test
+    "org.scalatest"           %% "scalatest"                      % scalaTestVersion           % "it, test",
+    "org.scalacheck"          %% "scalacheck"                     % scalaCheckVersion          % "it, test",
+    "org.scalatestplus"       %% "scalacheck-1-14"                % scalaTestPlusVersion       % "it, test",
+    "org.tpolecat"            %% "doobie-scalatest"               % doobieVersion              % "it, test",
+    "com.opentable.components" % "otj-pg-embedded"                % otjPgEmbeddedVersion       % Test,
+    "it.ozimov"                % "embedded-redis"                 % embeddedRedisVersion       % Test,
+    "com.dimafeng"            %% "testcontainers-scala-scalatest" % testcontainersScalaVersion % "it"
   )
 
   // https://scalapb.github.io/docs/faq/#i-am-getting-import-was-not-found-or-had-errors
