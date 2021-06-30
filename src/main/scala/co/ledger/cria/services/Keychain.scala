@@ -2,12 +2,12 @@ package co.ledger.cria.services
 
 import cats.effect.IO
 import co.ledger.cria.clients.grpc.KeychainClient
-import co.ledger.cria.services.Keychain.{Address, KeychainId, addressesRanges}
+import co.ledger.cria.services.Keychain.{Address, addressesRanges}
 import fs2.Stream
-import java.util.UUID
 
 import co.ledger.cria.models.interpreter.{AccountAddress, ChangeType}
-import co.ledger.cria.logging.{ContextLogging, DefaultContextLogging, CriaLogContext}
+import co.ledger.cria.logging.{ContextLogging, CriaLogContext, DefaultContextLogging}
+import co.ledger.cria.models.keychain.KeychainId
 
 class Keychain(client: KeychainClient) extends ContextLogging {
 
@@ -47,8 +47,7 @@ class Keychain(client: KeychainClient) extends ContextLogging {
 }
 
 object Keychain extends ContextLogging with DefaultContextLogging {
-  type Address    = String
-  type KeychainId = UUID
+  type Address = String
 
   def addressesRanges[F[_]](size: Int, start: Int = 0): Stream[F, Range] = {
     val from = Stream.iterate(start)(_ + size)

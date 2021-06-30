@@ -7,18 +7,15 @@ import co.ledger.cria.clients.http.ExplorerClient
 import co.ledger.cria.logging.{ContextLogging, CriaLogContext}
 import co.ledger.cria.models.account.{Account, Coin, CoinFamily}
 import co.ledger.cria.models.explorer.{Block, ConfirmedTransaction, UnconfirmedTransaction}
-import co.ledger.cria.models.interpreter.ChangeType
+import co.ledger.cria.models.interpreter.{ChangeType, SyncId}
 import co.ledger.cria.models.interpreter.ChangeType.{External, Internal}
 import co.ledger.cria.services._
 import co.ledger.cria.services.interpreter.Interpreter
 import fs2.Stream
 
-import java.util.UUID
-
 import co.ledger.cria.utils.IOUtils
 
 import scala.math.Ordering.Implicits._
-import scala.util.Try
 
 class Synchronizer(
     keychainClient: KeychainClient,
@@ -71,10 +68,10 @@ class Synchronizer(
       interpreterClient
     )
 
+    val keychainId = account.identifier
+
     // sync the whole account per streamed batch
     for {
-
-      keychainId <- IO.fromTry(Try(UUID.fromString(account.identifier)))
 
       addressesUsedByMempool <- (bookkeeper
         .record[UnconfirmedTransaction](
@@ -144,8 +141,8 @@ class Synchronizer(
   def lastMinedBlock(coin: Coin)(implicit t: Timer[IO], lc: CriaLogContext): IO[LastMinedBlock] =
     explorerClient(coin).getCurrentBlock.map(LastMinedBlock)
 
-  private def rewindToLastValidBlock(account: Account, lastKnownBlock: Block, syncId: UUID)(implicit
-      lc: CriaLogContext
+  private def rewindToLastValidBlock(account: Account, lastKnownBlock: Block, syncId: SyncId)(
+      implicit lc: CriaLogContext
   ): IO[Block] =
     for {
 
@@ -172,7 +169,7 @@ class Synchronizer(
           - coin      : ${syncParams.coin}""")(
         CriaLogContext().withCorrelationId(syncParams.syncId)
       )
-      account = Account(syncParams.keychainId.toString, CoinFamily.Bitcoin, syncParams.coin)
+      account = Account(syncParams.keychainId, CoinFamily.Bitcoin, syncParams.coin)
 
     } yield account
 }

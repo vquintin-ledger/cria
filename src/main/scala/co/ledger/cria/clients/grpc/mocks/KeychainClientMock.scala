@@ -1,12 +1,17 @@
 package co.ledger.cria.clients.grpc.mocks
 
 import java.util.UUID
-
 import cats.data.NonEmptyList
 import cats.effect.IO
 import co.ledger.cria.models.interpreter.ChangeType.External
 import co.ledger.cria.models.interpreter.{AccountAddress, ChangeType}
-import co.ledger.cria.models.keychain.{AccountKey, BitcoinLikeNetwork, BitcoinNetwork, KeychainInfo}
+import co.ledger.cria.models.keychain.{
+  AccountKey,
+  BitcoinLikeNetwork,
+  BitcoinNetwork,
+  KeychainId,
+  KeychainInfo
+}
 import co.ledger.cria.clients.grpc.KeychainClient
 import co.ledger.cria.models.account.Scheme
 
@@ -71,7 +76,7 @@ class KeychainClientMock extends KeychainClient {
   ): IO[KeychainInfo] =
     IO.delay(
       KeychainInfo(
-        UUID.randomUUID(),
+        KeychainId(UUID.randomUUID()),
         "",
         "",
         "",
@@ -82,10 +87,10 @@ class KeychainClientMock extends KeychainClient {
       )
     )
 
-  def getKeychainInfo(keychainId: UUID): IO[KeychainInfo] =
+  def getKeychainInfo(keychainId: KeychainId): IO[KeychainInfo] =
     IO.pure(
       KeychainInfo(
-        UUID.randomUUID(),
+        KeychainId(UUID.randomUUID()),
         "",
         "",
         "",
@@ -96,13 +101,13 @@ class KeychainClientMock extends KeychainClient {
       )
     )
 
-  def markAddressesAsUsed(keychainId: UUID, addresses: List[String]): IO[Unit] =
+  def markAddressesAsUsed(keychainId: KeychainId, addresses: List[String]): IO[Unit] =
     IO.delay {
       usedAddresses = usedAddresses ++ addresses
     }
 
   def getAddresses(
-      keychainId: UUID,
+      keychainId: KeychainId,
       fromIndex: Int,
       toIndex: Int,
       changeType: Option[ChangeType]
@@ -114,7 +119,7 @@ class KeychainClientMock extends KeychainClient {
     }
 
   def getKnownAndNewAddresses(
-      keychainId: UUID,
+      keychainId: KeychainId,
       changeType: Option[ChangeType] = None
   ): IO[List[AccountAddress]] =
     for {
@@ -131,7 +136,7 @@ class KeychainClientMock extends KeychainClient {
     } yield knownAddresses ++ newAddresses
 
   def getFreshAddresses(
-      keychainId: UUID,
+      keychainId: KeychainId,
       change: ChangeType,
       size: Int
   ): IO[List[AccountAddress]] =
@@ -142,12 +147,12 @@ class KeychainClientMock extends KeychainClient {
     }
 
   override def getAddressesPublicKeys(
-      keychainId: UUID,
+      keychainId: KeychainId,
       derivations: List[List[Int]]
   ): IO[List[String]] = ???
 
-  override def deleteKeychain(keychainId: UUID): IO[Unit] = ???
+  override def deleteKeychain(keychainId: KeychainId): IO[Unit] = ???
 
-  override def resetKeychain(keychainId: UUID): IO[Unit] = ???
+  override def resetKeychain(keychainId: KeychainId): IO[Unit] = ???
 
 }

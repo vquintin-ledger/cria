@@ -1,9 +1,8 @@
 package co.ledger.cria.services.interpreter
 
-import java.util.UUID
-
 import cats.effect.{ContextShift, IO}
 import co.ledger.cria.logging.{ContextLogging, CriaLogContext}
+import co.ledger.cria.models.account.AccountId
 import co.ledger.cria.models.interpreter.{AccountTxView, BlockView}
 import doobie.Transactor
 import doobie.implicits._
@@ -29,7 +28,7 @@ class TransactionService(db: Transactor[IO], maxConcurrent: Int) extends Context
           }
       }
 
-  def removeFromCursor(accountId: UUID, blockHeight: Long): IO[Int] =
+  def removeFromCursor(accountId: AccountId, blockHeight: Long): IO[Int] =
     TransactionQueries
       .removeFromCursor(accountId, blockHeight)
       .flatMap(_ =>
@@ -38,12 +37,12 @@ class TransactionService(db: Transactor[IO], maxConcurrent: Int) extends Context
       )
       .transact(db)
 
-  def getLastBlocks(accountId: UUID): Stream[IO, BlockView] =
+  def getLastBlocks(accountId: AccountId): Stream[IO, BlockView] =
     TransactionQueries
       .fetchMostRecentBlocks(accountId)
       .transact(db)
 
-  def deleteUnconfirmedTransaction(accountId: UUID, hash: String): IO[String] =
+  def deleteUnconfirmedTransaction(accountId: AccountId, hash: String): IO[String] =
     TransactionQueries
       .deleteUnconfirmedTransaction(accountId, hash)
       .transact(db)

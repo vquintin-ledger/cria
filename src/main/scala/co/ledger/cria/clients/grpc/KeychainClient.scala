@@ -1,10 +1,8 @@
 package co.ledger.cria.clients.grpc
 
-import java.util.UUID
-
 import cats.effect.{ContextShift, IO}
 import co.ledger.cria.models.interpreter.{AccountAddress, ChangeType}
-import co.ledger.cria.models.keychain.{AccountKey, BitcoinLikeNetwork, KeychainInfo}
+import co.ledger.cria.models.keychain.{AccountKey, BitcoinLikeNetwork, KeychainId, KeychainInfo}
 import co.ledger.cria.models.account.Scheme
 import co.ledger.cria.utils.UuidUtils
 import co.ledger.protobuf.bitcoin.keychain
@@ -18,32 +16,36 @@ trait KeychainClient {
       network: BitcoinLikeNetwork
   ): IO[KeychainInfo]
 
-  def getKeychainInfo(keychainId: UUID): IO[KeychainInfo]
+  def getKeychainInfo(keychainId: KeychainId): IO[KeychainInfo]
 
   def getAddresses(
-      keychainId: UUID,
+      keychainId: KeychainId,
       fromIndex: Int,
       toIndex: Int,
       changeType: Option[ChangeType] = None
   ): IO[List[AccountAddress]]
 
-  def markAddressesAsUsed(keychainId: UUID, addresses: List[String]): IO[Unit]
+  def markAddressesAsUsed(keychainId: KeychainId, addresses: List[String]): IO[Unit]
 
   def getKnownAndNewAddresses(
-      keychainId: UUID,
+      keychainId: KeychainId,
       changeType: Option[ChangeType] = None
   ): IO[List[AccountAddress]]
 
-  def getFreshAddresses(keychainId: UUID, change: ChangeType, size: Int): IO[List[AccountAddress]]
+  def getFreshAddresses(
+      keychainId: KeychainId,
+      change: ChangeType,
+      size: Int
+  ): IO[List[AccountAddress]]
 
   def getAddressesPublicKeys(
-      keychainId: UUID,
+      keychainId: KeychainId,
       derivations: List[List[Int]]
   ): IO[List[String]]
 
-  def resetKeychain(keychainId: UUID): IO[Unit]
+  def resetKeychain(keychainId: KeychainId): IO[Unit]
 
-  def deleteKeychain(keychainId: UUID): IO[Unit]
+  def deleteKeychain(keychainId: KeychainId): IO[Unit]
 }
 
 class KeychainGrpcClient(
@@ -76,16 +78,16 @@ class KeychainGrpcClient(
       )
       .map(KeychainInfo.fromProto)
 
-  def getKeychainInfo(keychainId: UUID): IO[KeychainInfo] =
+  def getKeychainInfo(keychainId: KeychainId): IO[KeychainInfo] =
     client
       .getKeychainInfo(
-        keychain.GetKeychainInfoRequest(UuidUtils.uuidToBytes(keychainId)),
+        keychain.GetKeychainInfoRequest(UuidUtils.uuidToBytes(keychainId.value)),
         new Metadata
       )
       .map(KeychainInfo.fromProto)
 
   def getAddresses(
-      keychainId: UUID,
+      keychainId: KeychainId,
       fromIndex: Int,
       toIndex: Int,
       changeType: Option[ChangeType] = None
@@ -95,7 +97,7 @@ class KeychainGrpcClient(
         changeType // not the best way to handle...
           .map(change =>
             keychain.GetAllObservableAddressesRequest(
-              keychainId = UuidUtils.uuidToBytes(keychainId),
+              keychainId = UuidUtils.uuidToBytes(keychainId.value),
               fromIndex = fromIndex,
               toIndex = toIndex,
               change = change.toKeychainProto
@@ -103,7 +105,7 @@ class KeychainGrpcClient(
           )
           .getOrElse(
             keychain.GetAllObservableAddressesRequest(
-              keychainId = UuidUtils.uuidToBytes(keychainId),
+              keychainId = UuidUtils.uuidToBytes(keychainId.value),
               fromIndex = fromIndex,
               toIndex = toIndex
             )
@@ -112,10 +114,10 @@ class KeychainGrpcClient(
       )
       .map(_.addresses.map(AccountAddress.fromKeychainProto).toList)
 
-  def markAddressesAsUsed(keychainId: UUID, addresses: List[String]): IO[Unit] =
+  def markAddressesAsUsed(keychainId: KeychainId, addresses: List[String]): IO[Unit] =
     client
       .markAddressesAsUsed(
-        keychain.MarkAddressesAsUsedRequest(UuidUtils.uuidToBytes(keychainId), addresses),
+        keychain.MarkAddressesAsUsedRequest(UuidUtils.uuidToBytes(keychainId.value), addresses),
         new Metadata
       )
       .void
@@ -124,7 +126,7 @@ class KeychainGrpcClient(
   // plus 20 new addresses (for free !)
 
   def getKnownAndNewAddresses(
-      keychainId: UUID,
+      keychainId: KeychainId,
       changeType: Option[ChangeType] = None
   ): IO[List[AccountAddress]] =
     client
@@ -132,24 +134,28 @@ class KeychainGrpcClient(
         changeType
           .map(change =>
             keychain.GetAllObservableAddressesRequest(
-              keychainId = UuidUtils.uuidToBytes(keychainId),
+              keychainId = UuidUtils.uuidToBytes(keychainId.value),
               change = change.toKeychainProto
             )
           )
           .getOrElse(
             keychain.GetAllObservableAddressesRequest(
-              keychainId = UuidUtils.uuidToBytes(keychainId)
+              keychainId = UuidUtils.uuidToBytes(keychainId.value)
             )
           ),
         new Metadata
       )
       .map(_.addresses.map(AccountAddress.fromKeychainProto).toList)
 
-  def getFreshAddresses(keychainId: UUID, change: ChangeType, size: Int): IO[List[AccountAddress]] =
+  def getFreshAddresses(
+      keychainId: KeychainId,
+      change: ChangeType,
+      size: Int
+  ): IO[List[AccountAddress]] =
     client
       .getFreshAddresses(
         keychain.GetFreshAddressesRequest(
-          UuidUtils.uuidToBytes(keychainId),
+          UuidUtils.uuidToBytes(keychainId.value),
           change.toKeychainProto,
           size
         ),
@@ -158,13 +164,13 @@ class KeychainGrpcClient(
       .map(_.addresses.map(AccountAddress.fromKeychainProto).toList)
 
   def getAddressesPublicKeys(
-      keychainId: UUID,
+      keychainId: KeychainId,
       derivations: List[List[Int]]
   ): IO[List[String]] =
     client
       .getAddressesPublicKeys(
         keychain.GetAddressesPublicKeysRequest(
-          UuidUtils.uuidToBytes(keychainId),
+          UuidUtils.uuidToBytes(keychainId.value),
           derivations
             .map(derivation => keychain.DerivationPath(derivation))
         ),
@@ -172,21 +178,21 @@ class KeychainGrpcClient(
       )
       .map(_.publicKeys.toList)
 
-  def resetKeychain(keychainId: UUID): IO[Unit] =
+  def resetKeychain(keychainId: KeychainId): IO[Unit] =
     client
       .resetKeychain(
         keychain.ResetKeychainRequest(
-          keychainId = UuidUtils.uuidToBytes(keychainId)
+          keychainId = UuidUtils.uuidToBytes(keychainId.value)
         ),
         new Metadata
       )
       .void
 
-  def deleteKeychain(keychainId: UUID): IO[Unit] =
+  def deleteKeychain(keychainId: KeychainId): IO[Unit] =
     client
       .deleteKeychain(
         keychain.DeleteKeychainRequest(
-          keychainId = UuidUtils.uuidToBytes(keychainId)
+          keychainId = UuidUtils.uuidToBytes(keychainId.value)
         ),
         new Metadata
       )

@@ -6,7 +6,7 @@ import co.ledger.cria.clients.grpc.mocks.InterpreterClientMock
 import co.ledger.cria.clients.http.ExplorerClient
 import co.ledger.cria.clients.http.mocks.ExplorerClientMock
 import co.ledger.cria.models.explorer.Block
-import co.ledger.cria.models.interpreter.TransactionView
+import co.ledger.cria.models.interpreter.{SyncId, TransactionView}
 import co.ledger.cria.services.CursorStateService
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
@@ -14,6 +14,7 @@ import org.scalatest.matchers.should.Matchers
 import java.time.Instant
 import java.util.UUID
 import co.ledger.cria.models.account.{Account, Coin, CoinFamily}
+import co.ledger.cria.models.keychain.KeychainId
 import co.ledger.cria.utils.IOAssertion
 
 import scala.concurrent.ExecutionContext
@@ -23,11 +24,11 @@ class SynchronizerSpec extends AnyFlatSpec with Matchers {
   implicit val cs: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
   implicit val t: Timer[IO]         = IO.timer(ExecutionContext.global)
 
-  val keychainId: UUID = UUID.randomUUID()
+  val keychainId = KeychainId(UUID.randomUUID())
 
   val accountIdentifier: Account =
     Account(
-      keychainId.toString,
+      keychainId,
       CoinFamily.Bitcoin,
       Coin.Btc
     )
@@ -123,7 +124,7 @@ class SynchronizerSpec extends AnyFlatSpec with Matchers {
   ): SynchronizationParameters =
     SynchronizationParameters(
       keychainId = keychainId,
-      syncId = UUID.randomUUID(),
+      syncId = SyncId(UUID.randomUUID()),
       coin = Coin.Btc,
       blockHash = cursor.map(_.hash),
       walletUid = UUID.randomUUID()

@@ -1,10 +1,9 @@
 package co.ledger.cria.services.interpreter
 
-import java.util.UUID
-
 import cats.data.NonEmptyList
 import cats.effect.{ContextShift, IO}
 import cats.implicits._
+import co.ledger.cria.models.account.AccountId
 import co.ledger.cria.models.interpreter.{AccountAddress, ChangeType}
 import doobie._
 import doobie.implicits._
@@ -12,7 +11,7 @@ import doobie.implicits._
 class FlaggingService(db: Transactor[IO]) {
 
   def flagInputsAndOutputs(
-      accountId: UUID,
+      accountId: AccountId,
       accountAddresses: List[AccountAddress]
   )(implicit cs: ContextShift[IO]): IO[Unit] = {
     val (internalAddresses, externalAddresses) =

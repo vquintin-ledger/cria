@@ -1,7 +1,6 @@
 package co.ledger.cria.e2e
 
 import java.util.UUID
-
 import cats.effect.{ExitCode, IO}
 import co.ledger.cria.App
 import co.ledger.cria.e2e.CriaE2ETest.{RegisterRequest, SyncResult, TestCase}
@@ -10,6 +9,7 @@ import co.ledger.cria.models.Sort
 import co.ledger.cria.models.account.{Account, Coin, CoinFamily, Scheme}
 import co.ledger.cria.models.keychain.AccountKey.Xpub
 import co.ledger.cria.models.circeImplicits._
+import co.ledger.cria.models.keychain.KeychainId
 import co.ledger.cria.utils.IOAssertion
 import io.circe.Decoder
 import co.ledger.cria.utils.CoinImplicits._
@@ -45,7 +45,7 @@ class CriaE2ETest extends ContainerFlatSpec with Matchers {
       "test-accounts-ltc.json"
     ).flatMap(readJson[List[TestCase]])
 
-  def makeKeychainId(request: RegisterRequest): IO[UUID] =
+  def makeKeychainId(request: RegisterRequest): IO[KeychainId] =
     testResources
       .use(tr =>
         tr.keychainClient
@@ -53,16 +53,16 @@ class CriaE2ETest extends ContainerFlatSpec with Matchers {
       )
       .map(_.keychainId)
 
-  def makeArgs(request: RegisterRequest, keychainId: UUID): List[String] =
+  def makeArgs(request: RegisterRequest, keychainId: KeychainId): List[String] =
     List(
-      ("--keychainId", keychainId.toString),
+      ("--keychainId", keychainId.value.toString),
       ("--coin", request.coin),
       ("--syncId", request.syncId),
       ("--walletUid", request.walletUid)
     ).flatMap { case (name, arg) => List(name, arg.toString) }
 
-  def getSyncResult(keychainId: UUID, coin: Coin): IO[SyncResult] = testResources.use { res =>
-    val account = Account(keychainId.toString, CoinFamily.Bitcoin, coin)
+  def getSyncResult(keychainId: KeychainId, coin: Coin): IO[SyncResult] = testResources.use { res =>
+    val account = Account(keychainId, CoinFamily.Bitcoin, coin)
     for {
       opsSize   <- res.testUtils.getOperations(account.id, 20, Sort.Ascending, None)
       utxosSize <- res.testUtils.getUtxos(account.id, 20, 0, Sort.Ascending)

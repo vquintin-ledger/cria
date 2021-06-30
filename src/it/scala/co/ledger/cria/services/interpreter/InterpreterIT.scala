@@ -3,7 +3,6 @@ package co.ledger.cria.services.interpreter
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import java.util.UUID
-
 import cats.data.NonEmptyList
 import cats.effect.IO
 import cats.implicits._
@@ -14,7 +13,7 @@ import co.ledger.cria.itutils.{ContainerFlatSpec, TestUtils}
 import co.ledger.cria.utils.IOAssertion
 import co.ledger.cria.logging.CriaLogContext
 import co.ledger.cria.models.Sort
-import co.ledger.cria.models.account.{Account, Coin, CoinFamily}
+import co.ledger.cria.models.account.{Account, AccountId, Coin, CoinFamily}
 import co.ledger.cria.models.explorer.UnconfirmedTransaction
 import co.ledger.cria.models.interpreter.{
   AccountAddress,
@@ -23,8 +22,10 @@ import co.ledger.cria.models.interpreter.{
   ChangeType,
   InputView,
   OutputView,
+  SyncId,
   TransactionView
 }
+import co.ledger.cria.models.keychain.KeychainId
 import org.scalatest.matchers.should.Matchers
 import fs2.Stream
 
@@ -34,11 +35,11 @@ class InterpreterIT extends ContainerFlatSpec with Matchers {
 
   val account: Account =
     Account(
-      "b723c553-3a9a-4130-8883-ee2f6c2f9202",
+      KeychainId.fromString("b723c553-3a9a-4130-8883-ee2f6c2f9202").get,
       CoinFamily.Bitcoin,
       Coin.Btc
     )
-  val accountId: UUID = account.id
+  val accountId: AccountId = account.id
 
   override implicit val lc: CriaLogContext = CriaLogContext().withAccountId(accountId)
 
@@ -141,7 +142,7 @@ class InterpreterIT extends ContainerFlatSpec with Matchers {
 
           _ <- interpreter.compute(
             account,
-            UUID.randomUUID(),
+            SyncId(UUID.randomUUID()),
             List(inputAddress, outputAddress2)
           )
 
@@ -172,7 +173,11 @@ class InterpreterIT extends ContainerFlatSpec with Matchers {
           start = time.minusSeconds(86400)
           end   = time.plusSeconds(86400)
 
-          _ <- interpreter.removeDataFromCursor(accountId, Some(block0.height), UUID.randomUUID())
+          _ <- interpreter.removeDataFromCursor(
+            accountId,
+            Some(block0.height),
+            SyncId(UUID.randomUUID())
+          )
 
           resOpsAfterDeletion <- utils.getOperations(
             accountId,
@@ -237,7 +242,7 @@ class InterpreterIT extends ContainerFlatSpec with Matchers {
 
           _ <- interpreter.compute(
             account,
-            UUID.randomUUID(),
+            SyncId(UUID.randomUUID()),
             List(outputAddress1)
           )
           res <- utils.getOperations(accountId, 20, Sort.Descending, None)
@@ -293,7 +298,7 @@ class InterpreterIT extends ContainerFlatSpec with Matchers {
 
           _ <- interpreter.compute(
             account,
-            UUID.randomUUID(),
+            SyncId(UUID.randomUUID()),
             List(outputAddress1)
           )
           res <- utils.getOperations(accountId, 20, Sort.Descending, None)
@@ -361,7 +366,7 @@ class InterpreterIT extends ContainerFlatSpec with Matchers {
 
         for {
           _            <- saveTxs(interpreter, List(uTx1))
-          _            <- interpreter.compute(account, UUID.randomUUID(), List(outputAddress1))
+          _            <- interpreter.compute(account, SyncId(UUID.randomUUID()), List(outputAddress1))
           firstBalance <- utils.getBalance(accountId)
           r1           <- utils.getOperations(accountId, 20, Sort.Descending, None)
           GetOperationsResult(firstOperations, _, _) = r1
@@ -373,7 +378,11 @@ class InterpreterIT extends ContainerFlatSpec with Matchers {
               uTx2
             )
           )
-          _             <- interpreter.compute(account, UUID.randomUUID(), List(outputAddress1, outputAddress2))
+          _ <- interpreter.compute(
+            account,
+            SyncId(UUID.randomUUID()),
+            List(outputAddress1, outputAddress2)
+          )
           secondBalance <- utils.getBalance(accountId)
           r2            <- utils.getOperations(accountId, 20, Sort.Descending, None)
           GetOperationsResult(secondOperations, _, _) = r2
@@ -387,7 +396,11 @@ class InterpreterIT extends ContainerFlatSpec with Matchers {
               uTx3
             )
           )
-          _           <- interpreter.compute(account, UUID.randomUUID(), List(outputAddress1, outputAddress2))
+          _ <- interpreter.compute(
+            account,
+            SyncId(UUID.randomUUID()),
+            List(outputAddress1, outputAddress2)
+          )
           lastBalance <- utils.getBalance(accountId)
           r3          <- utils.getOperations(accountId, 20, Sort.Descending, None)
           GetOperationsResult(lastOperations, _, _) = r3
@@ -444,19 +457,19 @@ class InterpreterIT extends ContainerFlatSpec with Matchers {
             .through(interpreter.saveTransactions(uTx1.accountId))
             .compile
             .drain
-          _     <- interpreter.compute(account, UUID.randomUUID(), List(outputAddress1))
+          _     <- interpreter.compute(account, SyncId(UUID.randomUUID()), List(outputAddress1))
           first <- utils.getOperations(accountId, 10, Sort.Ascending, None)
           _ <- Stream
             .emit(uTx1.tx)
             .through(interpreter.saveTransactions(uTx1.accountId))
             .compile
             .drain
-          _      <- interpreter.compute(account, UUID.randomUUID(), List(outputAddress1))
+          _      <- interpreter.compute(account, SyncId(UUID.randomUUID()), List(outputAddress1))
           second <- utils.getOperations(accountId, 10, Sort.Ascending, None)
           // The third time the transaction is not saved again, meaning that it disapeared from the network without being mined.
           // We now remove the transaction from the explorer
           _ = explorer.removeFromBC(uTx1.tx.hash)
-          _     <- interpreter.compute(account, UUID.randomUUID(), List(outputAddress1))
+          _     <- interpreter.compute(account, SyncId(UUID.randomUUID()), List(outputAddress1))
           third <- utils.getOperations(accountId, 10, Sort.Ascending, None)
         } yield {
           first.total shouldBe 1

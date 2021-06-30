@@ -1,7 +1,5 @@
 package co.ledger.cria.itutils.queries
 
-import java.util.UUID
-
 import cats.data.NonEmptyList
 import cats.implicits._
 import co.ledger.cria.itutils.models.{
@@ -11,6 +9,7 @@ import co.ledger.cria.itutils.models.{
   Utxo
 }
 import co.ledger.cria.logging.DoobieLogHandler
+import co.ledger.cria.models.account.AccountId
 import co.ledger.cria.models.interpreter.{InputView, Operation, OutputView}
 import co.ledger.cria.models.{Sort, TxHash}
 import co.ledger.cria.models.implicits._
@@ -25,7 +24,7 @@ object OperationTestQueries extends DoobieLogHandler {
   import OperationQueries._
 
   def fetchOperationDetails(
-      accountId: UUID,
+      accountId: AccountId,
       sort: Sort,
       opHashes: NonEmptyList[TxHash]
   ): Stream[doobie.ConnectionIO, OperationDetails] = {
@@ -52,7 +51,7 @@ object OperationTestQueries extends DoobieLogHandler {
       }
   }
 
-  def countUTXOs(accountId: UUID): ConnectionIO[Int] =
+  def countUTXOs(accountId: AccountId): ConnectionIO[Int] =
     sql"""SELECT COUNT(*)
           FROM output o
             LEFT JOIN input i
@@ -72,7 +71,7 @@ object OperationTestQueries extends DoobieLogHandler {
       .unique
 
   def fetchConfirmedUTXOs(
-      accountId: UUID,
+      accountId: AccountId,
       sort: Sort = Sort.Ascending,
       limit: Option[Int] = None,
       offset: Option[Int] = None
@@ -101,7 +100,7 @@ object OperationTestQueries extends DoobieLogHandler {
   }
 
   def fetchUnconfirmedUTXOs(
-      accountId: UUID
+      accountId: AccountId
   ): Stream[ConnectionIO, Utxo] =
     sql"""SELECT tx.hash, o.output_index, o.value, o.address, o.script_hex, o.change_type, o.derivation, tx.received_at
             FROM output o
@@ -126,7 +125,7 @@ object OperationTestQueries extends DoobieLogHandler {
     Fragments.in(fr"o.hash", hashes.map(_.hex))
 
   private def fetchInputs(
-      accountId: UUID,
+      accountId: AccountId,
       sort: Sort,
       opHashes: NonEmptyList[TxHash]
   ) = {
@@ -144,7 +143,7 @@ object OperationTestQueries extends DoobieLogHandler {
   }
 
   private def fetchOutputs(
-      accountId: UUID,
+      accountId: AccountId,
       sort: Sort,
       opHashes: NonEmptyList[TxHash]
   ) = {
@@ -162,7 +161,7 @@ object OperationTestQueries extends DoobieLogHandler {
     ).query[(TxHash, Option[OutputView])]
   }
 
-  def countOperations(accountId: UUID, blockHeight: Long = 0L): ConnectionIO[Int] =
+  def countOperations(accountId: AccountId, blockHeight: Long = 0L): ConnectionIO[Int] =
     sql"""SELECT COUNT(*) FROM operation WHERE account_id = $accountId AND (block_height >= $blockHeight OR block_height IS NULL)"""
       .query[Int]
       .unique
@@ -176,14 +175,14 @@ object OperationTestQueries extends DoobieLogHandler {
            JOIN "operation" o on t.hash = o.hash and o.account_id = t.account_id 
        """
 
-  def hasPreviousPage(accountId: UUID, uid: Operation.UID, sort: Sort): ConnectionIO[Boolean] =
+  def hasPreviousPage(accountId: AccountId, uid: Operation.UID, sort: Sort): ConnectionIO[Boolean] =
     hasMorePage(accountId, uid, sort, isNext = false)
 
-  def hasNextPage(accountId: UUID, uid: Operation.UID, sort: Sort): ConnectionIO[Boolean] =
+  def hasNextPage(accountId: AccountId, uid: Operation.UID, sort: Sort): ConnectionIO[Boolean] =
     hasMorePage(accountId, uid, sort, isNext = true)
 
   private def hasMorePage(
-      accountId: UUID,
+      accountId: AccountId,
       uid: Operation.UID,
       sort: Sort,
       isNext: Boolean
@@ -205,7 +204,7 @@ object OperationTestQueries extends DoobieLogHandler {
   }
 
   def fetchOperations(
-      accountId: UUID,
+      accountId: AccountId,
       limit: Int,
       sort: Sort = Sort.Descending,
       cursor: Option[PaginationToken[OperationPaginationState]]
@@ -249,7 +248,7 @@ object OperationTestQueries extends DoobieLogHandler {
   }
 
   def findOperation(
-      accountId: Operation.AccountId,
+      accountId: AccountId,
       operationId: Operation.UID
   ): ConnectionIO[Option[OpWithoutDetails]] = {
 

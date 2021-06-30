@@ -1,9 +1,8 @@
 package co.ledger.cria.models
 
 import java.time.Instant
-import java.util.UUID
-
 import cats.data.NonEmptyList
+import co.ledger.cria.models.account.AccountId
 import co.ledger.cria.models.interpreter.{ChangeType, Operation, OperationType, TransactionView}
 import co.ledger.cria.models.interpreter._
 import doobie._
@@ -59,7 +58,17 @@ object implicits {
 
   implicit lazy val readOperation: Read[Operation] =
     Read[
-      (String, UUID, String, OperationType, BigInt, BigInt, Instant, Option[Long], TransactionView)
+      (
+          String,
+          AccountId,
+          String,
+          OperationType,
+          BigInt,
+          BigInt,
+          Instant,
+          Option[Long],
+          TransactionView
+      )
     ].map { case (uid, accountId, hash, operationType, value, fees, time, height, tx) =>
       Operation(
         Operation.UID(uid),

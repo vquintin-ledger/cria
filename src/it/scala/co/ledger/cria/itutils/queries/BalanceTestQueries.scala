@@ -1,8 +1,7 @@
 package co.ledger.cria.itutils.queries
 
-import java.util.UUID
-
 import co.ledger.cria.logging.DoobieLogHandler
+import co.ledger.cria.models.account.AccountId
 import co.ledger.cria.models.account.interpreter.BlockchainBalance
 import co.ledger.cria.models.implicits._
 import doobie._
@@ -12,7 +11,7 @@ import doobie.postgres.implicits._
 object BalanceTestQueries extends DoobieLogHandler {
 
   def getBlockchainBalance(
-      accountId: UUID
+      accountId: AccountId
   ): ConnectionIO[BlockchainBalance] = {
     val balanceAndUtxosQuery =
       sql"""
@@ -69,7 +68,7 @@ object BalanceTestQueries extends DoobieLogHandler {
   }
 
   def getUnconfirmedBalance(
-      accountId: UUID
+      accountId: AccountId
   ): ConnectionIO[BigInt] =
     sql"""
           WITH new_utxo as (SELECT COALESCE(SUM(o.value), 0) as value
@@ -100,14 +99,14 @@ object BalanceTestQueries extends DoobieLogHandler {
       .unique
 
   def getBalanceHistoryCount(
-      accountId: UUID
+      accountId: AccountId
   ): ConnectionIO[Int] =
     sql"""SELECT COUNT(balance)
           FROM balance_history
           WHERE account_id = $accountId
        """.query[Int].unique
 
-  def removeBalancesHistoryFromCursor(accountId: UUID, blockHeight: Long): ConnectionIO[Int] =
+  def removeBalancesHistoryFromCursor(accountId: AccountId, blockHeight: Long): ConnectionIO[Int] =
     sql"""DELETE from balance_history
           WHERE account_id = $accountId
           AND block_height >= $blockHeight

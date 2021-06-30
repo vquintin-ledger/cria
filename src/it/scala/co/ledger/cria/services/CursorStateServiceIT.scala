@@ -2,7 +2,6 @@ package co.ledger.cria.services
 
 import java.time.Instant
 import java.util.UUID
-
 import cats.effect.{ContextShift, IO, Resource, Timer}
 import co.ledger.cria.clients.Clients
 import co.ledger.cria.clients.grpc.mocks.InterpreterClientMock
@@ -11,7 +10,8 @@ import co.ledger.cria.config.Config
 import co.ledger.cria.logging.DefaultContextLogging
 import co.ledger.cria.models.account.{Account, Coin, CoinFamily}
 import co.ledger.cria.models.explorer.Block
-import co.ledger.cria.models.interpreter.{BlockView, TransactionView}
+import co.ledger.cria.models.interpreter.{BlockView, SyncId, TransactionView}
+import co.ledger.cria.models.keychain.KeychainId
 import co.ledger.cria.utils.IOAssertion
 import fs2._
 import org.http4s.client.Client
@@ -36,10 +36,11 @@ class CursorStateServiceIT extends AnyFlatSpecLike with Matchers with DefaultCon
       val interpreterClient  = new InterpreterClientMock
       val cursorStateService = CursorStateService(explorerClient, interpreterClient)
 
+      val keychainId = KeychainId(UUID.randomUUID())
       val account =
-        Account(UUID.randomUUID().toString, CoinFamily.Bitcoin, Coin.Btc)
+        Account(keychainId, CoinFamily.Bitcoin, Coin.Btc)
       val accountId = account.id
-      val syncId    = UUID.randomUUID()
+      val syncId    = SyncId(UUID.randomUUID())
 
       val lastValidHash   = "00000000000000000008c76a28e115319fb747eb29a7e0794526d0fe47608379"
       val lastValidHeight = 559033L

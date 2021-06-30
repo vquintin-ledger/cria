@@ -9,11 +9,13 @@ import co.ledger.cria.services.CursorStateService
 import org.scalatest.flatspec.AnyFlatSpecLike
 import org.scalatest.matchers.should.Matchers
 import pureconfig.ConfigSource
+
 import java.time.Instant
 import java.util.UUID
-
 import co.ledger.cria.clients.Clients
 import co.ledger.cria.models.account.{Account, Coin, CoinFamily}
+import co.ledger.cria.models.interpreter.SyncId
+import co.ledger.cria.models.keychain.KeychainId
 import co.ledger.cria.utils.IOAssertion
 
 import scala.concurrent.ExecutionContext
@@ -28,7 +30,7 @@ class SynchronizerIT extends AnyFlatSpecLike with Matchers {
   IOAssertion {
     Clients.htt4s
       .use { httpClient =>
-        val keychainId = UUID.randomUUID()
+        val keychainId = KeychainId(UUID.randomUUID())
 
         val keychainClient = new KeychainClientMock
 
@@ -39,11 +41,13 @@ class SynchronizerIT extends AnyFlatSpecLike with Matchers {
         val cursorStateService: Coin => CursorStateService[IO] =
           c => CursorStateService(explorerClient(c), interpreterClient).getLastValidState(_, _, _)
 
+        val syncId = SyncId(UUID.randomUUID())
+
         val args: SynchronizationParameters =
           SynchronizationParameters(
             keychainId,
             Coin.Btc,
-            UUID.randomUUID(),
+            syncId,
             None,
             UUID.randomUUID()
           )
@@ -56,7 +60,7 @@ class SynchronizerIT extends AnyFlatSpecLike with Matchers {
         )
 
         val account = Account(
-          keychainId.toString,
+          keychainId,
           CoinFamily.Bitcoin,
           Coin.Btc
         )

@@ -1,19 +1,18 @@
 package co.ledger.cria.models.interpreter
 
 import java.time.Instant
-import java.util.UUID
-
 import cats.effect.IO
 import co.ledger.cria.models.circeImplicits._
 import co.ledger.cria.models._
 import co.ledger.cria.logging.{ContextLogging, CriaLogContext}
+import co.ledger.cria.models.account.AccountId
 import fs2.Stream
 import io.circe.generic.extras.semiauto._
 import io.circe.{Decoder, Encoder}
 
 case class OperationToSave(
     uid: Operation.UID,
-    accountId: UUID,
+    accountId: AccountId,
     hash: String,
     operationType: OperationType,
     value: BigInt,
@@ -31,7 +30,7 @@ object OperationToSave {
 }
 
 case class TransactionAmounts(
-    accountId: UUID,
+    accountId: AccountId,
     hash: String,
     blockHash: Option[String],
     blockHeight: Option[Long],
@@ -69,7 +68,7 @@ case class TransactionAmounts(
   private def makeOperationToSave(amount: BigInt, operationType: OperationType) = {
     OperationToSave(
       Operation
-        .uid(Operation.AccountId(accountId), Operation.TxId(hash), operationType, blockHeight),
+        .uid(accountId, Operation.TxId(hash), operationType, blockHeight),
       accountId = accountId,
       hash = hash,
       operationType = operationType,

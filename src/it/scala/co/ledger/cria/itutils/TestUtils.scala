@@ -1,7 +1,5 @@
 package co.ledger.cria.itutils
 
-import java.util.UUID
-
 import cats.effect.IO
 import co.ledger.cria.itutils.models.{
   GetOperationsResult,
@@ -11,6 +9,7 @@ import co.ledger.cria.itutils.models.{
   PaginationToken
 }
 import co.ledger.cria.itutils.queries.OperationTestQueries
+import co.ledger.cria.models.account.AccountId
 import co.ledger.cria.models.account.interpreter.CurrentBalance
 import co.ledger.cria.models.interpreter.{Operation, TransactionView}
 import co.ledger.cria.models.{Sort, TxHash}
@@ -26,7 +25,7 @@ class TestUtils(db: Transactor[IO]) {
   private val numberOfOperationsToBuildByQuery = 5
 
   def getOperations(
-      accountId: UUID,
+      accountId: AccountId,
       limit: Int,
       sort: Sort,
       cursor: Option[PaginationToken[OperationPaginationState]]
@@ -161,7 +160,7 @@ class TestUtils(db: Transactor[IO]) {
     )
 
   def getUtxos(
-      accountId: UUID,
+      accountId: AccountId,
       limit: Int,
       offset: Int,
       sort: Sort
@@ -180,7 +179,7 @@ class TestUtils(db: Transactor[IO]) {
       GetUtxosResult(utxos.slice(0, limit), total, truncated = utxos.size > limit)
     }
 
-  def getBalance(accountId: UUID): IO[CurrentBalance] =
+  def getBalance(accountId: AccountId): IO[CurrentBalance] =
     (for {
       blockchainBalance <- BalanceQueries.getBlockchainBalance(accountId)
       mempoolBalance    <- BalanceQueries.getUnconfirmedBalance(accountId)

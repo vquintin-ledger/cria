@@ -1,15 +1,15 @@
 package co.ledger.cria.logging
 
-import java.util.UUID
-
-import co.ledger.cria.models.account.{Account, Coin, CoinFamily}
+import co.ledger.cria.models.account.{Account, AccountId, Coin, CoinFamily}
+import co.ledger.cria.models.interpreter.SyncId
+import co.ledger.cria.models.keychain.KeychainId
 
 case class CriaLogContext(
-    accountId: Option[UUID] = None,
-    identifier: Option[String] = None,
+    accountId: Option[AccountId] = None,
+    identifier: Option[KeychainId] = None,
     coinFamily: Option[CoinFamily] = None,
     coin: Option[Coin] = None,
-    correlationId: Option[UUID] = None,
+    correlationId: Option[SyncId] = None,
     customFields: List[Option[(String, String)]] = List()
 ) extends LogContext {
 
@@ -20,10 +20,10 @@ case class CriaLogContext(
       coinFamily = Some(account.coinFamily)
     )
 
-  def withAccountId(accountId: UUID): CriaLogContext =
+  def withAccountId(accountId: AccountId): CriaLogContext =
     copy(accountId = Some(accountId))
 
-  def withIdentifier(identifier: String): CriaLogContext =
+  def withIdentifier(identifier: KeychainId): CriaLogContext =
     copy(identifier = Some(identifier))
 
   def withCoinFamily(coinFamily: CoinFamily): CriaLogContext =
@@ -32,7 +32,7 @@ case class CriaLogContext(
   def withCoin(coin: Coin): CriaLogContext =
     copy(coin = Some(coin))
 
-  def withCorrelationId(correlationId: UUID): CriaLogContext =
+  def withCorrelationId(correlationId: SyncId): CriaLogContext =
     copy(correlationId = Some(correlationId))
 
   def withCustomField(key: String, value: String): CriaLogContext =
@@ -40,7 +40,7 @@ case class CriaLogContext(
 
   override def asMap(): Map[String, String] = (List(
     accountId.map(account => ("id", account.toString)),
-    identifier.map(id => ("identifier", id)),
+    identifier.map(id => ("identifier", id.toString)),
     coinFamily.map(cf => ("coin_family", cf.name)),
     coin.map(c => ("coin", c.name)),
     correlationId.map(id => ("correlation_id", id.toString))

@@ -1,9 +1,8 @@
 package co.ledger.cria.services.interpreter
 
-import java.util.UUID
-
 import cats.data.NonEmptyList
 import co.ledger.cria.logging.DoobieLogHandler
+import co.ledger.cria.models.account.AccountId
 import co.ledger.cria.models.interpreter.{BlockView, InputView, OutputView, TransactionView}
 import co.ledger.cria.models.{Sort, TxHash}
 import co.ledger.cria.models.implicits._
@@ -11,6 +10,7 @@ import doobie._
 import doobie.implicits._
 import doobie.postgres.implicits._
 import fs2._
+import co.ledger.cria.services.interpreter.implicits._
 
 object TransactionQueries extends DoobieLogHandler {
 
@@ -20,7 +20,7 @@ object TransactionQueries extends DoobieLogHandler {
       outputs: List[OutputView]
   )
 
-  def fetchMostRecentBlocks(accountId: UUID): Stream[ConnectionIO, BlockView] = {
+  def fetchMostRecentBlocks(accountId: AccountId): Stream[ConnectionIO, BlockView] = {
     sql"""SELECT DISTINCT block_hash, block_height, block_time
           FROM transaction
           WHERE account_id = $accountId
@@ -29,7 +29,7 @@ object TransactionQueries extends DoobieLogHandler {
        """.query[BlockView].stream
   }
 
-  def saveTransaction(accountId: UUID, tx: TransactionView): ConnectionIO[Int] =
+  def saveTransaction(accountId: AccountId, tx: TransactionView): ConnectionIO[Int] =
     for {
       txStatement <- insertTx(accountId, tx)
 
@@ -42,14 +42,17 @@ object TransactionQueries extends DoobieLogHandler {
       _ <- insertOutputs(accountId, tx.hash, tx.outputs.toList)
     } yield txStatement
 
-  def deleteUnconfirmedTransactions(accountId: UUID): doobie.ConnectionIO[Int] = {
+  def deleteUnconfirmedTransactions(accountId: AccountId): doobie.ConnectionIO[Int] = {
     sql"""DELETE FROM transaction
          WHERE account_id = $accountId
          AND block_hash IS NULL
        """.update.run
   }
 
-  def deleteUnconfirmedTransaction(accountId: UUID, hash: String): doobie.ConnectionIO[String] = {
+  def deleteUnconfirmedTransaction(
+      accountId: AccountId,
+      hash: String
+  ): doobie.ConnectionIO[String] = {
     sql"""DELETE FROM transaction
          WHERE account_id = $accountId
          AND block_hash IS NULL
@@ -59,7 +62,7 @@ object TransactionQueries extends DoobieLogHandler {
   }
 
   private def insertTx(
-      accountId: UUID,
+      accountId: AccountId,
       tx: TransactionView
   ): doobie.ConnectionIO[Int] = {
 
@@ -93,7 +96,7 @@ object TransactionQueries extends DoobieLogHandler {
   }
 
   private def insertInputs(
-      accountId: UUID,
+      accountId: AccountId,
       txHash: String,
       inputs: List[InputView]
   ): doobie.ConnectionIO[Int] = {
@@ -101,7 +104,7 @@ object TransactionQueries extends DoobieLogHandler {
       s"""INSERT INTO input (
             account_id, hash, output_hash, output_index, input_index, value, address, script_signature, txinwitness, sequence, derivation
           ) VALUES (
-            '$accountId', '$txHash', ?, ?, ?, ?, ?, ?, ?, ?, ?
+            '${accountId.value}', '$txHash', ?, ?, ?, ?, ?, ?, ?, ?, ?
           )
           ON CONFLICT ON CONSTRAINT input_pkey DO NOTHING
        """
@@ -109,27 +112,27 @@ object TransactionQueries extends DoobieLogHandler {
   }
 
   private def insertOutputs(
-      accountId: UUID,
+      accountId: AccountId,
       txHash: String,
       outputs: List[OutputView]
   ) = {
     val query = s"""INSERT INTO output (
             account_id, hash, output_index, value, address, script_hex, change_type, derivation
           ) VALUES (
-            '$accountId', '$txHash', ?, ?, ?, ?, ?, ?
+            '${accountId.value}', '$txHash', ?, ?, ?, ?, ?, ?
           ) ON CONFLICT ON CONSTRAINT output_pkey DO NOTHING
         """
     Update[OutputView](query).updateMany(outputs)
   }
 
-  def removeFromCursor(accountId: UUID, blockHeight: Long): ConnectionIO[Int] =
+  def removeFromCursor(accountId: AccountId, blockHeight: Long): ConnectionIO[Int] =
     sql"""DELETE from transaction
           WHERE account_id = $accountId
           AND block_height >= $blockHeight
        """.update.run
 
   def fetchTransactionDetails(
-      accountId: UUID,
+      accountId: AccountId,
       sort: Sort,
       txHashes: NonEmptyList[TxHash]
   ): Stream[doobie.ConnectionIO, TransactionDetails] = {
@@ -163,7 +166,7 @@ object TransactionQueries extends DoobieLogHandler {
     Fragments.in(fr"t.hash", hashes.map(_.hex))
 
   private def fetchInputs(
-      accountId: UUID,
+      accountId: AccountId,
       sort: Sort,
       txHashes: NonEmptyList[TxHash]
   ) = {
@@ -181,7 +184,7 @@ object TransactionQueries extends DoobieLogHandler {
   }
 
   private def fetchOutputs(
-      accountId: UUID,
+      accountId: AccountId,
       sort: Sort,
       txHashes: NonEmptyList[TxHash]
   ) = {

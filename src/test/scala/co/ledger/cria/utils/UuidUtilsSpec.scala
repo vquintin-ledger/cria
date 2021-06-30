@@ -1,8 +1,7 @@
 package co.ledger.cria.utils
 
-import java.util.UUID
-
-import co.ledger.cria.models.account.{Account, Coin, CoinFamily}
+import co.ledger.cria.models.account.{Account, AccountId, Coin, CoinFamily}
+import co.ledger.cria.models.keychain.KeychainId
 import org.scalacheck.Gen
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers
@@ -18,11 +17,15 @@ class UuidUtilsSpec extends AnyFunSuite with Matchers {
   }
 
   test("account identifier to uuid") {
+    val keychainId = KeychainId.fromString("281f7c1c-f92f-3144-a6b2-514d9a2080e4").get
+
+    val accountId = AccountId.fromString("95e95f78-de95-344c-bb60-a935f3b30050").get
+
     Account(
-      "xpub",
+      keychainId,
       CoinFamily.Bitcoin,
       Coin.Btc
-    ).id shouldBe UUID.fromString("281f7c1c-f92f-3144-a6b2-514d9a2080e4")
+    ).id shouldBe accountId
   }
 
 }

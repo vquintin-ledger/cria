@@ -1,7 +1,5 @@
 package co.ledger.cria.models.keychain
 
-import java.util.UUID
-
 import co.ledger.cria.models.account.Scheme
 import co.ledger.cria.models.circeImplicits._
 import co.ledger.cria.utils.UuidUtils
@@ -10,7 +8,7 @@ import io.circe.{Decoder, Encoder}
 import io.circe.generic.extras.semiauto.{deriveConfiguredDecoder, deriveConfiguredEncoder}
 
 case class KeychainInfo(
-    keychainId: UUID,
+    keychainId: KeychainId,
     externalDescriptor: String,
     internalDescriptor: String,
     extendedPublicKey: String,
@@ -21,7 +19,7 @@ case class KeychainInfo(
 ) {
   def toProto: keychain.KeychainInfo =
     keychain.KeychainInfo(
-      UuidUtils.uuidToBytes(keychainId),
+      UuidUtils.uuidToBytes(keychainId.value),
       externalDescriptor,
       internalDescriptor,
       extendedPublicKey,
@@ -39,7 +37,7 @@ object KeychainInfo {
 
   def fromProto(proto: keychain.KeychainInfo): KeychainInfo =
     KeychainInfo(
-      UuidUtils.unsafeBytesToUuid(proto.keychainId),
+      KeychainId(UuidUtils.unsafeBytesToUuid(proto.keychainId)),
       proto.externalDescriptor,
       proto.internalDescriptor,
       proto.extendedPublicKey,

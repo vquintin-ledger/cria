@@ -3,31 +3,30 @@ package co.ledger.cria.clients.grpc.mocks
 import cats.effect.IO
 import co.ledger.cria.services.interpreter.Interpreter
 import co.ledger.cria.models.interpreter._
-import java.time.Instant
-import java.util.UUID
 
+import java.time.Instant
 import co.ledger.cria.logging.CriaLogContext
-import co.ledger.cria.models.account.Account
+import co.ledger.cria.models.account.{Account, AccountId}
 
 import scala.collection.mutable
 import fs2._
 
 class InterpreterClientMock extends Interpreter {
 
-  var savedTransactions: mutable.Map[UUID, List[TransactionView]] = mutable.Map.empty
-  var savedUnconfirmedTransactions: mutable.ArrayDeque[(UUID, List[TransactionView])] =
+  var savedTransactions: mutable.Map[AccountId, List[TransactionView]] = mutable.Map.empty
+  var savedUnconfirmedTransactions: mutable.ArrayDeque[(AccountId, List[TransactionView])] =
     mutable.ArrayDeque.empty
-  var transactions: mutable.Map[UUID, List[TransactionView]] = mutable.Map.empty
-  var operations: mutable.Map[UUID, List[Operation]]         = mutable.Map.empty
+  var transactions: mutable.Map[AccountId, List[TransactionView]] = mutable.Map.empty
+  var operations: mutable.Map[AccountId, List[Operation]]         = mutable.Map.empty
 
-  def saveUnconfirmedTransactions(accountId: UUID, txs: List[TransactionView]): IO[Int] =
+  def saveUnconfirmedTransactions(accountId: AccountId, txs: List[TransactionView]): IO[Int] =
     IO.pure {
       savedUnconfirmedTransactions += accountId -> txs
       txs.size
     }
 
   def saveTransactions(
-      accountId: UUID
+      accountId: AccountId
   )(implicit lc: CriaLogContext): Pipe[IO, TransactionView, Unit] =
     _.chunks.evalMap { chunk =>
       val txs = chunk.toList
@@ -44,7 +43,7 @@ class InterpreterClientMock extends Interpreter {
       IO.unit
     }
 
-  def getSavedTransaction(accountId: UUID): List[TransactionView] = savedTransactions
+  def getSavedTransaction(accountId: AccountId): List[TransactionView] = savedTransactions
     .getOrElse(
       accountId,
       List.empty
@@ -52,9 +51,9 @@ class InterpreterClientMock extends Interpreter {
     .distinctBy(_.id)
 
   def removeDataFromCursor(
-      accountId: UUID,
+      accountId: AccountId,
       blockHeightCursor: Option[Long],
-      followUpId: UUID
+      followUpId: SyncId
   )(implicit lc: CriaLogContext): IO[Int] = {
     savedTransactions.update(
       accountId,
@@ -77,7 +76,7 @@ class InterpreterClientMock extends Interpreter {
     IO.pure(0)
   }
 
-  def getLastBlocks(accountId: UUID)(implicit lc: CriaLogContext): IO[List[BlockView]] = {
+  def getLastBlocks(accountId: AccountId)(implicit lc: CriaLogContext): IO[List[BlockView]] = {
     val lastBlocks: List[BlockView] = savedTransactions(accountId)
       .collect { case TransactionView(_, _, _, _, _, _, _, Some(block), _) =>
         BlockView(
@@ -94,7 +93,7 @@ class InterpreterClientMock extends Interpreter {
 
   def compute(
       account: Account,
-      syncId: UUID,
+      syncId: SyncId,
       addresses: List[AccountAddress]
   )(implicit lc: CriaLogContext): IO[Int] = {
 
@@ -162,7 +161,7 @@ class InterpreterClientMock extends Interpreter {
   }
 
   private def makeOperation(
-      accountId: UUID,
+      accountId: AccountId,
       tx: TransactionView,
       amount: BigInt,
       operationType: OperationType
@@ -170,7 +169,7 @@ class InterpreterClientMock extends Interpreter {
     Operation(
       Operation
         .uid(
-          Operation.AccountId(accountId),
+          accountId,
           Operation.TxId(tx.id),
           operationType,
           tx.block.map(_.height)

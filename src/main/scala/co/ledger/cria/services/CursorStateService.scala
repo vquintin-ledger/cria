@@ -1,17 +1,16 @@
 package co.ledger.cria.services
 
-import java.util.UUID
-
 import cats.effect.{IO, Timer}
 import co.ledger.cria.models.explorer.Block
 import co.ledger.cria.clients.http.ExplorerClient
 import co.ledger.cria.logging.{ContextLogging, CriaLogContext}
-import co.ledger.cria.models.account.Account
+import co.ledger.cria.models.account.{Account, AccountId}
+import co.ledger.cria.models.interpreter.SyncId
 import co.ledger.cria.services.interpreter.Interpreter
 import org.http4s.client.UnexpectedStatus
 
 trait CursorStateService[F[_]] {
-  def getLastValidState(account: Account, block: Block, syncId: UUID): F[Block]
+  def getLastValidState(account: Account, block: Block, syncId: SyncId): F[Block]
 }
 
 object CursorStateService {
@@ -27,7 +26,7 @@ object CursorStateService {
      * and for each block in reverse order, we check if it's a valid block.
      * The first valid block found this way is returned for the sync.
      */
-    def getLastValidState(account: Account, block: Block, syncId: UUID): IO[Block] = {
+    def getLastValidState(account: Account, block: Block, syncId: SyncId): IO[Block] = {
 
       implicit val lc: CriaLogContext =
         CriaLogContext().withAccount(account).withCorrelationId(syncId)
@@ -54,7 +53,7 @@ object CursorStateService {
         }
     }
 
-    private def fetchLastBlocksUntilValid(accountId: UUID, block: Block)(implicit
+    private def fetchLastBlocksUntilValid(accountId: AccountId, block: Block)(implicit
         lc: CriaLogContext
     ): IO[Block] = {
       for {

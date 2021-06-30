@@ -1,18 +1,18 @@
 package co.ledger.cria.services.interpreter
 
 import co.ledger.cria.logging.DoobieLogHandler
+import co.ledger.cria.models.account.AccountId
 import co.ledger.cria.models.account.interpreter.BlockchainBalance
 
-import java.util.UUID
 import co.ledger.cria.models.implicits._
 import doobie._
 import doobie.implicits._
-import doobie.postgres.implicits._
+import co.ledger.cria.services.interpreter.implicits._
 
 object BalanceQueries extends DoobieLogHandler {
 
   def getBlockchainBalance(
-      accountId: UUID
+      accountId: AccountId
   ): ConnectionIO[BlockchainBalance] = {
     val balanceAndUtxosQuery =
       sql"""
@@ -69,7 +69,7 @@ object BalanceQueries extends DoobieLogHandler {
   }
 
   def getUnconfirmedBalance(
-      accountId: UUID
+      accountId: AccountId
   ): ConnectionIO[BigInt] =
     sql"""
           WITH new_utxo as (SELECT COALESCE(SUM(o.value), 0) as value

@@ -1,34 +1,32 @@
 package co.ledger.cria.services.interpreter
 
-import java.util.UUID
-
 import cats.effect.{ContextShift, IO, Timer}
 import cats.implicits._
 import co.ledger.cria.models.interpreter.{AccountAddress, Action, BlockView, TransactionView}
 import co.ledger.cria.clients.http.ExplorerClient
 import co.ledger.cria.logging.{ContextLogging, CriaLogContext}
-import co.ledger.cria.models.account.{Account, Coin}
+import co.ledger.cria.models.account.{Account, AccountId, Coin}
 import co.ledger.cria.models.interpreter._
 import co.ledger.cria.utils.IOUtils
 import doobie.Transactor
 import fs2._
 
 trait Interpreter {
-  def saveTransactions(accountId: UUID)(implicit
+  def saveTransactions(accountId: AccountId)(implicit
       lc: CriaLogContext
   ): Pipe[IO, TransactionView, Unit]
 
   def removeDataFromCursor(
-      accountId: UUID,
+      accountId: AccountId,
       blockHeightCursor: Option[Long],
-      followUpId: UUID
+      followUpId: SyncId
   )(implicit lc: CriaLogContext): IO[Int]
 
-  def getLastBlocks(accountId: UUID)(implicit lc: CriaLogContext): IO[List[BlockView]]
+  def getLastBlocks(accountId: AccountId)(implicit lc: CriaLogContext): IO[List[BlockView]]
 
   def compute(
       account: Account,
-      syncId: UUID,
+      syncId: SyncId,
       addresses: List[AccountAddress]
   )(implicit lc: CriaLogContext): IO[Int]
 
@@ -49,7 +47,7 @@ class InterpreterImpl(
   val postSyncCheckService = new PostSyncCheckService(db)
 
   def saveTransactions(
-      accountId: UUID
+      accountId: AccountId
   )(implicit lc: CriaLogContext): Pipe[IO, TransactionView, Unit] = { transactions =>
     transactions
       .map(tx => AccountTxView(accountId, tx))
@@ -58,7 +56,7 @@ class InterpreterImpl(
   }
 
   def getLastBlocks(
-      accountId: UUID
+      accountId: AccountId
   )(implicit lc: CriaLogContext): IO[List[BlockView]] = {
     log.info(s"Getting last known blocks") *>
       transactionService
@@ -68,9 +66,9 @@ class InterpreterImpl(
   }
 
   def removeDataFromCursor(
-      accountId: UUID,
+      accountId: AccountId,
       blockHeight: Option[Long],
-      followUpId: UUID
+      followUpId: SyncId
   )(implicit lc: CriaLogContext): IO[Int] = {
     for {
       _     <- log.info(s"""Deleting data with parameters:
@@ -82,7 +80,7 @@ class InterpreterImpl(
 
   def compute(
       account: Account,
-      syncId: UUID,
+      syncId: SyncId,
       addresses: List[AccountAddress]
   )(implicit lc: CriaLogContext): IO[Int] = {
     for {

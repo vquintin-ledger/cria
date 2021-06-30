@@ -1,15 +1,16 @@
 package co.ledger.cria.models.interpreter
 
+import co.ledger.cria.models.account.AccountId
 import co.ledger.cria.models.circeImplicits._
 import io.circe.generic.extras.semiauto.{deriveConfiguredDecoder, deriveConfiguredEncoder}
 import io.circe.{Decoder, Encoder}
+
 import java.security.MessageDigest
 import java.time.Instant
-import java.util.UUID
 
 case class Operation(
     uid: Operation.UID,
-    accountId: UUID,
+    accountId: AccountId,
     hash: String,
     transaction: TransactionView,
     operationType: OperationType,
@@ -20,9 +21,8 @@ case class Operation(
 )
 
 object Operation {
-  case class UID(hex: String)       extends AnyVal
-  case class AccountId(value: UUID) extends AnyVal
-  case class TxId(value: String)    extends AnyVal
+  case class UID(hex: String)    extends AnyVal
+  case class TxId(value: String) extends AnyVal
 
   object UID {
     implicit val encoder: Encoder[UID] = Encoder[String].contramap(_.hex)

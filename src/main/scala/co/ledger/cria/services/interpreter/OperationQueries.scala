@@ -1,12 +1,11 @@
 package co.ledger.cria.services.interpreter
 
 import java.time.Instant
-import java.util.UUID
-
 import cats.data.NonEmptyList
 import cats.implicits._
 import co.ledger.cria.logging.DoobieLogHandler
 import co.ledger.cria.models.TxHash
+import co.ledger.cria.models.account.AccountId
 import co.ledger.cria.models.interpreter._
 import co.ledger.cria.models.implicits._
 import doobie._
@@ -31,7 +30,7 @@ object OperationQueries extends DoobieLogHandler {
 
   case class Op(
       uid: Operation.UID,
-      accountId: UUID,
+      accountId: AccountId,
       hash: TxHash,
       operationType: OperationType,
       amount: BigInt,
@@ -49,7 +48,7 @@ object OperationQueries extends DoobieLogHandler {
   )
 
   def fetchUncomputedTransactionAmounts(
-      accountId: UUID
+      accountId: AccountId
   ): Stream[ConnectionIO, TransactionAmounts] =
     sql"""SELECT tx.account_id,
                  tx.hash,
@@ -80,7 +79,7 @@ object OperationQueries extends DoobieLogHandler {
     Update[OperationToSave](query).updateMany(operation)
   }
 
-  def deleteUnconfirmedOperations(accountId: UUID): doobie.ConnectionIO[Int] = {
+  def deleteUnconfirmedOperations(accountId: AccountId): doobie.ConnectionIO[Int] = {
     sql"""DELETE FROM operation
          WHERE account_id = $accountId
          AND block_height IS NULL
@@ -88,7 +87,7 @@ object OperationQueries extends DoobieLogHandler {
   }
 
   def flagBelongingInputs(
-      accountId: UUID,
+      accountId: AccountId,
       addresses: NonEmptyList[AccountAddress]
   ): ConnectionIO[Int] = {
     val queries = addresses.map { addr =>
@@ -103,7 +102,7 @@ object OperationQueries extends DoobieLogHandler {
   }
 
   def flagBelongingOutputs(
-      accountId: UUID,
+      accountId: AccountId,
       addresses: NonEmptyList[AccountAddress],
       changeType: ChangeType
   ): ConnectionIO[Int] = {
@@ -119,7 +118,7 @@ object OperationQueries extends DoobieLogHandler {
     queries.traverse(_.update.run).map(_.toList.sum)
   }
 
-  def removeFromCursor(accountId: UUID, blockHeight: Long): ConnectionIO[Int] =
+  def removeFromCursor(accountId: AccountId, blockHeight: Long): ConnectionIO[Int] =
     sql"""DELETE from operation
           WHERE account_id = $accountId
           AND (block_height >= $blockHeight

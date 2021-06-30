@@ -3,10 +3,11 @@ package co.ledger.cria.services
 import cats.Id
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
-import java.util.UUID
 
+import java.util.UUID
 import co.ledger.cria.KeychainFixture
 import co.ledger.cria.logging.DefaultContextLogging
+import co.ledger.cria.models.keychain.KeychainId
 
 class KeychainTest extends AnyFlatSpec with Matchers with DefaultContextLogging {
 
@@ -33,9 +34,11 @@ class KeychainTest extends AnyFlatSpec with Matchers with DefaultContextLogging 
 
     val keychain = new Keychain(KeychainFixture.keychainClient(knownAddresses, lookaheadSize = 2))
 
+    val keychainId = KeychainId(UUID.randomUUID())
+
     val firstAddresses =
       keychain
-        .discoverAddresses(UUID.randomUUID())
+        .discoverAddresses(keychainId)
         .map(_.map(_.accountAddress))
         .take(3)
         .compile

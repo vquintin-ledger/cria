@@ -9,26 +9,24 @@ import co.ledger.cria.models.explorer.{
   UnconfirmedTransaction
 }
 import co.ledger.cria.models.interpreter.{AccountAddress, ChangeType}
-import co.ledger.cria.services.Keychain.KeychainId
 import fs2.{Pipe, Stream}
-import java.util.UUID
 
 import co.ledger.cria.logging.{ContextLogging, CriaLogContext}
-import co.ledger.cria.models.account.Coin
+import co.ledger.cria.models.account.{AccountId, Coin}
+import co.ledger.cria.models.keychain.KeychainId
 import co.ledger.cria.services.interpreter.Interpreter
 
 trait Bookkeeper[F[_]] {
   def record[Tx <: Transaction: Bookkeeper.Recordable](
       coin: Coin,
-      accountId: UUID,
-      keychainId: UUID,
+      accountId: AccountId,
+      keychainId: KeychainId,
       change: ChangeType,
       blockHash: Option[Bookkeeper.BlockHash]
   )(implicit lc: CriaLogContext): Stream[F, AccountAddress]
 }
 
 object Bookkeeper extends ContextLogging {
-  type AccountId = UUID
   type Address   = String
   type BlockHash = String
 
@@ -41,7 +39,7 @@ object Bookkeeper extends ContextLogging {
     override def record[Tx <: Transaction: Recordable](
         coin: Coin,
         accountId: AccountId,
-        keychainId: AccountId,
+        keychainId: KeychainId,
         change: ChangeType,
         blockHash: Option[BlockHash]
     )(implicit lc: CriaLogContext): Stream[IO, AccountAddress] = {

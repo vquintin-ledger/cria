@@ -1,5 +1,5 @@
 package co.ledger.cria.models.interpreter
 
-import java.util.UUID
+import co.ledger.cria.models.account.AccountId
 
-case class AccountTxView(accountId: UUID, tx: TransactionView)
+case class AccountTxView(accountId: AccountId, tx: TransactionView)

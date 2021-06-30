@@ -1,7 +1,6 @@
 package co.ledger.cria
 
 import java.time.Instant
-
 import cats.effect.{ContextShift, IO, Timer}
 import co.ledger.cria.clients.grpc.mocks.InterpreterClientMock
 import co.ledger.cria.clients.http.ExplorerClient
@@ -13,10 +12,11 @@ import co.ledger.cria.services.{Bookkeeper, Keychain}
 import co.ledger.cria.models.account.Coin.Btc
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
-import java.util.UUID
 
+import java.util.UUID
 import co.ledger.cria.logging.DefaultContextLogging
-import co.ledger.cria.models.account.Coin
+import co.ledger.cria.models.account.{AccountId, Coin}
+import co.ledger.cria.models.keychain.KeychainId
 import co.ledger.cria.utils.IOAssertion
 import fs2.Stream
 
@@ -32,8 +32,8 @@ class BookkeeperSpec extends AnyFlatSpec with Matchers with DefaultContextLoggin
       blockchain: Map[Address, List[ConfirmedTransaction]] = Map.empty
   ): Coin => ExplorerClient =
     _ => new ExplorerClientMock(blockchain, mempool)
-  val accountId             = UUID.randomUUID()
-  val keychainId            = UUID.randomUUID()
+  val accountId             = AccountId(UUID.randomUUID())
+  val keychainId            = KeychainId(UUID.randomUUID())
   val usedAndFreshAddresses = LazyList.from(1).map(_.toString).take(150)
 
   "Bookkeeper.recordUnconfirmedTransactions" should "return the currently used addresses of the mempool by an account" in {

@@ -5,9 +5,15 @@ import cats.effect.IO
 import co.ledger.cria.clients.grpc.KeychainClient
 import co.ledger.cria.clients.http.ExplorerClient.Address
 import co.ledger.cria.models.interpreter.{AccountAddress, ChangeType}
-import co.ledger.cria.models.keychain.{AccountKey, BitcoinLikeNetwork, BitcoinNetwork, KeychainInfo}
-import java.util.UUID
+import co.ledger.cria.models.keychain.{
+  AccountKey,
+  BitcoinLikeNetwork,
+  BitcoinNetwork,
+  KeychainId,
+  KeychainInfo
+}
 
+import java.util.UUID
 import co.ledger.cria.models.account.Scheme
 
 import scala.collection.mutable
@@ -32,7 +38,7 @@ object KeychainFixture {
       ): IO[KeychainInfo] =
         IO.delay(
           KeychainInfo(
-            UUID.randomUUID(),
+            KeychainId(UUID.randomUUID()),
             "",
             "",
             "",
@@ -43,10 +49,10 @@ object KeychainFixture {
           )
         )
 
-      override def getKeychainInfo(keychainId: UUID): IO[KeychainInfo] =
+      override def getKeychainInfo(keychainId: KeychainId): IO[KeychainInfo] =
         IO.delay(
           KeychainInfo(
-            keychainId,
+            KeychainId(keychainId.value),
             externalDescriptor = "externalDesc",
             internalDescriptor = "internalDesc",
             extendedPublicKey = "extendedPublicKey",
@@ -58,7 +64,7 @@ object KeychainFixture {
         )
 
       override def getAddresses(
-          keychainId: UUID,
+          keychainId: KeychainId,
           fromIndex: Int,
           toIndex: Int,
           changeType: Option[ChangeType]
@@ -70,13 +76,16 @@ object KeychainFixture {
             .toList
         )
 
-      override def markAddressesAsUsed(keychainId: UUID, addresses: List[String]): IO[Unit] = {
+      override def markAddressesAsUsed(
+          keychainId: KeychainId,
+          addresses: List[String]
+      ): IO[Unit] = {
         addresses.foreach(a => newlyMarkedAddresses.update(a, a))
         IO.unit
       }
 
       override def getKnownAndNewAddresses(
-          keychainId: UUID,
+          keychainId: KeychainId,
           changeType: Option[ChangeType]
       ): IO[List[AccountAddress]] =
         for {
@@ -95,19 +104,19 @@ object KeychainFixture {
         } yield knownAddresses ++ newAddresses
 
       override def getFreshAddresses(
-          keychainId: UUID,
+          keychainId: KeychainId,
           change: ChangeType,
           size: Int
       ): IO[List[AccountAddress]] = ???
 
       override def getAddressesPublicKeys(
-          keychainId: UUID,
+          keychainId: KeychainId,
           derivations: List[List[Int]]
       ): IO[List[String]] = ???
 
-      override def deleteKeychain(keychainId: UUID): IO[Unit] = ???
+      override def deleteKeychain(keychainId: KeychainId): IO[Unit] = ???
 
-      override def resetKeychain(keychainId: UUID): IO[Unit] = ???
+      override def resetKeychain(keychainId: KeychainId): IO[Unit] = ???
 
     }
 
