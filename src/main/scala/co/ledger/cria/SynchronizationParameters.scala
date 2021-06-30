@@ -1,6 +1,6 @@
 package co.ledger.cria
 
-import co.ledger.cria.clients.explorer.types.Coin
+import co.ledger.cria.domain.models.account.Coin
 
 import java.util.UUID
 import co.ledger.cria.domain.models.interpreter.SyncId

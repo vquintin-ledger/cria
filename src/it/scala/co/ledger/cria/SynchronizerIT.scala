@@ -11,11 +11,10 @@ import pureconfig.ConfigSource
 import java.time.Instant
 import java.util.UUID
 import co.ledger.cria.clients.explorer.ExplorerHttpClient
-import co.ledger.cria.clients.explorer.types.{Coin, CoinFamily}
 import co.ledger.cria.clients.keychain.mocks.KeychainClientMock
 import co.ledger.cria.clients.protocol.http.Clients
-import co.ledger.cria.domain.adapters.explorer.ExplorerClientAdapter
-import co.ledger.cria.domain.models.account.Account
+import co.ledger.cria.domain.adapters.explorer.{ExplorerClientAdapter, TypeHelper}
+import co.ledger.cria.domain.models.account.{Account, Coin, CoinFamily}
 import co.ledger.cria.domain.models.interpreter.SyncId
 import co.ledger.cria.domain.models.keychain.KeychainId
 import co.ledger.cria.domain.services
@@ -40,7 +39,9 @@ class SynchronizerIT extends AnyFlatSpecLike with Matchers {
 
         val explorerClient =
           (c: Coin) =>
-            new ExplorerClientAdapter(new ExplorerHttpClient(httpClient, conf.explorer, c))
+            new ExplorerClientAdapter(
+              new ExplorerHttpClient(httpClient, conf.explorer, TypeHelper.coin.toExplorer(c))
+            )
 
         val interpreterClient = new InterpreterClientMock
 

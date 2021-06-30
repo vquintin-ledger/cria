@@ -4,11 +4,11 @@ import cats.effect.{ContextShift, IO, Resource, Timer}
 import co.ledger.cria.App
 import co.ledger.cria.App.ClientResources
 import co.ledger.cria.clients.explorer.ExplorerHttpClient
-import co.ledger.cria.clients.explorer.types.Coin
 import co.ledger.cria.clients.protocol.grpc.GrpcClient
 import co.ledger.cria.config.{Config, GrpcClientConfig}
-import co.ledger.cria.domain.adapters.explorer.ExplorerClientAdapter
+import co.ledger.cria.domain.adapters.explorer.{ExplorerClientAdapter, TypeHelper}
 import co.ledger.cria.domain.adapters.keychain.KeychainGrpcClient
+import co.ledger.cria.domain.models.account.Coin
 import co.ledger.cria.domain.services.KeychainClient
 import co.ledger.cria.domain.services.interpreter.{Interpreter, InterpreterImpl}
 import co.ledger.cria.logging.DefaultContextLogging
@@ -72,7 +72,13 @@ trait ContainerFlatSpec extends AnyFlatSpec with ForAllTestContainer with Defaul
     appResources.map { resources =>
       val explorerClient =
         (c: Coin) =>
-          new ExplorerClientAdapter(new ExplorerHttpClient(resources.httpClient, conf.explorer, c))
+          new ExplorerClientAdapter(
+            new ExplorerHttpClient(
+              resources.httpClient,
+              conf.explorer,
+              TypeHelper.coin.toExplorer(c)
+            )
+          )
       val interpreterClient = new InterpreterImpl(
         explorerClient,
         resources.transactor,

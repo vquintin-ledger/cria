@@ -2,6 +2,7 @@ package co.ledger.cria.domain.adapters.explorer
 
 import co.ledger.cria.clients.explorer.types.{Block, DefaultInput}
 import co.ledger.cria.clients.explorer.{types => explorer}
+import co.ledger.cria.domain.models.account.Coin
 import co.ledger.cria.domain.models.interpreter.{
   BlockView,
   ConfirmedTransactionView,
@@ -21,6 +22,16 @@ object TypeHelper {
       )
 
     def fromExplorer(b: explorer.Block): BlockView = BlockView(b.hash, b.height, b.time)
+  }
+
+  object coin {
+    def toExplorer(c: Coin): explorer.Coin =
+      c match {
+        case Coin.Btc        => explorer.Coin.Btc
+        case Coin.Ltc        => explorer.Coin.Ltc
+        case Coin.BtcTestnet => explorer.Coin.BtcTestnet
+        case Coin.BtcRegtest => explorer.Coin.BtcRegtest
+      }
   }
 
   object confirmedTransaction {

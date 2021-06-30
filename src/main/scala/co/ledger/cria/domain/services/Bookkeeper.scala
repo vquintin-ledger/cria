@@ -1,10 +1,9 @@
 package co.ledger.cria.domain.services
 
 import cats.effect.{ContextShift, IO, Timer}
-import co.ledger.cria.clients.explorer.types.{Coin, Transaction}
 import fs2.{Pipe, Stream}
 import co.ledger.cria.logging.{ContextLogging, CriaLogContext}
-import co.ledger.cria.domain.models.account.AccountId
+import co.ledger.cria.domain.models.account.{AccountId, Coin}
 import co.ledger.cria.domain.models.interpreter.{
   ConfirmedTransactionView,
   TransactionView,
@@ -121,7 +120,7 @@ object Bookkeeper extends ContextLogging {
   )(tx: TransactionView): List[AccountAddress] =
     accountAddresses.filter(addressUsedBy(tx)).distinct
 
-  def markAddresses[Tx <: Transaction](
+  def markAddresses[Tx <: TransactionView](
       keychain: Keychain,
       keychainId: KeychainId
   )(implicit lc: CriaLogContext): Pipe[IO, List[AccountAddress], List[AccountAddress]] =

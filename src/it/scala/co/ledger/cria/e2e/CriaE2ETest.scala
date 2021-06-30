@@ -3,11 +3,10 @@ package co.ledger.cria.e2e
 import java.util.UUID
 import cats.effect.{ExitCode, IO}
 import co.ledger.cria.App
-import co.ledger.cria.clients.explorer.types.{Coin, CoinFamily}
 import co.ledger.cria.e2e.CriaE2ETest.{RegisterRequest, SyncResult, TestCase}
 import co.ledger.cria.itutils.ContainerFlatSpec
 import co.ledger.cria.domain.models.Sort
-import co.ledger.cria.domain.models.account.Account
+import co.ledger.cria.domain.models.account.{Account, Coin, CoinFamily}
 import co.ledger.cria.domain.models.circeImplicits._
 import co.ledger.cria.domain.models.keychain.KeychainId
 import co.ledger.cria.itutils.models.keychain.AccountKey.Xpub

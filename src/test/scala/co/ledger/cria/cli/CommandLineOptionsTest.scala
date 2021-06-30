@@ -1,6 +1,6 @@
 package co.ledger.cria.cli
 
-import co.ledger.cria.clients.explorer.types.Coin
+import co.ledger.cria.domain.models.account.Coin
 
 import java.util.UUID
 import org.scalatest.flatspec.AnyFlatSpec
