@@ -1,6 +1,6 @@
 package co.ledger.cria
 
-import co.ledger.cria.models.explorer.Block
+import co.ledger.cria.clients.explorer.types.Block
 
 sealed abstract class SynchronizationResult {
   def parameters: SynchronizationParameters

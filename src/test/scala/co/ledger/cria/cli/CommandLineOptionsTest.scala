@@ -2,9 +2,9 @@ package co.ledger.cria.cli
 
 import java.util.UUID
 import org.scalatest.flatspec.AnyFlatSpec
-import co.ledger.cria.models.account.Coin
-import co.ledger.cria.models.interpreter.SyncId
-import co.ledger.cria.models.keychain.KeychainId
+import co.ledger.cria.domain.models.account.Coin
+import co.ledger.cria.domain.models.interpreter.SyncId
+import co.ledger.cria.domain.models.keychain.KeychainId
 import org.scalatest.matchers.should.Matchers
 
 class CommandLineOptionsTest extends AnyFlatSpec with Matchers {

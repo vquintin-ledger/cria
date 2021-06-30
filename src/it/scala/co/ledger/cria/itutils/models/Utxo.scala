@@ -1,9 +1,8 @@
 package co.ledger.cria.itutils.models
 
 import java.time.Instant
-
 import cats.data.NonEmptyList
-import co.ledger.cria.models.interpreter.ChangeType
+import co.ledger.cria.domain.models.keychain.ChangeType
 
 case class Utxo(
     transactionHash: String,

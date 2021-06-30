@@ -2,21 +2,20 @@ package co.ledger.cria
 
 import java.time.Instant
 import cats.effect.{ContextShift, IO, Timer}
-import co.ledger.cria.clients.grpc.mocks.InterpreterClientMock
-import co.ledger.cria.clients.http.ExplorerClient
-import co.ledger.cria.clients.http.ExplorerClient.Address
-import co.ledger.cria.clients.http.mocks.ExplorerClientMock
-import co.ledger.cria.models.explorer.{Block, ConfirmedTransaction, UnconfirmedTransaction}
-import co.ledger.cria.models.interpreter.{AccountAddress, ChangeType}
-import co.ledger.cria.services.{Bookkeeper, Keychain}
-import co.ledger.cria.models.account.Coin.Btc
+import co.ledger.cria.clients.explorer.ExplorerClient
+import co.ledger.cria.clients.protocol.grpc.mocks.InterpreterClientMock
+import ExplorerClient.Address
+import co.ledger.cria.clients.explorer.mocks.ExplorerClientMock
+import co.ledger.cria.clients.explorer.types.{Block, ConfirmedTransaction, UnconfirmedTransaction}
+import co.ledger.cria.domain.models.account.Coin.Btc
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
 import java.util.UUID
 import co.ledger.cria.logging.DefaultContextLogging
-import co.ledger.cria.models.account.{AccountId, Coin}
-import co.ledger.cria.models.keychain.KeychainId
+import co.ledger.cria.domain.models.account.{AccountId, Coin}
+import co.ledger.cria.domain.models.keychain.{AccountAddress, ChangeType, KeychainId}
+import co.ledger.cria.domain.services.{Bookkeeper, Keychain}
 import co.ledger.cria.utils.IOAssertion
 import fs2.Stream
 

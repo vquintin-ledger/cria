@@ -1,7 +1,7 @@
 package co.ledger.cria.utils
 
-import co.ledger.cria.models.account.{Account, AccountId, Coin, CoinFamily}
-import co.ledger.cria.models.keychain.KeychainId
+import co.ledger.cria.domain.models.account.{Account, AccountId, Coin, CoinFamily}
+import co.ledger.cria.domain.models.keychain.KeychainId
 import org.scalacheck.Gen
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.matchers.should.Matchers

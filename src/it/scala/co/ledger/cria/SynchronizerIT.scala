@@ -1,21 +1,23 @@
 package co.ledger.cria
 
 import cats.effect.{ContextShift, IO, Timer}
-import co.ledger.cria.clients.grpc.mocks.{InterpreterClientMock, KeychainClientMock}
-import co.ledger.cria.clients.http.ExplorerHttpClient
+import co.ledger.cria.clients.protocol.grpc.mocks.InterpreterClientMock
 import co.ledger.cria.SynchronizationResult.SynchronizationSuccess
 import co.ledger.cria.config.Config
-import co.ledger.cria.services.CursorStateService
 import org.scalatest.flatspec.AnyFlatSpecLike
 import org.scalatest.matchers.should.Matchers
 import pureconfig.ConfigSource
 
 import java.time.Instant
 import java.util.UUID
-import co.ledger.cria.clients.Clients
-import co.ledger.cria.models.account.{Account, Coin, CoinFamily}
-import co.ledger.cria.models.interpreter.SyncId
-import co.ledger.cria.models.keychain.KeychainId
+import co.ledger.cria.clients.explorer.ExplorerHttpClient
+import co.ledger.cria.clients.keychain.mocks.KeychainClientMock
+import co.ledger.cria.clients.protocol.http.Clients
+import co.ledger.cria.domain.models.account.{Account, Coin, CoinFamily}
+import co.ledger.cria.domain.models.interpreter.SyncId
+import co.ledger.cria.domain.models.keychain.KeychainId
+import co.ledger.cria.domain.services
+import co.ledger.cria.domain.services.CursorStateService
 import co.ledger.cria.utils.IOAssertion
 
 import scala.concurrent.ExecutionContext
@@ -39,7 +41,10 @@ class SynchronizerIT extends AnyFlatSpecLike with Matchers {
         val interpreterClient = new InterpreterClientMock
 
         val cursorStateService: Coin => CursorStateService[IO] =
-          c => CursorStateService(explorerClient(c), interpreterClient).getLastValidState(_, _, _)
+          c =>
+            services
+              .CursorStateService(explorerClient(c), interpreterClient)
+              .getLastValidState(_, _, _)
 
         val syncId = SyncId(UUID.randomUUID())
 

@@ -2,17 +2,16 @@ package co.ledger.cria
 
 import cats.effect.{ContextShift, IO, Timer}
 import cats.implicits._
-import co.ledger.cria.clients.grpc.KeychainClient
-import co.ledger.cria.clients.http.ExplorerClient
+import co.ledger.cria.clients.explorer.ExplorerClient
+import co.ledger.cria.clients.explorer.types.{Block, ConfirmedTransaction, UnconfirmedTransaction}
 import co.ledger.cria.logging.{ContextLogging, CriaLogContext}
-import co.ledger.cria.models.account.{Account, Coin, CoinFamily}
-import co.ledger.cria.models.explorer.{Block, ConfirmedTransaction, UnconfirmedTransaction}
-import co.ledger.cria.models.interpreter.{ChangeType, SyncId}
-import co.ledger.cria.models.interpreter.ChangeType.{External, Internal}
-import co.ledger.cria.services._
-import co.ledger.cria.services.interpreter.Interpreter
+import co.ledger.cria.domain.models.account.{Account, Coin, CoinFamily}
+import co.ledger.cria.domain.models.interpreter.SyncId
+import co.ledger.cria.domain.models.keychain.ChangeType
+import co.ledger.cria.domain.models.keychain.ChangeType.{External, Internal}
+import co.ledger.cria.domain.services.{Bookkeeper, CursorStateService, Keychain, KeychainClient}
+import co.ledger.cria.domain.services.interpreter.Interpreter
 import fs2.Stream
-
 import co.ledger.cria.utils.IOUtils
 
 import scala.math.Ordering.Implicits._

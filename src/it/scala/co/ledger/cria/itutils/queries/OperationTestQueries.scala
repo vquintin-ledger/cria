@@ -9,11 +9,11 @@ import co.ledger.cria.itutils.models.{
   Utxo
 }
 import co.ledger.cria.logging.DoobieLogHandler
-import co.ledger.cria.models.account.AccountId
-import co.ledger.cria.models.interpreter.{InputView, Operation, OutputView}
-import co.ledger.cria.models.{Sort, TxHash}
-import co.ledger.cria.models.implicits._
-import co.ledger.cria.services.interpreter.OperationQueries
+import co.ledger.cria.domain.models.account.AccountId
+import co.ledger.cria.domain.models.interpreter.{InputView, Operation, OutputView}
+import co.ledger.cria.domain.models.{Sort, TxHash}
+import co.ledger.cria.domain.models.implicits._
+import co.ledger.cria.domain.services.interpreter.OperationQueries
 import doobie._
 import doobie.implicits._
 import doobie.postgres.implicits._

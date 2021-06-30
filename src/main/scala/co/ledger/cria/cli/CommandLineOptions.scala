@@ -5,9 +5,9 @@ import com.monovore.decline._
 import cats.implicits._
 
 import java.util.UUID
-import co.ledger.cria.models.account.Coin
-import co.ledger.cria.models.interpreter.SyncId
-import co.ledger.cria.models.keychain.KeychainId
+import co.ledger.cria.domain.models.account.Coin
+import co.ledger.cria.domain.models.interpreter.SyncId
+import co.ledger.cria.domain.models.keychain.KeychainId
 
 case class CommandLineOptions(
     keychainId: KeychainId,

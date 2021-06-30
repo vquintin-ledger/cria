@@ -5,17 +5,20 @@ import cats.effect.{ExitCode, IO}
 import co.ledger.cria.App
 import co.ledger.cria.e2e.CriaE2ETest.{RegisterRequest, SyncResult, TestCase}
 import co.ledger.cria.itutils.ContainerFlatSpec
-import co.ledger.cria.models.Sort
-import co.ledger.cria.models.account.{Account, Coin, CoinFamily, Scheme}
-import co.ledger.cria.models.keychain.AccountKey.Xpub
-import co.ledger.cria.models.circeImplicits._
-import co.ledger.cria.models.keychain.KeychainId
+import co.ledger.cria.domain.models.Sort
+import co.ledger.cria.domain.models.account.{Account, Coin, CoinFamily}
+import co.ledger.cria.domain.models.circeImplicits._
+import co.ledger.cria.domain.models.keychain.KeychainId
+import co.ledger.cria.itutils.models.keychain.AccountKey.Xpub
+import co.ledger.cria.itutils.models.keychain.{KeychainInfo, Scheme}
 import co.ledger.cria.utils.IOAssertion
 import io.circe.Decoder
-import co.ledger.cria.utils.CoinImplicits._
+import co.ledger.cria.itutils.models.keychain.CoinImplicits._
+import co.ledger.protobuf.bitcoin.keychain
 import io.circe.generic.extras.semiauto.deriveConfiguredDecoder
 import org.scalatest.matchers.should.Matchers
 import io.circe.parser.decode
+import io.grpc.Metadata
 
 import scala.io.Source
 
@@ -46,12 +49,20 @@ class CriaE2ETest extends ContainerFlatSpec with Matchers {
     ).flatMap(readJson[List[TestCase]])
 
   def makeKeychainId(request: RegisterRequest): IO[KeychainId] =
-    testResources
-      .use(tr =>
-        tr.keychainClient
-          .create(request.accountKey, request.scheme, request.lookaheadSize, request.coin.toNetwork)
-      )
-      .map(_.keychainId)
+    testResources.use { tr =>
+      tr.rawKeychainClient
+        .createKeychain(
+          keychain.CreateKeychainRequest(
+            request.accountKey.toProto,
+            request.scheme.toProto,
+            request.lookaheadSize,
+            Some(request.coin.toNetwork.toKeychainChainParamsProto)
+          ),
+          new Metadata
+        )
+        .map(KeychainInfo.fromProto)
+        .map(_.keychainId)
+    }
 
   def makeArgs(request: RegisterRequest, keychainId: KeychainId): List[String] =
     List(

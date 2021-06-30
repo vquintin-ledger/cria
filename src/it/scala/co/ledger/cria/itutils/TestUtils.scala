@@ -9,12 +9,15 @@ import co.ledger.cria.itutils.models.{
   PaginationToken
 }
 import co.ledger.cria.itutils.queries.OperationTestQueries
-import co.ledger.cria.models.account.AccountId
-import co.ledger.cria.models.account.interpreter.CurrentBalance
-import co.ledger.cria.models.interpreter.{Operation, TransactionView}
-import co.ledger.cria.models.{Sort, TxHash}
-import co.ledger.cria.services.interpreter.OperationQueries.{OpWithoutDetails, OperationDetails}
-import co.ledger.cria.services.interpreter.{BalanceQueries, OperationQueries}
+import co.ledger.cria.domain.models.account.AccountId
+import co.ledger.cria.domain.models.account.interpreter.CurrentBalance
+import co.ledger.cria.domain.models.interpreter.{Operation, TransactionView}
+import co.ledger.cria.domain.models.{Sort, TxHash}
+import co.ledger.cria.domain.services.interpreter.OperationQueries.{
+  OpWithoutDetails,
+  OperationDetails
+}
+import co.ledger.cria.domain.services.interpreter.{BalanceQueries, OperationQueries}
 import doobie.ConnectionIO
 import doobie.implicits._
 import doobie.util.transactor.Transactor

@@ -6,7 +6,7 @@ import co.ledger.cria.itutils.Base64Utils
 import io.circe.generic.extras.semiauto.{deriveConfiguredDecoder, deriveConfiguredEncoder}
 import io.circe.parser.parse
 import io.circe.{Decoder, Encoder}
-import co.ledger.cria.models.circeImplicits._
+import co.ledger.cria.domain.models.circeImplicits._
 
 final case class PaginationToken[T](state: T, isNext: Boolean) {
   def toBase64(implicit e: Encoder[T]): String =

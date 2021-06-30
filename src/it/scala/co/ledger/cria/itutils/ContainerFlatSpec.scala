@@ -3,18 +3,23 @@ package co.ledger.cria.itutils
 import cats.effect.{ContextShift, IO, Resource, Timer}
 import co.ledger.cria.App
 import co.ledger.cria.App.ClientResources
-import co.ledger.cria.clients.grpc.{KeychainClient, KeychainGrpcClient}
-import co.ledger.cria.clients.http.ExplorerHttpClient
+import co.ledger.cria.clients.explorer.ExplorerHttpClient
+import co.ledger.cria.clients.protocol.grpc.GrpcClient
 import co.ledger.cria.config.{Config, GrpcClientConfig}
+import co.ledger.cria.domain.adapters.keychain.KeychainGrpcClient
+import co.ledger.cria.domain.services.KeychainClient
+import co.ledger.cria.domain.services.interpreter.{Interpreter, InterpreterImpl}
 import co.ledger.cria.logging.DefaultContextLogging
-import co.ledger.cria.services.interpreter.{Interpreter, InterpreterImpl}
 import co.ledger.cria.utils.DbUtils
+import co.ledger.protobuf.bitcoin.keychain
+import co.ledger.protobuf.bitcoin.keychain.KeychainServiceFs2Grpc
 import com.dimafeng.testcontainers.{
   DockerComposeContainer,
   ExposedService,
   ForAllTestContainer,
   ServiceLogConsumer
 }
+import io.grpc.Metadata
 import org.flywaydb.core.Flyway
 import org.scalatest.flatspec.AnyFlatSpec
 import pureconfig.ConfigSource
@@ -75,6 +80,11 @@ trait ContainerFlatSpec extends AnyFlatSpec with ForAllTestContainer with Defaul
         resources,
         interpreterClient,
         keychainClient,
+        GrpcClient.resolveClient(
+          keychain.KeychainServiceFs2Grpc.stub[IO],
+          resources.keychainGrpcChannel,
+          "keychainClient"
+        ),
         new TestUtils(resources.transactor)
       )
     }
@@ -83,6 +93,7 @@ trait ContainerFlatSpec extends AnyFlatSpec with ForAllTestContainer with Defaul
       clients: ClientResources,
       interpreter: Interpreter,
       keychainClient: KeychainClient,
+      rawKeychainClient: KeychainServiceFs2Grpc[IO, Metadata],
       testUtils: TestUtils
   )
 

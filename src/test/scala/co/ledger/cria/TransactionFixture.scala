@@ -1,8 +1,8 @@
 package co.ledger.cria
 
 import cats.data.NonEmptyList
-import co.ledger.cria.clients.http.ExplorerClient.Address
-import co.ledger.cria.models.explorer.{
+import co.ledger.cria.clients.explorer.ExplorerClient.Address
+import co.ledger.cria.clients.explorer.types.{
   Block,
   ConfirmedTransaction,
   DefaultInput,
