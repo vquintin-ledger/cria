@@ -6,14 +6,20 @@ import co.ledger.cria.clients.explorer.ExplorerClient
 import co.ledger.cria.clients.protocol.grpc.mocks.InterpreterClientMock
 import ExplorerClient.Address
 import co.ledger.cria.clients.explorer.mocks.ExplorerClientMock
-import co.ledger.cria.clients.explorer.types.{Block, ConfirmedTransaction, UnconfirmedTransaction}
-import co.ledger.cria.domain.models.account.Coin.Btc
+import co.ledger.cria.clients.explorer.types.{
+  Block,
+  Coin,
+  ConfirmedTransaction,
+  UnconfirmedTransaction
+}
+import co.ledger.cria.clients.explorer.types.Coin.Btc
+import co.ledger.cria.domain.adapters.explorer.TypeHelper
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
 import java.util.UUID
 import co.ledger.cria.logging.DefaultContextLogging
-import co.ledger.cria.domain.models.account.{AccountId, Coin}
+import co.ledger.cria.domain.models.account.AccountId
 import co.ledger.cria.domain.models.keychain.{AccountAddress, ChangeType, KeychainId}
 import co.ledger.cria.domain.services.{Bookkeeper, Keychain}
 import co.ledger.cria.utils.IOAssertion
@@ -168,7 +174,8 @@ class BookkeeperSpec extends AnyFlatSpec with Matchers with DefaultContextLoggin
       .toList
       .unsafeRunSync()
 
-    val expectedSavedTransactions = transactions.values.flatten.map(_.toTransactionView)
+    val expectedSavedTransactions =
+      transactions.values.flatten.map(TypeHelper.transaction.fromExplorer)
 
     interpreter.savedUnconfirmedTransactions should have size 1
     interpreter.savedUnconfirmedTransactions.head._1 shouldBe accountId

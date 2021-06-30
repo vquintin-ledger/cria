@@ -4,6 +4,7 @@ import cats.effect.{ContextShift, IO, Timer}
 import co.ledger.cria.clients.explorer.ExplorerClient.Address
 import co.ledger.cria.clients.explorer.types.{
   Block,
+  Coin,
   ConfirmedTransaction,
   GetTransactionsResponse,
   SendTransactionResult,
@@ -12,7 +13,6 @@ import co.ledger.cria.clients.explorer.types.{
 }
 import co.ledger.cria.config.ExplorerConfig
 import co.ledger.cria.logging.{ContextLogging, CriaLogContext}
-import co.ledger.cria.domain.models.account.Coin
 import co.ledger.cria.domain.models.circeImplicits._
 import co.ledger.cria.utils
 import co.ledger.cria.utils.IOUtils

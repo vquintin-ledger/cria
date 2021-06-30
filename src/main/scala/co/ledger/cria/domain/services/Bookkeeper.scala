@@ -3,14 +3,16 @@ package co.ledger.cria.domain.services
 import cats.effect.{ContextShift, IO, Timer}
 import co.ledger.cria.clients.explorer.ExplorerClient
 import co.ledger.cria.clients.explorer.types.{
+  Coin,
   ConfirmedTransaction,
   DefaultInput,
   Transaction,
   UnconfirmedTransaction
 }
+import co.ledger.cria.domain.adapters.explorer.TypeHelper
 import fs2.{Pipe, Stream}
 import co.ledger.cria.logging.{ContextLogging, CriaLogContext}
-import co.ledger.cria.domain.models.account.{AccountId, Coin}
+import co.ledger.cria.domain.models.account.AccountId
 import co.ledger.cria.domain.models.keychain.{AccountAddress, ChangeType, KeychainId}
 import co.ledger.cria.domain.services.interpreter.Interpreter
 
@@ -141,7 +143,7 @@ object Bookkeeper extends ContextLogging {
     def save(interpreter: Interpreter)(accountId: AccountId)(implicit
         lc: CriaLogContext
     ): Pipe[IO, Tx, Unit] =
-      _.map(_.toTransactionView).through(interpreter.saveTransactions(accountId))
+      _.map(TypeHelper.transaction.fromExplorer).through(interpreter.saveTransactions(accountId))
   }
 
   implicit def confirmed(implicit

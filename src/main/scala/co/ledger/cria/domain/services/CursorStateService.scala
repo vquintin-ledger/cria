@@ -3,6 +3,7 @@ package co.ledger.cria.domain.services
 import cats.effect.{IO, Timer}
 import co.ledger.cria.clients.explorer.ExplorerClient
 import co.ledger.cria.clients.explorer.types.Block
+import co.ledger.cria.domain.adapters.explorer.TypeHelper
 import co.ledger.cria.logging.{ContextLogging, CriaLogContext}
 import co.ledger.cria.domain.models.account.{Account, AccountId}
 import co.ledger.cria.domain.models.interpreter.SyncId
@@ -61,7 +62,7 @@ object CursorStateService {
           s"Block [hash: '${block.hash}', height: ${block.height}] has been invalidated, searching last known valid block."
         )
         blockViews <- interpreterClient.getLastBlocks(accountId)
-        blocks = blockViews.map(Block.fromBlockView)
+        blocks = blockViews.map(TypeHelper.block.toExplorer)
         lastValidBlock <- getlastValidBlockRec(blocks)
         _ <- log.info(
           s"Block [hash: '${lastValidBlock.hash}', height: ${lastValidBlock.height}] is valid !"

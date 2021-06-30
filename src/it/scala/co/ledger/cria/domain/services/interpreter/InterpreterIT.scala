@@ -8,13 +8,13 @@ import cats.effect.IO
 import cats.implicits._
 import co.ledger.cria.App.ClientResources
 import co.ledger.cria.clients.explorer.mocks.ExplorerClientMock
-import co.ledger.cria.clients.explorer.types.UnconfirmedTransaction
+import co.ledger.cria.clients.explorer.types.{Coin, CoinFamily, UnconfirmedTransaction}
 import co.ledger.cria.itutils.models.{GetOperationsResult, GetUtxosResult}
 import co.ledger.cria.itutils.{ContainerFlatSpec, TestUtils}
 import co.ledger.cria.utils.IOAssertion
 import co.ledger.cria.logging.CriaLogContext
 import co.ledger.cria.domain.models.{Sort, keychain}
-import co.ledger.cria.domain.models.account.{Account, AccountId, Coin, CoinFamily}
+import co.ledger.cria.domain.models.account.{Account, AccountId}
 import co.ledger.cria.domain.models.interpreter.{
   AccountTxView,
   BlockView,

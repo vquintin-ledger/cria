@@ -1,6 +1,5 @@
 package co.ledger.cria.clients.explorer.types
 
-import co.ledger.cria.domain.models.interpreter.{BlockView, InputView, OutputView, TransactionView}
 import io.circe.generic.extras.semiauto.{deriveConfiguredDecoder, deriveConfiguredEncoder}
 import io.circe.syntax._
 import io.circe.{Decoder, Encoder}
@@ -17,8 +16,6 @@ sealed trait Transaction {
   val inputs: Seq[Input]
   val outputs: Seq[Output]
   val confirmations: Int
-
-  def toTransactionView: TransactionView
 }
 
 object Transaction {
@@ -43,47 +40,7 @@ case class ConfirmedTransaction(
     outputs: Seq[Output],
     block: Block,
     confirmations: Int
-) extends Transaction {
-  def toTransactionView: TransactionView =
-    TransactionView(
-      id,
-      hash,
-      receivedAt,
-      lockTime,
-      fees,
-      inputs.collect { case i: DefaultInput =>
-        InputView(
-          i.outputHash,
-          i.outputIndex,
-          i.inputIndex,
-          i.value,
-          i.address,
-          i.scriptSignature,
-          i.txinwitness,
-          i.sequence,
-          None
-        )
-      },
-      outputs.map { o =>
-        OutputView(
-          o.outputIndex,
-          o.value,
-          o.address,
-          o.scriptHex,
-          None,
-          None
-        )
-      },
-      Some(
-        BlockView(
-          block.hash,
-          block.height,
-          block.time
-        )
-      ),
-      confirmations
-    )
-}
+) extends Transaction
 
 object ConfirmedTransaction {
   implicit val encoder: Encoder[ConfirmedTransaction] =
@@ -102,42 +59,7 @@ case class UnconfirmedTransaction(
     inputs: Seq[Input],
     outputs: Seq[Output],
     confirmations: Int
-) extends Transaction {
-
-  def toTransactionView: TransactionView =
-    TransactionView(
-      id,
-      hash,
-      receivedAt,
-      lockTime,
-      fees,
-      inputs.collect { case i: DefaultInput =>
-        InputView(
-          i.outputHash,
-          i.outputIndex,
-          i.inputIndex,
-          i.value,
-          i.address,
-          i.scriptSignature,
-          i.txinwitness,
-          i.sequence,
-          None
-        )
-      },
-      outputs.map { o =>
-        OutputView(
-          o.outputIndex,
-          o.value,
-          o.address,
-          o.scriptHex,
-          None,
-          None
-        )
-      },
-      None,
-      confirmations
-    )
-}
+) extends Transaction
 
 object UnconfirmedTransaction {
   implicit val encoder: Encoder[UnconfirmedTransaction] =

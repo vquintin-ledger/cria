@@ -11,9 +11,10 @@ import pureconfig.ConfigSource
 import java.time.Instant
 import java.util.UUID
 import co.ledger.cria.clients.explorer.ExplorerHttpClient
+import co.ledger.cria.clients.explorer.types.{Coin, CoinFamily}
 import co.ledger.cria.clients.keychain.mocks.KeychainClientMock
 import co.ledger.cria.clients.protocol.http.Clients
-import co.ledger.cria.domain.models.account.{Account, Coin, CoinFamily}
+import co.ledger.cria.domain.models.account.Account
 import co.ledger.cria.domain.models.interpreter.SyncId
 import co.ledger.cria.domain.models.keychain.KeychainId
 import co.ledger.cria.domain.services

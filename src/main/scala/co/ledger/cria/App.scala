@@ -10,9 +10,9 @@ import cats.implicits._
 import co.ledger.cria.cli.CommandLineOptions
 import co.ledger.cria.config.Config
 import co.ledger.cria.clients.explorer.ExplorerHttpClient
+import co.ledger.cria.clients.explorer.types.Coin
 import co.ledger.cria.clients.protocol.http.Clients
 import co.ledger.cria.domain.adapters.keychain.KeychainGrpcClient
-import co.ledger.cria.domain.models.account.Coin
 import co.ledger.cria.domain.services.{CursorStateService, HealthService}
 import co.ledger.cria.domain.services.interpreter.InterpreterImpl
 import co.ledger.cria.utils.{DbUtils, ResourceUtils}

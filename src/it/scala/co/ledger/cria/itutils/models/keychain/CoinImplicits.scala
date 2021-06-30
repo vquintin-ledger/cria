@@ -1,6 +1,6 @@
 package co.ledger.cria.itutils.models.keychain
 
-import co.ledger.cria.domain.models.account.Coin
+import co.ledger.cria.clients.explorer.types.Coin
 
 object CoinImplicits {
 

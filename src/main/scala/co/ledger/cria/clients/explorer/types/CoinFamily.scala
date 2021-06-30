@@ -1,4 +1,4 @@
-package co.ledger.cria.domain.models.account
+package co.ledger.cria.clients.explorer.types
 
 import io.circe.{Decoder, Encoder}
 import pureconfig.ConfigReader

@@ -3,7 +3,7 @@ package co.ledger.cria
 import cats.effect.{ContextShift, IO, Timer}
 import co.ledger.cria.clients.explorer.ExplorerClient
 import co.ledger.cria.clients.explorer.mocks.ExplorerClientMock
-import co.ledger.cria.clients.explorer.types.Block
+import co.ledger.cria.clients.explorer.types.{Block, Coin, CoinFamily}
 import co.ledger.cria.clients.protocol.grpc.mocks.InterpreterClientMock
 import co.ledger.cria.domain.models.interpreter.{SyncId, TransactionView}
 import org.scalatest.flatspec.AnyFlatSpec
@@ -11,7 +11,7 @@ import org.scalatest.matchers.should.Matchers
 
 import java.time.Instant
 import java.util.UUID
-import co.ledger.cria.domain.models.account.{Account, Coin, CoinFamily}
+import co.ledger.cria.domain.models.account.Account
 import co.ledger.cria.domain.models.keychain.KeychainId
 import co.ledger.cria.domain.services.CursorStateService
 import co.ledger.cria.domain.services.interpreter.Interpreter

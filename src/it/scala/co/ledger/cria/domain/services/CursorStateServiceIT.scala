@@ -4,12 +4,12 @@ import java.time.Instant
 import java.util.UUID
 import cats.effect.{ContextShift, IO, Resource, Timer}
 import co.ledger.cria.clients.explorer.ExplorerHttpClient
-import co.ledger.cria.clients.explorer.types.Block
+import co.ledger.cria.clients.explorer.types.{Block, Coin, CoinFamily}
 import co.ledger.cria.clients.protocol.grpc.mocks.InterpreterClientMock
 import co.ledger.cria.clients.protocol.http.Clients
 import co.ledger.cria.config.Config
 import co.ledger.cria.logging.DefaultContextLogging
-import co.ledger.cria.domain.models.account.{Account, Coin, CoinFamily}
+import co.ledger.cria.domain.models.account.Account
 import co.ledger.cria.domain.models.interpreter.{BlockView, SyncId, TransactionView}
 import co.ledger.cria.domain.models.keychain.KeychainId
 import co.ledger.cria.utils.IOAssertion

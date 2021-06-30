@@ -1,5 +1,7 @@
 package co.ledger.cria.domain.models.account
 
+import co.ledger.cria.clients.explorer.types.{Coin, CoinFamily}
+
 import java.util.UUID
 import io.circe.generic.extras.semiauto._
 import co.ledger.cria.domain.models.circeImplicits._
