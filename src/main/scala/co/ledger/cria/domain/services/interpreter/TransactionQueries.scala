@@ -68,9 +68,9 @@ object TransactionQueries extends DoobieLogHandler {
 
     val update =
       fr"""DO UPDATE SET
-              block_hash   = ${tx.block.map(_.hash)}, 
-              block_height = ${tx.block.map(_.height)}, 
-              block_time   = ${tx.block.map(_.time)}
+              block_hash   = ${tx.blockOpt.map(_.hash)}, 
+              block_height = ${tx.blockOpt.map(_.height)}, 
+              block_time   = ${tx.blockOpt.map(_.time)}
             WHERE transaction.block_hash IS NULL
        """
 
@@ -82,15 +82,15 @@ object TransactionQueries extends DoobieLogHandler {
             $accountId,
             ${tx.id},
             ${tx.hash},
-            ${tx.block.map(_.hash)},
-            ${tx.block.map(_.height)},
-            ${tx.block.map(_.time)},
+            ${tx.blockOpt.map(_.hash)},
+            ${tx.blockOpt.map(_.height)},
+            ${tx.blockOpt.map(_.time)},
             ${tx.receivedAt},
             ${tx.lockTime},
             ${tx.fees},
             ${tx.confirmations}
           ) ON CONFLICT ON CONSTRAINT transaction_pkey """ ++
-      tx.block.map(_ => update).getOrElse(noUpdate)
+      tx.blockOpt.map(_ => update).getOrElse(noUpdate)
 
     query.update.run
   }

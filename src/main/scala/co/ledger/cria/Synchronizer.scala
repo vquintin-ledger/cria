@@ -2,20 +2,24 @@ package co.ledger.cria
 
 import cats.effect.{ContextShift, IO, Timer}
 import cats.implicits._
-import co.ledger.cria.clients.explorer.ExplorerClient
-import co.ledger.cria.clients.explorer.types.{
-  Block,
-  Coin,
-  CoinFamily,
-  ConfirmedTransaction,
-  UnconfirmedTransaction
-}
+import co.ledger.cria.clients.explorer.types.{Coin, CoinFamily}
 import co.ledger.cria.logging.{ContextLogging, CriaLogContext}
 import co.ledger.cria.domain.models.account.Account
-import co.ledger.cria.domain.models.interpreter.SyncId
+import co.ledger.cria.domain.models.interpreter.{
+  BlockView,
+  ConfirmedTransactionView,
+  SyncId,
+  UnconfirmedTransactionView
+}
 import co.ledger.cria.domain.models.keychain.ChangeType
 import co.ledger.cria.domain.models.keychain.ChangeType.{External, Internal}
-import co.ledger.cria.domain.services.{Bookkeeper, CursorStateService, Keychain, KeychainClient}
+import co.ledger.cria.domain.services.{
+  Bookkeeper,
+  CursorStateService,
+  ExplorerClient,
+  Keychain,
+  KeychainClient
+}
 import co.ledger.cria.domain.services.interpreter.Interpreter
 import fs2.Stream
 import co.ledger.cria.utils.IOUtils
@@ -58,7 +62,7 @@ class Synchronizer(
   def synchronizeAccount(
       syncParams: SynchronizationParameters,
       account: Account,
-      previousBlockState: Option[Block]
+      previousBlockState: Option[BlockView]
   )(implicit
       cs: ContextShift[IO],
       t: Timer[IO],
@@ -79,14 +83,14 @@ class Synchronizer(
     for {
 
       addressesUsedByMempool <- (bookkeeper
-        .record[UnconfirmedTransaction](
+        .record[UnconfirmedTransactionView](
           account.coin,
           account.id,
           keychainId,
           Internal,
           None
         ) ++ bookkeeper
-        .record[UnconfirmedTransaction](
+        .record[UnconfirmedTransactionView](
           account.coin,
           account.id,
           keychainId,
@@ -106,14 +110,14 @@ class Synchronizer(
         .evalMap(b => b.map(rewindToLastValidBlock(account, _, syncParams.syncId)).sequence)
         .evalMap { lastValidBlock =>
           (bookkeeper
-            .record[ConfirmedTransaction](
+            .record[ConfirmedTransactionView](
               account.coin,
               account.id,
               keychainId,
               ChangeType.Internal,
               lastValidBlock.map(_.hash)
             ) ++ bookkeeper
-            .record[ConfirmedTransaction](
+            .record[ConfirmedTransactionView](
               account.coin,
               account.id,
               keychainId,
@@ -141,14 +145,14 @@ class Synchronizer(
     }
   }
 
-  case class LastMinedBlock(block: Block)
+  case class LastMinedBlock(block: BlockView)
 
   def lastMinedBlock(coin: Coin)(implicit t: Timer[IO], lc: CriaLogContext): IO[LastMinedBlock] =
     explorerClient(coin).getCurrentBlock.map(LastMinedBlock)
 
-  private def rewindToLastValidBlock(account: Account, lastKnownBlock: Block, syncId: SyncId)(
+  private def rewindToLastValidBlock(account: Account, lastKnownBlock: BlockView, syncId: SyncId)(
       implicit lc: CriaLogContext
-  ): IO[Block] =
+  ): IO[BlockView] =
     for {
 
       lvb <- cursorService(account.coin).getLastValidState(account, lastKnownBlock, syncId)

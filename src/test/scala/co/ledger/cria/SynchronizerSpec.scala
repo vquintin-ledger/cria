@@ -1,10 +1,10 @@
 package co.ledger.cria
 
 import cats.effect.{ContextShift, IO, Timer}
-import co.ledger.cria.clients.explorer.ExplorerClient
 import co.ledger.cria.clients.explorer.mocks.ExplorerClientMock
 import co.ledger.cria.clients.explorer.types.{Block, Coin, CoinFamily}
 import co.ledger.cria.clients.protocol.grpc.mocks.InterpreterClientMock
+import co.ledger.cria.domain.adapters.explorer.ExplorerClientAdapter
 import co.ledger.cria.domain.models.interpreter.{SyncId, TransactionView}
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
@@ -13,7 +13,7 @@ import java.time.Instant
 import java.util.UUID
 import co.ledger.cria.domain.models.account.Account
 import co.ledger.cria.domain.models.keychain.KeychainId
-import co.ledger.cria.domain.services.CursorStateService
+import co.ledger.cria.domain.services.{CursorStateService, ExplorerClient}
 import co.ledger.cria.domain.services.interpreter.Interpreter
 import co.ledger.cria.utils.IOAssertion
 
@@ -52,8 +52,10 @@ class SynchronizerSpec extends AnyFlatSpec with Matchers {
     .take(1)
     .toList
 
-  val defaultExplorer = new ExplorerClientMock(
-    blockchain.flatMap(_._2).toMap
+  val defaultExplorer = new ExplorerClientAdapter(
+    new ExplorerClientMock(
+      blockchain.flatMap(_._2).toMap
+    )
   )
   val alreadyValidBlockCursorService: CursorStateService[IO] = (_, b, _) => IO.pure(b)
 
@@ -87,8 +89,8 @@ class SynchronizerSpec extends AnyFlatSpec with Matchers {
 
     val lastMinedBlock = blockchain.last._1
     val interpreter    = new InterpreterClientMock
-    val explorer =
-      new ExplorerClientMock(blockchain.flatMap(_._2).toMap)
+    val mock           = new ExplorerClientMock(blockchain.flatMap(_._2).toMap)
+    val explorer       = new ExplorerClientAdapter(mock)
 
     interpreter.getSavedTransaction(accountIdentifier.id) shouldBe empty
 
@@ -99,15 +101,15 @@ class SynchronizerSpec extends AnyFlatSpec with Matchers {
     } yield {
 
       interpreter.getSavedTransaction(accountIdentifier.id) shouldBe empty
-      explorer.getConfirmedTransactionsCount = 0
+      mock.getConfirmedTransactionsCount = 0
     }
   }
 
   it should "try to import unconfirmed txs even if blockchain last block is synced" in {
 
     val lastMinedBlock = blockchain.last._1
-    val explorer =
-      new ExplorerClientMock(blockchain.flatMap(_._2).toMap, mempool.toMap)
+    val mock           = new ExplorerClientMock(blockchain.flatMap(_._2).toMap)
+    val explorer       = new ExplorerClientAdapter(mock)
 
     val syncParams = mkSyncParams(Some(lastMinedBlock))
     val w          = worker(explorer = explorer)
@@ -115,7 +117,7 @@ class SynchronizerSpec extends AnyFlatSpec with Matchers {
       _ <- w.run(syncParams)
       _ <- w.run(syncParams)
     } yield {
-      explorer.getUnConfirmedTransactionsCount = 2
+      mock.getUnConfirmedTransactionsCount = 2
     }
   }
 

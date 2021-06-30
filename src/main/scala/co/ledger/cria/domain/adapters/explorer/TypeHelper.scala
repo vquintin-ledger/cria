@@ -2,7 +2,14 @@ package co.ledger.cria.domain.adapters.explorer
 
 import co.ledger.cria.clients.explorer.types.{Block, DefaultInput}
 import co.ledger.cria.clients.explorer.{types => explorer}
-import co.ledger.cria.domain.models.interpreter.{BlockView, InputView, OutputView, TransactionView}
+import co.ledger.cria.domain.models.interpreter.{
+  BlockView,
+  ConfirmedTransactionView,
+  InputView,
+  OutputView,
+  TransactionView,
+  UnconfirmedTransactionView
+}
 
 object TypeHelper {
   object block {
@@ -12,85 +19,94 @@ object TypeHelper {
         b.height,
         b.time
       )
+
+    def fromExplorer(b: explorer.Block): BlockView = BlockView(b.hash, b.height, b.time)
+  }
+
+  object confirmedTransaction {
+    def fromExplorer(t: explorer.ConfirmedTransaction): ConfirmedTransactionView = {
+      import t.{block => b, _}
+      ConfirmedTransactionView(
+        id,
+        hash,
+        receivedAt,
+        lockTime,
+        fees,
+        inputs.collect { case i: DefaultInput =>
+          InputView(
+            i.outputHash,
+            i.outputIndex,
+            i.inputIndex,
+            i.value,
+            i.address,
+            i.scriptSignature,
+            i.txinwitness,
+            i.sequence,
+            None
+          )
+        },
+        outputs.map { o =>
+          OutputView(
+            o.outputIndex,
+            o.value,
+            o.address,
+            o.scriptHex,
+            None,
+            None
+          )
+        },
+        BlockView(
+          b.hash,
+          b.height,
+          b.time
+        ),
+        confirmations
+      )
+    }
+  }
+
+  object unconfirmedTransaction {
+    def fromExplorer(t: explorer.UnconfirmedTransaction): UnconfirmedTransactionView = {
+      import t._
+      UnconfirmedTransactionView(
+        id,
+        hash,
+        receivedAt,
+        lockTime,
+        fees,
+        inputs.collect { case i: DefaultInput =>
+          InputView(
+            i.outputHash,
+            i.outputIndex,
+            i.inputIndex,
+            i.value,
+            i.address,
+            i.scriptSignature,
+            i.txinwitness,
+            i.sequence,
+            None
+          )
+        },
+        outputs.map { o =>
+          OutputView(
+            o.outputIndex,
+            o.value,
+            o.address,
+            o.scriptHex,
+            None,
+            None
+          )
+        },
+        confirmations
+      )
+    }
   }
 
   object transaction {
     def fromExplorer(t: explorer.Transaction): TransactionView =
       t match {
-        case t: explorer.ConfirmedTransaction =>
-          import t.{block => b, _}
-          TransactionView(
-            id,
-            hash,
-            receivedAt,
-            lockTime,
-            fees,
-            inputs.collect { case i: DefaultInput =>
-              InputView(
-                i.outputHash,
-                i.outputIndex,
-                i.inputIndex,
-                i.value,
-                i.address,
-                i.scriptSignature,
-                i.txinwitness,
-                i.sequence,
-                None
-              )
-            },
-            outputs.map { o =>
-              OutputView(
-                o.outputIndex,
-                o.value,
-                o.address,
-                o.scriptHex,
-                None,
-                None
-              )
-            },
-            Some(
-              BlockView(
-                b.hash,
-                b.height,
-                b.time
-              )
-            ),
-            confirmations
-          )
-        case t: explorer.UnconfirmedTransaction =>
-          import t._
-          TransactionView(
-            id,
-            hash,
-            receivedAt,
-            lockTime,
-            fees,
-            inputs.collect { case i: DefaultInput =>
-              InputView(
-                i.outputHash,
-                i.outputIndex,
-                i.inputIndex,
-                i.value,
-                i.address,
-                i.scriptSignature,
-                i.txinwitness,
-                i.sequence,
-                None
-              )
-            },
-            outputs.map { o =>
-              OutputView(
-                o.outputIndex,
-                o.value,
-                o.address,
-                o.scriptHex,
-                None,
-                None
-              )
-            },
-            None,
-            confirmations
-          )
+        case t: explorer.ConfirmedTransaction   => confirmedTransaction.fromExplorer(t)
+        case t: explorer.UnconfirmedTransaction => unconfirmedTransaction.fromExplorer(t)
       }
   }
 }

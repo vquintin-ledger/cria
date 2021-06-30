@@ -34,10 +34,10 @@ class InterpreterClientMock extends Interpreter {
 
       savedTransactions.update(
         accountId,
-        txs.filter(_.block.isDefined) ::: savedTransactions.getOrElse(accountId, Nil)
+        txs.filter(_.blockOpt.isDefined) ::: savedTransactions.getOrElse(accountId, Nil)
       )
 
-      val unconfirmed = txs.filterNot(_.block.isDefined)
+      val unconfirmed = txs.filterNot(_.blockOpt.isDefined)
       if (unconfirmed.nonEmpty)
         saveUnconfirmedTransactions(accountId, unconfirmed)
 
@@ -59,19 +59,19 @@ class InterpreterClientMock extends Interpreter {
     savedTransactions.update(
       accountId,
       savedTransactions(accountId)
-        .filter(tx => tx.block.map(_.height).getOrElse(0L) < blockHeightCursor.getOrElse(0L))
+        .filter(tx => tx.blockOpt.map(_.height).getOrElse(0L) < blockHeightCursor.getOrElse(0L))
     )
 
     transactions.update(
       accountId,
       transactions(accountId)
-        .filter(tx => tx.block.exists(_.height < blockHeightCursor.getOrElse(0L)))
+        .filter(tx => tx.blockOpt.exists(_.height < blockHeightCursor.getOrElse(0L)))
     )
 
     operations.update(
       accountId,
       operations(accountId)
-        .filter(op => op.transaction.block.exists(_.height < blockHeightCursor.getOrElse(0L)))
+        .filter(op => op.transaction.blockOpt.exists(_.height < blockHeightCursor.getOrElse(0L)))
     )
 
     IO.pure(0)
@@ -79,13 +79,7 @@ class InterpreterClientMock extends Interpreter {
 
   def getLastBlocks(accountId: AccountId)(implicit lc: CriaLogContext): IO[List[BlockView]] = {
     val lastBlocks: List[BlockView] = savedTransactions(accountId)
-      .collect { case TransactionView(_, _, _, _, _, _, _, Some(block), _) =>
-        BlockView(
-          block.hash,
-          block.height,
-          block.time
-        )
-      }
+      .collect { case ConfirmedTransactionView(_, _, _, _, _, _, _, block, _) => block }
       .distinct
       .sortBy(_.height)(Ordering[Long].reverse)
 
@@ -102,20 +96,24 @@ class InterpreterClientMock extends Interpreter {
       .getOrElse(account.id, List.empty)
 
     val computedTxViews = txViews.map { tx =>
-      tx.copy(
-        outputs = tx.outputs.map { o =>
-          val addressO = addresses.find(_.accountAddress == o.address)
-          o.copy(
-            changeType = addressO.map(_.changeType),
-            derivation = addressO.map(_.derivation)
-          )
-        },
-        inputs = tx.inputs.map { i =>
-          i.copy(
-            derivation = addresses.find(_.accountAddress == i.address).map(_.derivation)
-          )
-        }
-      )
+      val outputs = tx.outputs.map { o =>
+        val addressO = addresses.find(_.accountAddress == o.address)
+        o.copy(
+          changeType = addressO.map(_.changeType),
+          derivation = addressO.map(_.derivation)
+        )
+      }
+      val inputs = tx.inputs.map { i =>
+        i.copy(
+          derivation = addresses.find(_.accountAddress == i.address).map(_.derivation)
+        )
+      }
+      tx match {
+        case tx: UnconfirmedTransactionView =>
+          tx.copy(outputs = outputs, inputs = inputs)
+        case tx: ConfirmedTransactionView =>
+          tx.copy(outputs = outputs, inputs = inputs)
+      }
     }
 
     transactions.update(
@@ -173,7 +171,7 @@ class InterpreterClientMock extends Interpreter {
           accountId,
           Operation.TxId(tx.id),
           operationType,
-          tx.block.map(_.height)
+          tx.blockOpt.map(_.height)
         ),
       accountId,
       tx.hash,
@@ -181,8 +179,8 @@ class InterpreterClientMock extends Interpreter {
       operationType,
       amount,
       tx.fees,
-      tx.block.map(_.time).getOrElse(Instant.now()),
-      tx.block.map(_.height)
+      tx.blockOpt.map(_.time).getOrElse(Instant.now()),
+      tx.blockOpt.map(_.height)
     )
   }
 

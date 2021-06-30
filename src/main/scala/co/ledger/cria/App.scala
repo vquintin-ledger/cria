@@ -12,8 +12,9 @@ import co.ledger.cria.config.Config
 import co.ledger.cria.clients.explorer.ExplorerHttpClient
 import co.ledger.cria.clients.explorer.types.Coin
 import co.ledger.cria.clients.protocol.http.Clients
+import co.ledger.cria.domain.adapters.explorer.ExplorerClientAdapter
 import co.ledger.cria.domain.adapters.keychain.KeychainGrpcClient
-import co.ledger.cria.domain.services.{CursorStateService, HealthService}
+import co.ledger.cria.domain.services.{CursorStateService, ExplorerClient, HealthService}
 import co.ledger.cria.domain.services.interpreter.InterpreterImpl
 import co.ledger.cria.utils.{DbUtils, ResourceUtils}
 import doobie.util.transactor.Transactor
@@ -52,7 +53,9 @@ object App extends IOApp with DefaultContextLogging {
       .use { resources =>
         val clientResources = resources.clients
         val keychainClient  = new KeychainGrpcClient(clientResources.keychainGrpcChannel)
-        val explorerClient  = new ExplorerHttpClient(clientResources.httpClient, conf.explorer, _)
+        def explorerClient(c: Coin): ExplorerClient = new ExplorerClientAdapter(
+          new ExplorerHttpClient(clientResources.httpClient, conf.explorer, c)
+        )
         val interpreterClient = new InterpreterImpl(
           explorerClient,
           clientResources.transactor,

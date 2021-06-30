@@ -9,6 +9,7 @@ import cats.implicits._
 import co.ledger.cria.App.ClientResources
 import co.ledger.cria.clients.explorer.mocks.ExplorerClientMock
 import co.ledger.cria.clients.explorer.types.{Coin, CoinFamily, UnconfirmedTransaction}
+import co.ledger.cria.domain.adapters.explorer.ExplorerClientAdapter
 import co.ledger.cria.itutils.models.{GetOperationsResult, GetUtxosResult}
 import co.ledger.cria.itutils.{ContainerFlatSpec, TestUtils}
 import co.ledger.cria.utils.IOAssertion
@@ -18,10 +19,12 @@ import co.ledger.cria.domain.models.account.{Account, AccountId}
 import co.ledger.cria.domain.models.interpreter.{
   AccountTxView,
   BlockView,
+  ConfirmedTransactionView,
   InputView,
   OutputView,
   SyncId,
-  TransactionView
+  TransactionView,
+  UnconfirmedTransactionView
 }
 import co.ledger.cria.domain.models.keychain.{AccountAddress, ChangeType, KeychainId}
 import org.scalatest.matchers.should.Matchers
@@ -29,7 +32,9 @@ import fs2.Stream
 
 class InterpreterIT extends ContainerFlatSpec with Matchers {
 
-  val explorer = new ExplorerClientMock()
+  val mock = new ExplorerClientMock()
+
+  val explorer = new ExplorerClientAdapter(new ExplorerClientMock())
 
   val account: Account =
     Account(
@@ -82,8 +87,8 @@ class InterpreterIT extends ContainerFlatSpec with Matchers {
     )
   )
 
-  val coinbaseTx: TransactionView =
-    TransactionView(
+  val coinbaseTx: ConfirmedTransactionView =
+    ConfirmedTransactionView(
       "txId",
       "0f38e5f1b12078495a9e80c6e0d77af3d674cfe6096bb6e7909993a53b6e8386",
       time,
@@ -91,12 +96,12 @@ class InterpreterIT extends ContainerFlatSpec with Matchers {
       0,
       Nil,
       List(OutputView(0, 80000, inputAddress.accountAddress, "script", None, None)),
-      Some(block0),
+      block0,
       1
     )
 
-  val insertTx: TransactionView =
-    TransactionView(
+  val insertTx: ConfirmedTransactionView =
+    ConfirmedTransactionView(
       "txId",
       "a8a935c6bc2bd8b3a7c20f107a9eb5f10a315ce27de9d72f3f4e27ac9ec1eb1f",
       time,
@@ -104,7 +109,7 @@ class InterpreterIT extends ContainerFlatSpec with Matchers {
       20566,
       inputs,
       outputs,
-      Some(block0),
+      block0,
       1
     )
 
@@ -140,7 +145,7 @@ class InterpreterIT extends ContainerFlatSpec with Matchers {
             interpreter,
             List(
               coinbaseTx,
-              insertTx.copy(hash = "toto", block = Some(block1))
+              insertTx.copy(hash = "toto", block = block1)
             )
           )
 
@@ -224,7 +229,7 @@ class InterpreterIT extends ContainerFlatSpec with Matchers {
 
         val utils = new TestUtils(db)
 
-        val uTx = TransactionView(
+        val uTx = UnconfirmedTransactionView(
           "txId",
           "a8a935c6bc2bd8b3a7c20f107a9eb5f10a315ce27de9d72f3f4e27ac9ec1eb1f",
           time,
@@ -232,7 +237,6 @@ class InterpreterIT extends ContainerFlatSpec with Matchers {
           20566,
           inputs,
           outputs,
-          None,
           1
         )
         val uTx2 = uTx.copy(
@@ -324,7 +328,7 @@ class InterpreterIT extends ContainerFlatSpec with Matchers {
 
         val utils = new TestUtils(db)
 
-        val uTx1 = TransactionView(
+        val uTx1 = UnconfirmedTransactionView(
           "tx1",
           "tx1",
           time,
@@ -336,7 +340,6 @@ class InterpreterIT extends ContainerFlatSpec with Matchers {
           List(
             OutputView(0, 100000, outputAddress1.accountAddress, "script", None, None)
           ), // receive
-          None,
           1
         )
         addToExplorer(uTx1)
@@ -380,7 +383,7 @@ class InterpreterIT extends ContainerFlatSpec with Matchers {
           _ <- saveTxs(
             interpreter,
             List(
-              uTx1.copy(block = Some(BlockView("block1", 1L, time))), // mine first transaction
+              uTx1.mine(BlockView("block1", 1L, time)), // mine first transaction
               uTx2
             )
           )
@@ -396,8 +399,8 @@ class InterpreterIT extends ContainerFlatSpec with Matchers {
           _ <- saveTxs(
             interpreter,
             List(
-              uTx2.copy(block =
-                Some(BlockView("block2", 2L, time.plus(10, ChronoUnit.MINUTES)))
+              uTx2.mine(
+                BlockView("block2", 2L, time.plus(10, ChronoUnit.MINUTES))
               ), // mine second transaction
               uTx3
             )
@@ -474,7 +477,7 @@ class InterpreterIT extends ContainerFlatSpec with Matchers {
           second <- utils.getOperations(accountId, 10, Sort.Ascending, None)
           // The third time the transaction is not saved again, meaning that it disapeared from the network without being mined.
           // We now remove the transaction from the explorer
-          _ = explorer.removeFromBC(uTx1.tx.hash)
+          _ = mock.removeFromBC(uTx1.tx.hash)
           _     <- interpreter.compute(account, SyncId(UUID.randomUUID()), List(outputAddress1))
           third <- utils.getOperations(accountId, 10, Sort.Ascending, None)
         } yield {
@@ -487,7 +490,7 @@ class InterpreterIT extends ContainerFlatSpec with Matchers {
   }
 
   private def addToExplorer(tx: TransactionView) = {
-    explorer.addToBC(
+    mock.addToBC(
       UnconfirmedTransaction(
         tx.hash,
         tx.hash,
