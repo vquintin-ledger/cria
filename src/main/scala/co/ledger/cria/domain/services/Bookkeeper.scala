@@ -2,22 +2,19 @@ package co.ledger.cria.domain.services
 
 import cats.effect.{ContextShift, IO, Timer}
 import co.ledger.cria.clients.explorer.ExplorerClient
-import co.ledger.cria.clients.explorer.types.{
-  Coin,
-  ConfirmedTransaction,
-  DefaultInput,
-  Transaction,
-  UnconfirmedTransaction
-}
+import co.ledger.cria.clients.explorer.types.{Coin}
 import co.ledger.cria.domain.adapters.explorer.TypeHelper
 import fs2.{Pipe, Stream}
 import co.ledger.cria.logging.{ContextLogging, CriaLogContext}
 import co.ledger.cria.domain.models.account.AccountId
+import co.ledger.cria.domain.models.interpreter.{Confirmation, TransactionView}
 import co.ledger.cria.domain.models.keychain.{AccountAddress, ChangeType, KeychainId}
 import co.ledger.cria.domain.services.interpreter.Interpreter
+import shapeless.tag
+import shapeless.tag.@@
 
 trait Bookkeeper[F[_]] {
-  def record[Tx <: Transaction: Bookkeeper.Recordable](
+  def record[Tx <: Confirmation: Bookkeeper.Recordable](
       coin: Coin,
       accountId: AccountId,
       keychainId: KeychainId,
@@ -36,7 +33,7 @@ object Bookkeeper extends ContextLogging {
       interpreterClient: Interpreter
   )(implicit cs: ContextShift[IO]): Bookkeeper[IO] = new Bookkeeper[IO] {
 
-    override def record[Tx <: Transaction: Recordable](
+    override def record[Tx <: Confirmation: Recordable](
         coin: Coin,
         accountId: AccountId,
         keychainId: KeychainId,
@@ -79,12 +76,12 @@ object Bookkeeper extends ContextLogging {
 
   }
 
-  case class TransactionRecord[Tx <: Transaction: Recordable](
-      tx: Tx,
+  case class TransactionRecord[Tx <: Confirmation: Recordable](
+      tx: TransactionView @@ Tx,
       usedAddresses: List[AccountAddress]
   )
 
-  def fetchTransactionRecords[Tx <: Transaction](
+  def fetchTransactionRecords[Tx <: Confirmation](
       explorer: ExplorerClient,
       blockHash: Option[BlockHash]
   )(implicit
@@ -98,7 +95,7 @@ object Bookkeeper extends ContextLogging {
           .map(tx => TransactionRecord(tx, addressesUsed(addresses)(tx)))
       }
 
-  def saveTransactionRecords[Tx <: Transaction: Recordable](
+  def saveTransactionRecords[Tx <: Confirmation: Recordable](
       interpreter: Interpreter,
       accountId: AccountId
   )(implicit
@@ -112,19 +109,19 @@ object Bookkeeper extends ContextLogging {
         .as(chunk.map(a => a.usedAddresses).toList.flatten)
     }
 
-  def addressUsedBy(tx: Transaction)(accountAddress: AccountAddress): Boolean = {
+  def addressUsedBy(tx: TransactionView)(accountAddress: AccountAddress): Boolean = {
     tx.inputs
-      .collect { case i: DefaultInput => i.address }
+      .map(_.address)
       .contains(accountAddress.accountAddress) ||
     tx.outputs.map(_.address).contains(accountAddress.accountAddress)
   }
 
   def addressesUsed(
       accountAddresses: List[AccountAddress]
-  )(tx: Transaction): List[AccountAddress] =
+  )(tx: TransactionView): List[AccountAddress] =
     accountAddresses.filter(addressUsedBy(tx)).distinct
 
-  def markAddresses[Tx <: Transaction](
+  def markAddresses[Tx <: Confirmation](
       keychain: Keychain,
       keychainId: KeychainId
   )(implicit lc: CriaLogContext): Pipe[IO, List[AccountAddress], List[AccountAddress]] =
@@ -135,38 +132,50 @@ object Bookkeeper extends ContextLogging {
         keychain.markAsUsed(keychainId, usedAddresses)
     }
 
-  trait Recordable[Tx <: Transaction] {
+  trait Recordable[T <: Confirmation] {
     def fetch(
         explorer: ExplorerClient
-    )(addresses: Set[Address], block: Option[BlockHash]): Stream[IO, Tx]
+    )(addresses: Set[Address], block: Option[BlockHash]): Stream[IO, TransactionView @@ T]
 
     def save(interpreter: Interpreter)(accountId: AccountId)(implicit
         lc: CriaLogContext
-    ): Pipe[IO, Tx, Unit] =
-      _.map(TypeHelper.transaction.fromExplorer).through(interpreter.saveTransactions(accountId))
+    ): Pipe[IO, TransactionView, Unit] =
+      interpreter.saveTransactions(accountId)
   }
 
   implicit def confirmed(implicit
       cs: ContextShift[IO],
       t: Timer[IO],
       lc: CriaLogContext
-  ): Recordable[ConfirmedTransaction] =
-    new Recordable[ConfirmedTransaction] {
+  ): Recordable[Confirmation.Confirmed] =
+    new Recordable[Confirmation.Confirmed] {
       override def fetch(
           explorer: ExplorerClient
-      )(addresses: Set[Address], block: Option[BlockHash]): Stream[IO, ConfirmedTransaction] =
-        explorer.getConfirmedTransactions(addresses.toSeq, block)
+      )(
+          addresses: Set[Address],
+          block: Option[BlockHash]
+      ): Stream[IO, TransactionView @@ Confirmation.Confirmed] =
+        explorer
+          .getConfirmedTransactions(addresses.toSeq, block)
+          .map(TypeHelper.transaction.fromExplorer)
+          .map(tag[Confirmation.Confirmed].apply)
     }
 
   implicit def unconfirmedTransaction(implicit
       cs: ContextShift[IO],
       t: Timer[IO],
       lc: CriaLogContext
-  ): Recordable[UnconfirmedTransaction] =
-    new Recordable[UnconfirmedTransaction] {
+  ): Recordable[Confirmation.Unconfirmed] =
+    new Recordable[Confirmation.Unconfirmed] {
       override def fetch(
           explorer: ExplorerClient
-      )(addresses: Set[Address], block: Option[BlockHash]): Stream[IO, UnconfirmedTransaction] =
-        explorer.getUnconfirmedTransactions(addresses)
+      )(
+          addresses: Set[Address],
+          block: Option[BlockHash]
+      ): Stream[IO, TransactionView @@ Confirmation.Unconfirmed] =
+        explorer
+          .getUnconfirmedTransactions(addresses)
+          .map(TypeHelper.transaction.fromExplorer)
+          .map(tag[Confirmation.Unconfirmed].apply)
     }
 }

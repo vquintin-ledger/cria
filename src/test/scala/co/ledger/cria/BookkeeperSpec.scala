@@ -20,6 +20,7 @@ import org.scalatest.matchers.should.Matchers
 import java.util.UUID
 import co.ledger.cria.logging.DefaultContextLogging
 import co.ledger.cria.domain.models.account.AccountId
+import co.ledger.cria.domain.models.interpreter.Confirmation
 import co.ledger.cria.domain.models.keychain.{AccountAddress, ChangeType, KeychainId}
 import co.ledger.cria.domain.services.{Bookkeeper, Keychain}
 import co.ledger.cria.utils.IOAssertion
@@ -59,7 +60,7 @@ class BookkeeperSpec extends AnyFlatSpec with Matchers with DefaultContextLoggin
     )
 
     val addresses = bookkeeper
-      .record[UnconfirmedTransaction](
+      .record[Confirmation.Unconfirmed](
         Btc,
         accountId,
         keychainId,
@@ -91,7 +92,7 @@ class BookkeeperSpec extends AnyFlatSpec with Matchers with DefaultContextLoggin
     )
 
     val addresses = bookkeeper
-      .record[UnconfirmedTransaction](
+      .record[Confirmation.Unconfirmed](
         Btc,
         accountId,
         keychainId,
@@ -127,7 +128,7 @@ class BookkeeperSpec extends AnyFlatSpec with Matchers with DefaultContextLoggin
     )
 
     val _ = bookkeeper
-      .record[UnconfirmedTransaction](
+      .record[Confirmation.Unconfirmed](
         Btc,
         accountId,
         keychainId,
@@ -163,7 +164,7 @@ class BookkeeperSpec extends AnyFlatSpec with Matchers with DefaultContextLoggin
     )
 
     val _ = bookkeeper
-      .record[UnconfirmedTransaction](
+      .record[Confirmation.Unconfirmed](
         Btc,
         accountId,
         keychainId,
@@ -191,7 +192,7 @@ class BookkeeperSpec extends AnyFlatSpec with Matchers with DefaultContextLoggin
     )
 
     val addresses = bookkeeper
-      .record[UnconfirmedTransaction](
+      .record[Confirmation.Unconfirmed](
         Btc,
         accountId,
         keychainId,
@@ -242,7 +243,7 @@ class BookkeeperSpec extends AnyFlatSpec with Matchers with DefaultContextLoggin
       )
 
       addressesMatched <- bookkeeper
-        .record[ConfirmedTransaction](
+        .record[Confirmation.Confirmed](
           Btc,
           accountId,
           keychainId,
