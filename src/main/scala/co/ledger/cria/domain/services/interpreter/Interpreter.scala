@@ -2,13 +2,13 @@ package co.ledger.cria.domain.services.interpreter
 
 import cats.effect.{ContextShift, IO, Timer}
 import cats.implicits._
-import co.ledger.cria.clients.explorer.ExplorerClient
 import co.ledger.cria.clients.explorer.types.Coin
 import co.ledger.cria.domain.models.interpreter.{Action, BlockView, TransactionView}
 import co.ledger.cria.logging.{ContextLogging, CriaLogContext}
 import co.ledger.cria.domain.models.account.{Account, AccountId}
 import co.ledger.cria.domain.models.interpreter._
 import co.ledger.cria.domain.models.keychain.AccountAddress
+import co.ledger.cria.domain.services.ExplorerClient
 import co.ledger.cria.utils.IOUtils
 import doobie.Transactor
 import fs2._

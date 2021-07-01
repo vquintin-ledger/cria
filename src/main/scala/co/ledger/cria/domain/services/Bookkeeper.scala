@@ -1,16 +1,13 @@
 package co.ledger.cria.domain.services
 
 import cats.effect.{ContextShift, IO, Timer}
-import co.ledger.cria.clients.explorer.ExplorerClient
-import co.ledger.cria.clients.explorer.types.{Coin}
-import co.ledger.cria.domain.adapters.explorer.TypeHelper
+import co.ledger.cria.clients.explorer.types.Coin
 import fs2.{Pipe, Stream}
 import co.ledger.cria.logging.{ContextLogging, CriaLogContext}
 import co.ledger.cria.domain.models.account.AccountId
 import co.ledger.cria.domain.models.interpreter.{Confirmation, TransactionView}
 import co.ledger.cria.domain.models.keychain.{AccountAddress, ChangeType, KeychainId}
 import co.ledger.cria.domain.services.interpreter.Interpreter
-import shapeless.tag
 import shapeless.tag.@@
 
 trait Bookkeeper[F[_]] {
@@ -157,8 +154,6 @@ object Bookkeeper extends ContextLogging {
       ): Stream[IO, TransactionView @@ Confirmation.Confirmed] =
         explorer
           .getConfirmedTransactions(addresses.toSeq, block)
-          .map(TypeHelper.transaction.fromExplorer)
-          .map(tag[Confirmation.Confirmed].apply)
     }
 
   implicit def unconfirmedTransaction(implicit
@@ -175,7 +170,5 @@ object Bookkeeper extends ContextLogging {
       ): Stream[IO, TransactionView @@ Confirmation.Unconfirmed] =
         explorer
           .getUnconfirmedTransactions(addresses)
-          .map(TypeHelper.transaction.fromExplorer)
-          .map(tag[Confirmation.Unconfirmed].apply)
     }
 }

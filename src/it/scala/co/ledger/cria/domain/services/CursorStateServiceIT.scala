@@ -4,10 +4,11 @@ import java.time.Instant
 import java.util.UUID
 import cats.effect.{ContextShift, IO, Resource, Timer}
 import co.ledger.cria.clients.explorer.ExplorerHttpClient
-import co.ledger.cria.clients.explorer.types.{Block, Coin, CoinFamily}
+import co.ledger.cria.clients.explorer.types.{Coin, CoinFamily}
 import co.ledger.cria.clients.protocol.grpc.mocks.InterpreterClientMock
 import co.ledger.cria.clients.protocol.http.Clients
 import co.ledger.cria.config.Config
+import co.ledger.cria.domain.adapters.explorer.ExplorerClientAdapter
 import co.ledger.cria.logging.DefaultContextLogging
 import co.ledger.cria.domain.models.account.Account
 import co.ledger.cria.domain.models.interpreter.{BlockView, SyncId, TransactionView}
@@ -32,7 +33,8 @@ class CursorStateServiceIT extends AnyFlatSpecLike with Matchers with DefaultCon
 
   it should "get the last valid cursor state" in IOAssertion {
     resources.use { httpClient =>
-      val explorerClient     = new ExplorerHttpClient(httpClient, conf.explorer, Coin.Btc)
+      val explorerClient =
+        new ExplorerClientAdapter(new ExplorerHttpClient(httpClient, conf.explorer, Coin.Btc))
       val interpreterClient  = new InterpreterClientMock
       val cursorStateService = CursorStateService(explorerClient, interpreterClient)
 
@@ -74,7 +76,7 @@ class CursorStateServiceIT extends AnyFlatSpecLike with Matchers with DefaultCon
 
         block <- cursorStateService.getLastValidState(
           account,
-          Block(invalidHash, 0L, Instant.now()),
+          BlockView(invalidHash, 0L, Instant.now()),
           syncId
         )
       } yield {

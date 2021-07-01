@@ -1,17 +1,14 @@
 package co.ledger.cria.domain.services
 
 import cats.effect.{IO, Timer}
-import co.ledger.cria.clients.explorer.ExplorerClient
-import co.ledger.cria.clients.explorer.types.Block
-import co.ledger.cria.domain.adapters.explorer.TypeHelper
 import co.ledger.cria.logging.{ContextLogging, CriaLogContext}
 import co.ledger.cria.domain.models.account.{Account, AccountId}
-import co.ledger.cria.domain.models.interpreter.SyncId
+import co.ledger.cria.domain.models.interpreter.{BlockView, SyncId}
 import co.ledger.cria.domain.services.interpreter.Interpreter
 import org.http4s.client.UnexpectedStatus
 
 trait CursorStateService[F[_]] {
-  def getLastValidState(account: Account, block: Block, syncId: SyncId): F[Block]
+  def getLastValidState(account: Account, block: BlockView, syncId: SyncId): F[BlockView]
 }
 
 object CursorStateService {
@@ -27,7 +24,7 @@ object CursorStateService {
      * and for each block in reverse order, we check if it's a valid block.
      * The first valid block found this way is returned for the sync.
      */
-    def getLastValidState(account: Account, block: Block, syncId: SyncId): IO[Block] = {
+    def getLastValidState(account: Account, block: BlockView, syncId: SyncId): IO[BlockView] = {
 
       implicit val lc: CriaLogContext =
         CriaLogContext().withAccount(account).withCorrelationId(syncId)
@@ -37,7 +34,7 @@ object CursorStateService {
        * To be sure, we now support 2 signatures :
        * - In both cases a valid hash returns a 200 with a list of blocks
        * - An unknown valid hash return either a 404, or an empty list
-       * - An invalid hash returns either a 400 or a 500 error.
+       * - An invalid hash returns either a 40Block0 or a 500 error.
        */
 
       explorerClient
@@ -54,23 +51,24 @@ object CursorStateService {
         }
     }
 
-    private def fetchLastBlocksUntilValid(accountId: AccountId, block: Block)(implicit
+    private def fetchLastBlocksUntilValid(accountId: AccountId, block: BlockView)(implicit
         lc: CriaLogContext
-    ): IO[Block] = {
+    ): IO[BlockView] = {
       for {
         _ <- log.info(
           s"Block [hash: '${block.hash}', height: ${block.height}] has been invalidated, searching last known valid block."
         )
-        blockViews <- interpreterClient.getLastBlocks(accountId)
-        blocks = blockViews.map(TypeHelper.block.toExplorer)
-        lastValidBlock <- getlastValidBlockRec(blocks)
+        blockViews     <- interpreterClient.getLastBlocks(accountId)
+        lastValidBlock <- getlastValidBlockRec(blockViews)
         _ <- log.info(
           s"Block [hash: '${lastValidBlock.hash}', height: ${lastValidBlock.height}] is valid !"
         )
       } yield lastValidBlock
     }
 
-    private def getlastValidBlockRec(blocks: List[Block])(implicit lc: CriaLogContext): IO[Block] =
+    private def getlastValidBlockRec(
+        blocks: List[BlockView]
+    )(implicit lc: CriaLogContext): IO[BlockView] =
       blocks match {
         case Nil => IO.raiseError(new Exception("no valid block found in the last blocks..."))
         case block :: tail =>
@@ -89,9 +87,9 @@ object CursorStateService {
               }
       }
 
-    private def logUnexpectedError(b: Block, serverError: UnexpectedStatus)(implicit
+    private def logUnexpectedError(b: BlockView, serverError: UnexpectedStatus)(implicit
         lc: CriaLogContext
-    ): IO[Block] = {
+    ): IO[BlockView] = {
       log.error(
         s"Error ${serverError.status.code} while calling explorer with block : ${b.hash}"
       ) *>

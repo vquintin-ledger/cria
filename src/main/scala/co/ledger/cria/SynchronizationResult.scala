@@ -1,13 +1,15 @@
 package co.ledger.cria
 
-import co.ledger.cria.clients.explorer.types.Block
+import co.ledger.cria.domain.models.interpreter.BlockView
 
 sealed abstract class SynchronizationResult {
   def parameters: SynchronizationParameters
 }
 object SynchronizationResult {
-  final case class SynchronizationSuccess(parameters: SynchronizationParameters, newCursor: Block)
-      extends SynchronizationResult
+  final case class SynchronizationSuccess(
+      parameters: SynchronizationParameters,
+      newCursor: BlockView
+  ) extends SynchronizationResult
 
   final case class SynchronizationFailure(
       parameters: SynchronizationParameters,

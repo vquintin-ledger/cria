@@ -12,6 +12,13 @@ object TypeHelper {
         b.height,
         b.time
       )
+
+    def fromExplorer(b: explorer.Block): BlockView =
+      BlockView(
+        b.hash,
+        b.height,
+        b.time
+      )
   }
 
   object transaction {

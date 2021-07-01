@@ -7,8 +7,8 @@ import cats.data.NonEmptyList
 import cats.effect.IO
 import cats.implicits._
 import co.ledger.cria.App.ClientResources
-import co.ledger.cria.clients.explorer.mocks.ExplorerClientMock
-import co.ledger.cria.clients.explorer.types.{Coin, CoinFamily, UnconfirmedTransaction}
+import co.ledger.cria.domain.mocks.ExplorerClientMock
+import co.ledger.cria.clients.explorer.types.{Coin, CoinFamily}
 import co.ledger.cria.itutils.models.{GetOperationsResult, GetUtxosResult}
 import co.ledger.cria.itutils.{ContainerFlatSpec, TestUtils}
 import co.ledger.cria.utils.IOAssertion
@@ -488,7 +488,7 @@ class InterpreterIT extends ContainerFlatSpec with Matchers {
 
   private def addToExplorer(tx: TransactionView) = {
     explorer.addToBC(
-      UnconfirmedTransaction(
+      TransactionView(
         tx.hash,
         tx.hash,
         tx.receivedAt,
@@ -496,6 +496,7 @@ class InterpreterIT extends ContainerFlatSpec with Matchers {
         tx.fees,
         Seq(),
         Seq(),
+        None,
         tx.confirmations
       )
     )
