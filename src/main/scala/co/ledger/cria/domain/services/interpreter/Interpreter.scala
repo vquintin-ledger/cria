@@ -2,7 +2,6 @@ package co.ledger.cria.domain.services.interpreter
 
 import cats.effect.{ContextShift, IO, Timer}
 import cats.implicits._
-import co.ledger.cria.clients.explorer.types.Coin
 import co.ledger.cria.domain.models.interpreter.{Action, BlockView, TransactionView}
 import co.ledger.cria.logging.{ContextLogging, CriaLogContext}
 import co.ledger.cria.domain.models.account.{Account, AccountId}

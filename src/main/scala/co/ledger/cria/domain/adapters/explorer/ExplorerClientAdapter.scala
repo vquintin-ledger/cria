@@ -2,7 +2,7 @@ package co.ledger.cria.domain.adapters.explorer
 
 import cats.effect.{ContextShift, IO, Timer}
 import co.ledger.cria.clients.explorer
-import co.ledger.cria.domain.models.interpreter.{BlockView, Confirmation, TransactionView}
+import co.ledger.cria.domain.models.interpreter.{BlockView, Coin, Confirmation, TransactionView}
 import co.ledger.cria.domain.services.ExplorerClient
 import co.ledger.cria.logging.CriaLogContext
 import shapeless.tag
@@ -39,4 +39,9 @@ final class ExplorerClientAdapter(client: explorer.ExplorerClient) extends Explo
       transactionHash: String
   )(implicit lc: CriaLogContext, t: Timer[IO]): IO[Option[TransactionView]] =
     client.getTransaction(transactionHash).map(_.map(TypeHelper.transaction.fromExplorer))
+}
+
+object ExplorerClientAdapter {
+  def explorerForCoin(f: explorer.types.Coin => explorer.ExplorerClient)(c: Coin): ExplorerClient =
+    new ExplorerClientAdapter(f(TypeHelper.coin.toExplorer(c)))
 }

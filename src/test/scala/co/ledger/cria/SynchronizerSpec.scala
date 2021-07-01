@@ -2,9 +2,14 @@ package co.ledger.cria
 
 import cats.effect.{ContextShift, IO, Timer}
 import co.ledger.cria.domain.mocks.ExplorerClientMock
-import co.ledger.cria.clients.explorer.types.{Coin, CoinFamily}
 import co.ledger.cria.clients.protocol.grpc.mocks.InterpreterClientMock
-import co.ledger.cria.domain.models.interpreter.{BlockView, SyncId, TransactionView}
+import co.ledger.cria.domain.models.interpreter.{
+  BlockView,
+  Coin,
+  CoinFamily,
+  SyncId,
+  TransactionView
+}
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 

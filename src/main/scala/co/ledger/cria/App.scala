@@ -10,10 +10,10 @@ import cats.implicits._
 import co.ledger.cria.cli.CommandLineOptions
 import co.ledger.cria.config.Config
 import co.ledger.cria.clients.explorer.ExplorerHttpClient
-import co.ledger.cria.clients.explorer.types.Coin
 import co.ledger.cria.clients.protocol.http.Clients
 import co.ledger.cria.domain.adapters.explorer.ExplorerClientAdapter
 import co.ledger.cria.domain.adapters.keychain.KeychainGrpcClient
+import co.ledger.cria.domain.models.interpreter.Coin
 import co.ledger.cria.domain.services.{CursorStateService, HealthService}
 import co.ledger.cria.domain.services.interpreter.InterpreterImpl
 import co.ledger.cria.utils.{DbUtils, ResourceUtils}
@@ -53,10 +53,11 @@ object App extends IOApp with DefaultContextLogging {
       .use { resources =>
         val clientResources = resources.clients
         val keychainClient  = new KeychainGrpcClient(clientResources.keychainGrpcChannel)
-        val explorerClient = (c: Coin) =>
-          new ExplorerClientAdapter(
-            new ExplorerHttpClient(clientResources.httpClient, conf.explorer, c)
-          )
+        val explorerClient =
+          ExplorerClientAdapter
+            .explorerForCoin(
+              new ExplorerHttpClient(clientResources.httpClient, conf.explorer, _)
+            ) _
         val interpreterClient = new InterpreterImpl(
           explorerClient,
           clientResources.transactor,

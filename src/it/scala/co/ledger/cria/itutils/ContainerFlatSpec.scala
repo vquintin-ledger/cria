@@ -4,7 +4,6 @@ import cats.effect.{ContextShift, IO, Resource, Timer}
 import co.ledger.cria.App
 import co.ledger.cria.App.ClientResources
 import co.ledger.cria.clients.explorer.ExplorerHttpClient
-import co.ledger.cria.clients.explorer.types.Coin
 import co.ledger.cria.clients.protocol.grpc.GrpcClient
 import co.ledger.cria.config.{Config, GrpcClientConfig}
 import co.ledger.cria.domain.adapters.explorer.ExplorerClientAdapter
@@ -71,8 +70,9 @@ trait ContainerFlatSpec extends AnyFlatSpec with ForAllTestContainer with Defaul
   def testResources: Resource[IO, TestResources] =
     appResources.map { resources =>
       val explorerClient =
-        (c: Coin) =>
-          new ExplorerClientAdapter(new ExplorerHttpClient(resources.httpClient, conf.explorer, c))
+        ExplorerClientAdapter.explorerForCoin(
+          new ExplorerHttpClient(resources.httpClient, conf.explorer, _)
+        ) _
       val interpreterClient = new InterpreterImpl(
         explorerClient,
         resources.transactor,

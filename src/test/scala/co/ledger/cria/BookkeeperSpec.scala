@@ -4,15 +4,14 @@ import java.time.Instant
 import cats.effect.{ContextShift, IO, Timer}
 import co.ledger.cria.clients.protocol.grpc.mocks.InterpreterClientMock
 import co.ledger.cria.domain.mocks.ExplorerClientMock
-import co.ledger.cria.clients.explorer.types.Coin
-import co.ledger.cria.clients.explorer.types.Coin.Btc
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
 import java.util.UUID
 import co.ledger.cria.logging.DefaultContextLogging
 import co.ledger.cria.domain.models.account.AccountId
-import co.ledger.cria.domain.models.interpreter.{BlockView, Confirmation, TransactionView}
+import co.ledger.cria.domain.models.interpreter.Coin.Btc
+import co.ledger.cria.domain.models.interpreter.{BlockView, Coin, Confirmation, TransactionView}
 import co.ledger.cria.domain.models.keychain.{AccountAddress, ChangeType, KeychainId}
 import co.ledger.cria.domain.services.{Bookkeeper, ExplorerClient, Keychain}
 import co.ledger.cria.utils.IOAssertion
