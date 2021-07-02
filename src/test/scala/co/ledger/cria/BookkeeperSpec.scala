@@ -2,23 +2,21 @@ package co.ledger.cria
 
 import java.time.Instant
 import cats.effect.{ContextShift, IO, Timer}
-import co.ledger.cria.clients.grpc.mocks.InterpreterClientMock
-import co.ledger.cria.clients.http.ExplorerClient
-import co.ledger.cria.clients.http.ExplorerClient.Address
-import co.ledger.cria.clients.http.mocks.ExplorerClientMock
-import co.ledger.cria.models.explorer.{Block, ConfirmedTransaction, UnconfirmedTransaction}
-import co.ledger.cria.models.interpreter.{AccountAddress, ChangeType}
-import co.ledger.cria.services.{Bookkeeper, Keychain}
-import co.ledger.cria.models.account.Coin.Btc
+import co.ledger.cria.domain.mocks.ExplorerClientMock
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
 import java.util.UUID
 import co.ledger.cria.logging.DefaultContextLogging
-import co.ledger.cria.models.account.{AccountId, Coin}
-import co.ledger.cria.models.keychain.KeychainId
+import co.ledger.cria.domain.models.account.AccountId
+import co.ledger.cria.domain.models.interpreter.Coin.Btc
+import co.ledger.cria.domain.models.interpreter.{BlockView, Coin, Confirmation, TransactionView}
+import co.ledger.cria.domain.models.keychain.{AccountAddress, ChangeType, KeychainId}
+import co.ledger.cria.domain.services.interpreter.InterpreterClientMock
+import co.ledger.cria.domain.services.{Bookkeeper, ExplorerClient, Keychain}
 import co.ledger.cria.utils.IOAssertion
 import fs2.Stream
+import shapeless.tag.@@
 
 import scala.concurrent.ExecutionContext
 
@@ -28,8 +26,8 @@ class BookkeeperSpec extends AnyFlatSpec with Matchers with DefaultContextLoggin
   implicit val t: Timer[IO]         = IO.timer(ExecutionContext.global)
 
   def explorerClient(
-      mempool: Map[Address, List[UnconfirmedTransaction]] = Map.empty,
-      blockchain: Map[Address, List[ConfirmedTransaction]] = Map.empty
+      mempool: Map[String, List[TransactionView @@ Confirmation.Unconfirmed]] = Map.empty,
+      blockchain: Map[String, List[TransactionView @@ Confirmation.Confirmed]] = Map.empty
   ): Coin => ExplorerClient =
     _ => new ExplorerClientMock(blockchain, mempool)
   val accountId             = AccountId(UUID.randomUUID())
@@ -54,7 +52,7 @@ class BookkeeperSpec extends AnyFlatSpec with Matchers with DefaultContextLoggin
     )
 
     val addresses = bookkeeper
-      .record[UnconfirmedTransaction](
+      .record[Confirmation.Unconfirmed](
         Btc,
         accountId,
         keychainId,
@@ -86,7 +84,7 @@ class BookkeeperSpec extends AnyFlatSpec with Matchers with DefaultContextLoggin
     )
 
     val addresses = bookkeeper
-      .record[UnconfirmedTransaction](
+      .record[Confirmation.Unconfirmed](
         Btc,
         accountId,
         keychainId,
@@ -122,7 +120,7 @@ class BookkeeperSpec extends AnyFlatSpec with Matchers with DefaultContextLoggin
     )
 
     val _ = bookkeeper
-      .record[UnconfirmedTransaction](
+      .record[Confirmation.Unconfirmed](
         Btc,
         accountId,
         keychainId,
@@ -158,7 +156,7 @@ class BookkeeperSpec extends AnyFlatSpec with Matchers with DefaultContextLoggin
     )
 
     val _ = bookkeeper
-      .record[UnconfirmedTransaction](
+      .record[Confirmation.Unconfirmed](
         Btc,
         accountId,
         keychainId,
@@ -169,8 +167,7 @@ class BookkeeperSpec extends AnyFlatSpec with Matchers with DefaultContextLoggin
       .toList
       .unsafeRunSync()
 
-    val expectedSavedTransactions = transactions.values.flatten.map(_.toTransactionView)
-
+    val expectedSavedTransactions = transactions.values.flatten
     interpreter.savedUnconfirmedTransactions should have size 1
     interpreter.savedUnconfirmedTransactions.head._1 shouldBe accountId
     interpreter.savedUnconfirmedTransactions.head._2 should contain only (expectedSavedTransactions.toSeq: _*)
@@ -185,7 +182,7 @@ class BookkeeperSpec extends AnyFlatSpec with Matchers with DefaultContextLoggin
     )
 
     val addresses = bookkeeper
-      .record[UnconfirmedTransaction](
+      .record[Confirmation.Unconfirmed](
         Btc,
         accountId,
         keychainId,
@@ -223,7 +220,7 @@ class BookkeeperSpec extends AnyFlatSpec with Matchers with DefaultContextLoggin
       addressUsed = addressesToUse.takeRight(10).head
       transaction = Map(
         addressUsed -> List(
-          TransactionFixture.confirmed.transfer(addressUsed, Block("hash", 1L, Instant.now()))
+          TransactionFixture.confirmed.transfer(addressUsed, BlockView("hash", 1L, Instant.now()))
         )
       )
 
@@ -236,7 +233,7 @@ class BookkeeperSpec extends AnyFlatSpec with Matchers with DefaultContextLoggin
       )
 
       addressesMatched <- bookkeeper
-        .record[ConfirmedTransaction](
+        .record[Confirmation.Confirmed](
           Btc,
           accountId,
           keychainId,

@@ -1,9 +1,6 @@
 package co.ledger.cria
 
 import cats.effect.{ExitCode, IO, IOApp, Resource}
-import co.ledger.cria.clients.grpc.KeychainGrpcClient
-import co.ledger.cria.clients.http.ExplorerHttpClient
-import co.ledger.cria.services.{CursorStateService, HealthService}
 import co.ledger.cria.logging.DefaultContextLogging
 import co.ledger.cria.utils.ResourceUtils.grpcManagedChannel
 import io.grpc.{ManagedChannel, Server}
@@ -12,9 +9,15 @@ import pureconfig.ConfigSource
 import cats.implicits._
 import co.ledger.cria.cli.CommandLineOptions
 import co.ledger.cria.config.Config
-import co.ledger.cria.clients.Clients
-import co.ledger.cria.models.account.Coin
-import co.ledger.cria.services.interpreter.InterpreterImpl
+import co.ledger.cria.clients.explorer.ExplorerHttpClient
+import co.ledger.cria.clients.protocol.http.Clients
+import co.ledger.cria.domain.Synchronizer
+import co.ledger.cria.domain.adapters.explorer.ExplorerClientAdapter
+import co.ledger.cria.domain.adapters.keychain.KeychainGrpcClient
+import co.ledger.cria.domain.models.{SynchronizationParameters, SynchronizationResult}
+import co.ledger.cria.domain.models.interpreter.Coin
+import co.ledger.cria.domain.services.{CursorStateService, HealthService}
+import co.ledger.cria.domain.services.interpreter.InterpreterImpl
 import co.ledger.cria.utils.{DbUtils, ResourceUtils}
 import doobie.util.transactor.Transactor
 
@@ -52,7 +55,11 @@ object App extends IOApp with DefaultContextLogging {
       .use { resources =>
         val clientResources = resources.clients
         val keychainClient  = new KeychainGrpcClient(clientResources.keychainGrpcChannel)
-        val explorerClient  = new ExplorerHttpClient(clientResources.httpClient, conf.explorer, _)
+        val explorerClient =
+          ExplorerClientAdapter
+            .explorerForCoin(
+              new ExplorerHttpClient(clientResources.httpClient, conf.explorer, _)
+            ) _
         val interpreterClient = new InterpreterImpl(
           explorerClient,
           clientResources.transactor,

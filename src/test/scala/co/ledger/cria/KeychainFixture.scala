@@ -2,19 +2,10 @@ package co.ledger.cria
 
 import cats.data.NonEmptyList
 import cats.effect.IO
-import co.ledger.cria.clients.grpc.KeychainClient
-import co.ledger.cria.clients.http.ExplorerClient.Address
-import co.ledger.cria.models.interpreter.{AccountAddress, ChangeType}
-import co.ledger.cria.models.keychain.{
-  AccountKey,
-  BitcoinLikeNetwork,
-  BitcoinNetwork,
-  KeychainId,
-  KeychainInfo
-}
-
-import java.util.UUID
-import co.ledger.cria.models.account.Scheme
+import co.ledger.cria.clients.explorer.ExplorerClient.Address
+import co.ledger.cria.domain.models.keychain
+import co.ledger.cria.domain.models.keychain.{AccountAddress, ChangeType, KeychainId}
+import co.ledger.cria.domain.services.KeychainClient
 
 import scala.collection.mutable
 
@@ -30,38 +21,7 @@ object KeychainFixture {
   ): KeychainClient with UsedAddressesTracker =
     new KeychainClient with UsedAddressesTracker {
 
-      override def create(
-          accountKey: AccountKey,
-          scheme: Scheme,
-          lookaheadSize: Int,
-          network: BitcoinLikeNetwork
-      ): IO[KeychainInfo] =
-        IO.delay(
-          KeychainInfo(
-            KeychainId(UUID.randomUUID()),
-            "",
-            "",
-            "",
-            "",
-            lookaheadSize,
-            scheme,
-            network
-          )
-        )
-
-      override def getKeychainInfo(keychainId: KeychainId): IO[KeychainInfo] =
-        IO.delay(
-          KeychainInfo(
-            KeychainId(keychainId.value),
-            externalDescriptor = "externalDesc",
-            internalDescriptor = "internalDesc",
-            extendedPublicKey = "extendedPublicKey",
-            slip32ExtendedPublicKey = "slip32ExtendedPublicKey",
-            lookaheadSize = lookaheadSize,
-            scheme = Scheme.Bip44,
-            network = BitcoinNetwork.MainNet
-          )
-        )
+      override def getLookaheadSize(keychainId: KeychainId): IO[Int] = IO.pure(lookaheadSize)
 
       override def getAddresses(
           keychainId: KeychainId,
@@ -91,7 +51,7 @@ object KeychainFixture {
         for {
           knownAddresses <- IO(
             newlyMarkedAddresses.keys.toList.map(
-              AccountAddress(_, ChangeType.External, derivation = NonEmptyList.one(1))
+              keychain.AccountAddress(_, ChangeType.External, derivation = NonEmptyList.one(1))
             )
           )
 
@@ -102,22 +62,6 @@ object KeychainFixture {
           )
 
         } yield knownAddresses ++ newAddresses
-
-      override def getFreshAddresses(
-          keychainId: KeychainId,
-          change: ChangeType,
-          size: Int
-      ): IO[List[AccountAddress]] = ???
-
-      override def getAddressesPublicKeys(
-          keychainId: KeychainId,
-          derivations: List[List[Int]]
-      ): IO[List[String]] = ???
-
-      override def deleteKeychain(keychainId: KeychainId): IO[Unit] = ???
-
-      override def resetKeychain(keychainId: KeychainId): IO[Unit] = ???
-
     }
 
 }

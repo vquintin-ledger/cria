@@ -1,8 +1,8 @@
 package co.ledger.cria.logging
 
-import co.ledger.cria.models.account.{Account, AccountId, Coin, CoinFamily}
-import co.ledger.cria.models.interpreter.SyncId
-import co.ledger.cria.models.keychain.KeychainId
+import co.ledger.cria.domain.models.account.{Account, AccountId}
+import co.ledger.cria.domain.models.interpreter.{Coin, CoinFamily, SyncId}
+import co.ledger.cria.domain.models.keychain.KeychainId
 
 case class CriaLogContext(
     accountId: Option[AccountId] = None,
