@@ -39,6 +39,7 @@ services:
       REDIS_PASSWORD: ${REDIS_PASSWORD}
       REDIS_SSL: ${REDIS_SSL}
       REDIS_DB: ${BITCOIN_KEYCHAIN_REDIS_DB}
+      STORE_TYPE: ${BITCOIN_KEYCHAIN_STORE_TYPE:-wd}
     depends_on:
       - redis
       - bitcoin-lib-grpc

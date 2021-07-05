@@ -8,7 +8,9 @@
       "lookahead_size": 20,
       "coin": "ltc",
       "sync_id": "f7021dcd-215d-4306-ba92-a4a883649125",
-      "wallet_uid": "5e2da313-ec04-4f76-bee7-3da3ba943bf1"
+      "wallet_uid": "5e2da313-ec04-4f76-bee7-3da3ba943bf1",
+      "account_index": 5,
+      "metadata": "nolibcore:testworkspace"
     },
     "expected": {
       "extended_public_key": "Ltub2YVEdR2HA21h8snykKmpKoARQqjvVKUv36fLDsisBBxt8tSLKhmPA97vem7Be9GoomUDpVoj4f84So16mAf58LJdHEWKDpmk1wNbXHzPAYu",

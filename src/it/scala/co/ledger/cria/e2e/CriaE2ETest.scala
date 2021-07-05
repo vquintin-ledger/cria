@@ -57,7 +57,10 @@ class CriaE2ETest extends ContainerFlatSpec with Matchers {
             request.accountKey.toProto,
             request.scheme.toProto,
             request.lookaheadSize,
-            Some(request.coin.toNetwork.toKeychainChainParamsProto)
+            Some(request.coin.toNetwork.toKeychainChainParamsProto),
+            request.accountIndex,
+            request.metadata
+
           ),
           new Metadata
         )
@@ -104,7 +107,9 @@ object CriaE2ETest {
       lookaheadSize: Int,
       coin: Coin,
       syncId: UUID,
-      walletUid: UUID
+      walletUid: UUID,
+      accountIndex: Int,
+      metadata: String
   )
 
   case class SyncResult(
