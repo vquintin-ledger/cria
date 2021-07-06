@@ -2,6 +2,7 @@ package co.ledger.cria
 
 import cats.data.NonEmptyList
 import co.ledger.cria.clients.explorer.ExplorerClient.Address
+import co.ledger.cria.domain.models.TxHash
 import co.ledger.cria.domain.models.interpreter.{
   BlockView,
   Confirmation,
@@ -9,6 +10,7 @@ import co.ledger.cria.domain.models.interpreter.{
   OutputView,
   TransactionView
 }
+import co.ledger.cria.utils.HexUtils
 import shapeless.tag
 import shapeless.tag.@@
 
@@ -77,7 +79,7 @@ object TransactionFixture {
   ): TransactionView @@ Confirmation.Unconfirmed = tag[Confirmation.Unconfirmed](
     TransactionView(
       id = s"id-${Random.nextInt(100)}",
-      hash = s"hash${Random.nextInt(6)}",
+      hash = randomTxHash(),
       receivedAt = Instant.now(),
       lockTime = 0L,
       fees = 1,
@@ -95,7 +97,7 @@ object TransactionFixture {
   ): TransactionView @@ Confirmation.Confirmed = tag[Confirmation.Confirmed](
     TransactionView(
       id = s"id-${Random.nextInt(100) + 100}",
-      hash = s"hash${Random.nextInt(6) + 6}",
+      hash = randomTxHash(),
       receivedAt = Instant.now(),
       lockTime = 0L,
       fees = 1,
@@ -106,4 +108,6 @@ object TransactionFixture {
     )
   )
 
+  def randomTxHash(): TxHash =
+    TxHash.fromStringUnsafe(HexUtils.valueOf(Random.nextBytes(32)))
 }

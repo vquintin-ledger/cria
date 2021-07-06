@@ -169,7 +169,7 @@ class InterpreterClientMock extends Interpreter {
       Operation
         .uid(
           accountId,
-          Operation.TxId(tx.id),
+          tx.hash,
           operationType,
           tx.block.map(_.height)
         ),

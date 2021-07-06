@@ -1,7 +1,13 @@
 package co.ledger.cria.domain.mocks
 
 import cats.effect.{ContextShift, IO, Timer}
-import co.ledger.cria.domain.models.interpreter.{BlockView, Confirmation, TransactionView}
+import co.ledger.cria.domain.models.TxHash
+import co.ledger.cria.domain.models.interpreter.{
+  BlockHash,
+  BlockView,
+  Confirmation,
+  TransactionView
+}
 import co.ledger.cria.domain.services.ExplorerClient
 import co.ledger.cria.logging.CriaLogContext
 import fs2.Stream
@@ -22,7 +28,7 @@ class ExplorerClientMock(
   def getCurrentBlock(implicit lc: CriaLogContext, t: Timer[IO]): IO[BlockView] =
     IO.pure(blockchain.values.flatten.flatMap(_.block).max)
 
-  def getBlock(hash: String)(implicit lc: CriaLogContext, t: Timer[IO]): IO[Option[BlockView]] =
+  def getBlock(hash: BlockHash)(implicit lc: CriaLogContext, t: Timer[IO]): IO[Option[BlockView]] =
     IO.pure(blocks.find(_.hash == hash))
 
   def getUnconfirmedTransactions(
@@ -36,7 +42,7 @@ class ExplorerClientMock(
     Stream.emits(addresses.flatMap(mempool.get).flatten.toSeq)
   }
 
-  def getConfirmedTransactions(addresses: Seq[String], blockHash: Option[String])(implicit
+  def getConfirmedTransactions(addresses: Seq[String], blockHash: Option[BlockHash])(implicit
       cs: ContextShift[IO],
       t: Timer[IO],
       lc: CriaLogContext
@@ -45,12 +51,12 @@ class ExplorerClientMock(
     Stream.emits(addresses.flatMap(blockchain.get).flatten)
   }
 
-  val txs: mutable.Map[String, TransactionView] = mutable.Map()
+  val txs: mutable.Map[TxHash, TransactionView] = mutable.Map()
   def addToBC(tx: TransactionView): Unit        = txs.update(tx.hash, tx)
-  def removeFromBC(hash: String): Unit          = txs.remove(hash)
+  def removeFromBC(hash: TxHash): Unit          = txs.remove(hash)
 
   def getTransaction(
-      transactionHash: String
+      transactionHash: TxHash
   )(implicit lc: CriaLogContext, t: Timer[IO]): IO[Option[TransactionView]] = {
     IO.pure(txs.get(transactionHash))
   }

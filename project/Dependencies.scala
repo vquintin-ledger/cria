@@ -16,7 +16,14 @@ object Dependencies extends DependencyBuilders with LibraryManagementSyntax {
     "io.circe" %% "circe-core"           % circeVersion,
     "io.circe" %% "circe-parser"         % circeVersion,
     "io.circe" %% "circe-generic"        % circeVersion,
-    "io.circe" %% "circe-generic-extras" % circeVersion
+    "io.circe" %% "circe-generic-extras" % circeVersion,
+    "io.circe" %% "circe-refined"        % circeVersion
+  )
+
+  val refinedVersion = "0.9.26"
+  val refined: Seq[ModuleID] = Seq(
+    "eu.timepit" %% "refined"      % refinedVersion,
+    "eu.timepit" %% "refined-cats" % refinedVersion
   )
 
   val H2Version     = "1.4.200"
@@ -28,7 +35,8 @@ object Dependencies extends DependencyBuilders with LibraryManagementSyntax {
     "org.tpolecat"  %% "doobie-core"     % doobieVersion,
     "org.tpolecat"  %% "doobie-postgres" % doobieVersion,
     "org.tpolecat"  %% "doobie-hikari"   % doobieVersion,
-    "org.tpolecat"  %% "doobie-h2"       % doobieVersion
+    "org.tpolecat"  %% "doobie-h2"       % doobieVersion,
+    "org.tpolecat"  %% "doobie-refined"  % doobieVersion
   )
 
   val pureconfigVersion   = "0.15.0"
@@ -76,5 +84,5 @@ object Dependencies extends DependencyBuilders with LibraryManagementSyntax {
     "com.google.protobuf"   % "protobuf-java"     % protobufJava
   )
 
-  val cria: Seq[ModuleID] = circe ++ utilities ++ postgres ++ http4s ++ cli
+  val cria: Seq[ModuleID] = circe ++ utilities ++ postgres ++ http4s ++ cli ++ refined
 }

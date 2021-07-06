@@ -10,7 +10,13 @@ import java.util.UUID
 import co.ledger.cria.logging.DefaultContextLogging
 import co.ledger.cria.domain.models.account.AccountId
 import co.ledger.cria.domain.models.interpreter.Coin.Btc
-import co.ledger.cria.domain.models.interpreter.{BlockView, Coin, Confirmation, TransactionView}
+import co.ledger.cria.domain.models.interpreter.{
+  BlockHash,
+  BlockView,
+  Coin,
+  Confirmation,
+  TransactionView
+}
 import co.ledger.cria.domain.models.keychain.{AccountAddress, ChangeType, KeychainId}
 import co.ledger.cria.domain.services.interpreter.InterpreterClientMock
 import co.ledger.cria.domain.services.{Bookkeeper, ExplorerClient, Keychain}
@@ -220,7 +226,16 @@ class BookkeeperSpec extends AnyFlatSpec with Matchers with DefaultContextLoggin
       addressUsed = addressesToUse.takeRight(10).head
       transaction = Map(
         addressUsed -> List(
-          TransactionFixture.confirmed.transfer(addressUsed, BlockView("hash", 1L, Instant.now()))
+          TransactionFixture.confirmed.transfer(
+            addressUsed,
+            BlockView(
+              BlockHash.fromStringUnsafe(
+                "00000000eb3abe7272f133b99a919e106d964778a9092478ef9e2e5bc26a009b"
+              ),
+              1L,
+              Instant.now()
+            )
+          )
         )
       )
 

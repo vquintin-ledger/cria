@@ -5,6 +5,7 @@ import co.ledger.cria.domain.mocks.ExplorerClientMock
 import co.ledger.cria.domain.Synchronizer
 import co.ledger.cria.domain.models.SynchronizationParameters
 import co.ledger.cria.domain.models.interpreter.{
+  BlockHash,
   BlockView,
   Coin,
   CoinFamily,
@@ -20,9 +21,10 @@ import co.ledger.cria.domain.models.account.Account
 import co.ledger.cria.domain.models.keychain.KeychainId
 import co.ledger.cria.domain.services.{CursorStateService, ExplorerClient}
 import co.ledger.cria.domain.services.interpreter.{Interpreter, InterpreterClientMock}
-import co.ledger.cria.utils.IOAssertion
+import co.ledger.cria.utils.{HexUtils, IOAssertion}
 
 import scala.concurrent.ExecutionContext
+import scala.util.Random
 
 class SynchronizerSpec extends AnyFlatSpec with Matchers {
 
@@ -41,12 +43,15 @@ class SynchronizerSpec extends AnyFlatSpec with Matchers {
   val blockchain = LazyList
     .from(0)
     .map { i =>
-      val block   = BlockView((i + 1000).toString, i, Instant.now())
+      val block   = BlockView(randomBlockHash(), i, Instant.now())
       val address = i.toString
       block -> List(address -> List(TransactionFixture.confirmed.receive(address, inBlock = block)))
     }
     .take(5)
     .toList
+
+  private def randomBlockHash(): BlockHash =
+    BlockHash.fromStringUnsafe(HexUtils.valueOf(Random.nextBytes(32)))
 
   val mempool = LazyList
     .from(100)

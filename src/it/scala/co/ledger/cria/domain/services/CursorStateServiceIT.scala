@@ -7,9 +7,11 @@ import co.ledger.cria.clients.explorer.ExplorerHttpClient
 import co.ledger.cria.clients.protocol.http.Clients
 import co.ledger.cria.config.Config
 import co.ledger.cria.domain.adapters.explorer.ExplorerClientAdapter
+import co.ledger.cria.domain.models.TxHash
 import co.ledger.cria.logging.DefaultContextLogging
 import co.ledger.cria.domain.models.account.Account
 import co.ledger.cria.domain.models.interpreter.{
+  BlockHash,
   BlockView,
   Coin,
   CoinFamily,
@@ -50,9 +52,13 @@ class CursorStateServiceIT extends AnyFlatSpecLike with Matchers with DefaultCon
       val accountId = account.id
       val syncId    = SyncId(UUID.randomUUID())
 
-      val lastValidHash   = "00000000000000000008c76a28e115319fb747eb29a7e0794526d0fe47608379"
+      val lastValidHash = BlockHash.fromStringUnsafe(
+        "00000000000000000008c76a28e115319fb747eb29a7e0794526d0fe47608379"
+      )
       val lastValidHeight = 559033L
-      val invalidHash     = "00000000000000000008c76a28e115319fb747eb29a7e0794526d0fe47608376"
+      val invalidHash = BlockHash.fromStringUnsafe(
+        "00000000000000000008c76a28e115319fb747eb29a7e0794526d0fe47608376"
+      )
 
       for {
         // save transactions to create "blocks" in the interpreter
@@ -96,13 +102,13 @@ class CursorStateServiceIT extends AnyFlatSpecLike with Matchers with DefaultCon
   private def createTx(blockHash: String, height: Long) =
     TransactionView(
       "id",
-      "hash",
+      TxHash.fromStringUnsafe("b55ba601af2e705c11f8a62dc72c34b052b4f0be0eaf6ba2025e513d86194de9"),
       Instant.now(),
       0L,
       1,
       Nil,
       Nil,
-      Some(BlockView(blockHash, height, Instant.now())),
+      Some(BlockView(BlockHash.fromStringUnsafe(blockHash), height, Instant.now())),
       0
     )
 

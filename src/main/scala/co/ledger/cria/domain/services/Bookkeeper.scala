@@ -4,7 +4,7 @@ import cats.effect.{ContextShift, IO, Timer}
 import fs2.{Pipe, Stream}
 import co.ledger.cria.logging.{ContextLogging, CriaLogContext}
 import co.ledger.cria.domain.models.account.AccountId
-import co.ledger.cria.domain.models.interpreter.{Coin, Confirmation, TransactionView}
+import co.ledger.cria.domain.models.interpreter.{BlockHash, Coin, Confirmation, TransactionView}
 import co.ledger.cria.domain.models.keychain.{AccountAddress, ChangeType, KeychainId}
 import co.ledger.cria.domain.services.interpreter.Interpreter
 import shapeless.tag.@@
@@ -15,13 +15,12 @@ trait Bookkeeper[F[_]] {
       accountId: AccountId,
       keychainId: KeychainId,
       change: ChangeType,
-      blockHash: Option[Bookkeeper.BlockHash]
+      blockHash: Option[BlockHash]
   )(implicit lc: CriaLogContext): Stream[F, AccountAddress]
 }
 
 object Bookkeeper extends ContextLogging {
-  type Address   = String
-  type BlockHash = String
+  type Address = String
 
   def apply(
       keychain: Keychain,

@@ -143,10 +143,10 @@ class TestUtils(db: Transactor[IO]) {
     Operation(
       uid = emptyOperation.op.uid,
       accountId = emptyOperation.op.accountId,
-      hash = emptyOperation.op.hash.hex,
+      hash = emptyOperation.op.hash,
       transaction = TransactionView(
         id = emptyOperation.tx.id,
-        hash = emptyOperation.tx.hash.hex,
+        hash = emptyOperation.tx.hash,
         receivedAt = emptyOperation.tx.receivedAt,
         lockTime = emptyOperation.tx.lockTime,
         fees = emptyOperation.tx.fees,

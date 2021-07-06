@@ -13,7 +13,7 @@ import io.circe.{Decoder, Encoder}
 case class OperationToSave(
     uid: Operation.UID,
     accountId: AccountId,
-    hash: String,
+    hash: TxHash,
     operationType: OperationType,
     value: BigInt,
     fees: BigInt,
@@ -31,7 +31,7 @@ object OperationToSave {
 
 case class TransactionAmounts(
     accountId: AccountId,
-    hash: String,
+    hash: TxHash,
     blockHash: Option[String],
     blockHeight: Option[Long],
     blockTime: Option[Instant],
@@ -68,7 +68,7 @@ case class TransactionAmounts(
   private def makeOperationToSave(amount: BigInt, operationType: OperationType) = {
     OperationToSave(
       Operation
-        .uid(accountId, Operation.TxId(hash), operationType, blockHeight),
+        .uid(accountId, hash, operationType, blockHeight),
       accountId = accountId,
       hash = hash,
       operationType = operationType,

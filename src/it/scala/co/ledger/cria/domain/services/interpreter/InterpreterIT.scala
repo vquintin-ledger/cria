@@ -12,10 +12,11 @@ import co.ledger.cria.itutils.models.{GetOperationsResult, GetUtxosResult}
 import co.ledger.cria.itutils.{ContainerFlatSpec, TestUtils}
 import co.ledger.cria.utils.IOAssertion
 import co.ledger.cria.logging.CriaLogContext
-import co.ledger.cria.domain.models.{Sort, keychain}
+import co.ledger.cria.domain.models.{Sort, TxHash, keychain}
 import co.ledger.cria.domain.models.account.{Account, AccountId}
 import co.ledger.cria.domain.models.interpreter.{
   AccountTxView,
+  BlockHash,
   BlockView,
   Coin,
   CoinFamily,
@@ -60,7 +61,7 @@ class InterpreterIT extends ContainerFlatSpec with Matchers {
   private val time: Instant = Instant.parse("2019-04-04T10:03:22Z")
 
   val block0: BlockView = BlockView(
-    "00000000000000000008c76a28e115319fb747eb29a7e0794526d0fe47608379",
+    BlockHash.fromStringUnsafe("00000000000000000008c76a28e115319fb747eb29a7e0794526d0fe47608379"),
     570153,
     time
   )
@@ -86,7 +87,7 @@ class InterpreterIT extends ContainerFlatSpec with Matchers {
   val coinbaseTx: TransactionView =
     TransactionView(
       "txId",
-      "0f38e5f1b12078495a9e80c6e0d77af3d674cfe6096bb6e7909993a53b6e8386",
+      TxHash.fromStringUnsafe("0f38e5f1b12078495a9e80c6e0d77af3d674cfe6096bb6e7909993a53b6e8386"),
       time,
       0,
       0,
@@ -99,7 +100,7 @@ class InterpreterIT extends ContainerFlatSpec with Matchers {
   val insertTx: TransactionView =
     TransactionView(
       "txId",
-      "a8a935c6bc2bd8b3a7c20f107a9eb5f10a315ce27de9d72f3f4e27ac9ec1eb1f",
+      TxHash.fromStringUnsafe("a8a935c6bc2bd8b3a7c20f107a9eb5f10a315ce27de9d72f3f4e27ac9ec1eb1f"),
       time,
       0,
       20566,
@@ -125,7 +126,9 @@ class InterpreterIT extends ContainerFlatSpec with Matchers {
         val utils = new TestUtils(db)
 
         val block1 = BlockView(
-          "0000000000000000000cc9cc204cf3b314d106e69afbea68f2ae7f9e5047ba74",
+          BlockHash.fromStringUnsafe(
+            "0000000000000000000cc9cc204cf3b314d106e69afbea68f2ae7f9e5047ba74"
+          ),
           block0.height + 1,
           time
         )
@@ -133,15 +136,20 @@ class InterpreterIT extends ContainerFlatSpec with Matchers {
         // intentionally disordered
         val blocksToSave = List(block1, block0)
 
-        addToExplorer(coinbaseTx)
-        addToExplorer(insertTx)
+        explorer.addToBC(coinbaseTx)
+        explorer.addToBC(insertTx)
 
         for {
           _ <- saveTxs(
             interpreter,
             List(
               coinbaseTx,
-              insertTx.copy(hash = "toto", block = Some(block1))
+              insertTx.copy(
+                hash = TxHash.fromStringUnsafe(
+                  "1c66772c25c49d2baf9b2ca04aa72eea9cb998dc7dc66c0a704948d20a197349"
+                ),
+                block = Some(block1)
+              )
             )
           )
 
@@ -227,7 +235,9 @@ class InterpreterIT extends ContainerFlatSpec with Matchers {
 
         val uTx = TransactionView(
           "txId",
-          "a8a935c6bc2bd8b3a7c20f107a9eb5f10a315ce27de9d72f3f4e27ac9ec1eb1f",
+          TxHash.fromStringUnsafe(
+            "a8a935c6bc2bd8b3a7c20f107a9eb5f10a315ce27de9d72f3f4e27ac9ec1eb1f"
+          ),
           time,
           0,
           20566,
@@ -238,11 +248,13 @@ class InterpreterIT extends ContainerFlatSpec with Matchers {
         )
         val uTx2 = uTx.copy(
           id = "txId2",
-          hash = "a8a935c6bc2bd8b3a7c20f107a9eb5f10a315ce27de9d72f3f4e27ac9ec1eb1e"
+          hash = TxHash.fromStringUnsafe(
+            "a8a935c6bc2bd8b3a7c20f107a9eb5f10a315ce27de9d72f3f4e27ac9ec1eb1e"
+          )
         )
 
-        addToExplorer(uTx)
-        addToExplorer(uTx2)
+        explorer.addToBC(uTx)
+        explorer.addToBC(uTx2)
 
         for {
           _ <- saveTxs(interpreter, List(uTx, uTx2))
@@ -277,7 +289,9 @@ class InterpreterIT extends ContainerFlatSpec with Matchers {
 
         val uTx = TransactionView(
           "txId",
-          "a8a935c6bc2bd8b3a7c20f107a9eb5f10a315ce27de9d72f3f4e27ac9ec1eb1f",
+          TxHash.fromStringUnsafe(
+            "a8a935c6bc2bd8b3a7c20f107a9eb5f10a315ce27de9d72f3f4e27ac9ec1eb1f"
+          ),
           time,
           0,
           20566,
@@ -286,11 +300,13 @@ class InterpreterIT extends ContainerFlatSpec with Matchers {
           None,
           1
         )
-        addToExplorer(uTx)
+        explorer.addToBC(uTx)
 
         val tx = TransactionView(
           "txId",
-          "a8a935c6bc2bd8b3a7c20f107a9eb5f10a315ce27de9d72f3f4e27ac9ec1eb1f",
+          TxHash.fromStringUnsafe(
+            "a8a935c6bc2bd8b3a7c20f107a9eb5f10a315ce27de9d72f3f4e27ac9ec1eb1f"
+          ),
           time,
           0,
           20566,
@@ -327,7 +343,9 @@ class InterpreterIT extends ContainerFlatSpec with Matchers {
 
         val uTx1 = TransactionView(
           "tx1",
-          "tx1",
+          TxHash.fromStringUnsafe(
+            "b23ed6a7362a45ed880d29aa601baed2ee718b440a562daf31473a65fc99d0c7"
+          ),
           time,
           0,
           1000,
@@ -340,20 +358,24 @@ class InterpreterIT extends ContainerFlatSpec with Matchers {
           None,
           1
         )
-        addToExplorer(uTx1)
+        explorer.addToBC(uTx1)
 
         val uTx2 = uTx1.copy(
           id = "tx2",
-          hash = "tx2",
+          hash = TxHash.fromStringUnsafe(
+            "8f6ffe55e14c78025c9ee5e9a31f3562dedb6d36157c7cc1eda9dae7b6b25a7e"
+          ),
           outputs = List(
             OutputView(0, 5000, outputAddress2.accountAddress, "script", None, None)
           ) // receive
         )
-        addToExplorer(uTx2)
+        explorer.addToBC(uTx2)
 
         val uTx3 = uTx1.copy(
           id = "tx3",
-          hash = "tx3",
+          hash = TxHash.fromStringUnsafe(
+            "ab01bc59e0174a4f53a8c87e3ddd0d55a25ad207dd7d1d1cdf6efd651e43a391"
+          ),
           inputs = List(
             InputView(
               "tx1",
@@ -369,7 +391,7 @@ class InterpreterIT extends ContainerFlatSpec with Matchers {
           ),
           outputs = List(OutputView(0, 99000, inputAddress.accountAddress, "script", None, None))
         )
-        addToExplorer(uTx3)
+        explorer.addToBC(uTx3)
 
         for {
           _            <- saveTxs(interpreter, List(uTx1))
@@ -381,7 +403,17 @@ class InterpreterIT extends ContainerFlatSpec with Matchers {
           _ <- saveTxs(
             interpreter,
             List(
-              uTx1.copy(block = Some(BlockView("block1", 1L, time))), // mine first transaction
+              uTx1.copy(block =
+                Some(
+                  BlockView(
+                    BlockHash.fromStringUnsafe(
+                      "90a9c00424e06c9074ed6e70a33005046767682c2a077e1b9ee02a3adc336e9f"
+                    ),
+                    1L,
+                    time
+                  )
+                )
+              ), // mine first transaction
               uTx2
             )
           )
@@ -398,7 +430,15 @@ class InterpreterIT extends ContainerFlatSpec with Matchers {
             interpreter,
             List(
               uTx2.copy(block =
-                Some(BlockView("block2", 2L, time.plus(10, ChronoUnit.MINUTES)))
+                Some(
+                  BlockView(
+                    BlockHash.fromStringUnsafe(
+                      "cbbeeea984ca073ef0275d74b15cc581dd12e608bd60ae7964f32bb37771848f"
+                    ),
+                    2L,
+                    time.plus(10, ChronoUnit.MINUTES)
+                  )
+                )
               ), // mine second transaction
               uTx3
             )
@@ -440,7 +480,9 @@ class InterpreterIT extends ContainerFlatSpec with Matchers {
           accountId,
           TransactionView(
             "utx1",
-            "utx1",
+            TxHash.fromStringUnsafe(
+              "a99c7e333b287e7ecb017b33b7faf028a7eba69ae716114401e398f568f6ad9b"
+            ),
             time,
             0,
             1000,
@@ -456,7 +498,7 @@ class InterpreterIT extends ContainerFlatSpec with Matchers {
         )
 
         // We add the transaction to the explorer
-        addToExplorer(uTx1.tx)
+        explorer.addToBC(uTx1.tx)
 
         for {
           _ <- Stream
@@ -485,21 +527,5 @@ class InterpreterIT extends ContainerFlatSpec with Matchers {
         }
 
       }
-  }
-
-  private def addToExplorer(tx: TransactionView) = {
-    explorer.addToBC(
-      TransactionView(
-        tx.hash,
-        tx.hash,
-        tx.receivedAt,
-        tx.lockTime,
-        tx.fees,
-        Seq(),
-        Seq(),
-        None,
-        tx.confirmations
-      )
-    )
   }
 }

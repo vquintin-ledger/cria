@@ -51,7 +51,7 @@ object TransactionQueries extends DoobieLogHandler {
 
   def deleteUnconfirmedTransaction(
       accountId: AccountId,
-      hash: String
+      hash: TxHash
   ): doobie.ConnectionIO[String] = {
     sql"""DELETE FROM transaction
          WHERE account_id = $accountId
@@ -97,14 +97,14 @@ object TransactionQueries extends DoobieLogHandler {
 
   private def insertInputs(
       accountId: AccountId,
-      txHash: String,
+      txHash: TxHash,
       inputs: List[InputView]
   ): doobie.ConnectionIO[Int] = {
     val query =
       s"""INSERT INTO input (
             account_id, hash, output_hash, output_index, input_index, value, address, script_signature, txinwitness, sequence, derivation
           ) VALUES (
-            '${accountId.value}', '$txHash', ?, ?, ?, ?, ?, ?, ?, ?, ?
+            '${accountId.value}', '${txHash.asString}', ?, ?, ?, ?, ?, ?, ?, ?, ?
           )
           ON CONFLICT ON CONSTRAINT input_pkey DO NOTHING
        """
@@ -113,13 +113,13 @@ object TransactionQueries extends DoobieLogHandler {
 
   private def insertOutputs(
       accountId: AccountId,
-      txHash: String,
+      txHash: TxHash,
       outputs: List[OutputView]
   ) = {
     val query = s"""INSERT INTO output (
             account_id, hash, output_index, value, address, script_hex, change_type, derivation
           ) VALUES (
-            '${accountId.value}', '$txHash', ?, ?, ?, ?, ?, ?
+            '${accountId.value}', '${txHash.asString}', ?, ?, ?, ?, ?, ?
           ) ON CONFLICT ON CONSTRAINT output_pkey DO NOTHING
         """
     Update[OutputView](query).updateMany(outputs)
@@ -163,7 +163,7 @@ object TransactionQueries extends DoobieLogHandler {
     Fragment.const(s"ORDER BY t.block_time $sort, t.hash $sort")
 
   private def allTxHashes(hashes: NonEmptyList[TxHash]) =
-    Fragments.in(fr"t.hash", hashes.map(_.hex))
+    Fragments.in(fr"t.hash", hashes.map(_.asString))
 
   private def fetchInputs(
       accountId: AccountId,

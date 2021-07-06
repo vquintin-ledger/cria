@@ -1,5 +1,6 @@
 package co.ledger.cria.domain.models.interpreter
 
+import co.ledger.cria.domain.models.TxHash
 import co.ledger.cria.domain.models.account.AccountId
 import co.ledger.cria.domain.models.circeImplicits._
 import io.circe.generic.extras.semiauto.{deriveConfiguredDecoder, deriveConfiguredEncoder}
@@ -11,7 +12,7 @@ import java.time.Instant
 case class Operation(
     uid: Operation.UID,
     accountId: AccountId,
-    hash: String,
+    hash: TxHash,
     transaction: TransactionView,
     operationType: OperationType,
     amount: BigInt,
@@ -21,8 +22,7 @@ case class Operation(
 )
 
 object Operation {
-  case class UID(hex: String)    extends AnyVal
-  case class TxId(value: String) extends AnyVal
+  case class UID(hex: String) extends AnyVal
 
   object UID {
     implicit val encoder: Encoder[UID] = Encoder[String].contramap(_.hex)
@@ -34,7 +34,7 @@ object Operation {
 
   def uid(
       accountId: AccountId,
-      txId: TxId,
+      txId: TxHash,
       operationType: OperationType,
       blockHeight: Option[Long]
   ): UID = {
@@ -45,13 +45,13 @@ object Operation {
     }
 
     val blockHeightPrefix = blockHeight.getOrElse(0L)
-    val txIdPrefix        = txId.value.take(2).toList.map(_.toLong).mkString.toLong.toHexString
+    val txIdPrefix        = txId.asString.take(2).toList.map(_.toLong).mkString.toLong.toHexString
 
     // This prefix ensures to have a sequential uid
     val prefix = s"$blockHeightPrefix$txIdPrefix"
 
     val rawUid =
-      s"uid:${accountId.value.toString.toLowerCase}+${txId.value}+$libcoreType"
+      s"uid:${accountId.value.toString.toLowerCase}+${txId.asString}+$libcoreType"
 
     val hex =
       MessageDigest

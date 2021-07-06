@@ -122,7 +122,7 @@ object OperationTestQueries extends DoobieLogHandler {
     Fragment.const(s"ORDER BY o.uid $sort")
 
   private def allOpHashes(hashes: NonEmptyList[TxHash]) =
-    Fragments.in(fr"o.hash", hashes.map(_.hex))
+    Fragments.in(fr"o.hash", hashes.map(_.asString))
 
   private def fetchInputs(
       accountId: AccountId,

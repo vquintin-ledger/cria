@@ -30,7 +30,7 @@ object implicits {
 
   implicit lazy val readTransactionView: Read[TransactionView] =
     Read[
-      (String, String, Option[String], Option[Long], Option[Instant], Instant, Long, BigInt, Int)
+      (String, TxHash, Option[BlockHash], Option[Long], Option[Instant], Instant, Long, BigInt, Int)
     ].map {
       case (
             id,
@@ -62,7 +62,7 @@ object implicits {
       (
           String,
           AccountId,
-          String,
+          TxHash,
           OperationType,
           BigInt,
           BigInt,

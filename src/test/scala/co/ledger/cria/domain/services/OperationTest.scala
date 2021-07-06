@@ -1,5 +1,6 @@
 package co.ledger.cria.domain.services
 
+import co.ledger.cria.domain.models.TxHash
 import co.ledger.cria.domain.models.account.AccountId
 
 import java.util.UUID
@@ -12,8 +13,11 @@ class OperationTest extends AnyFlatSpec with Matchers {
   "Operation.uid" should "be a SHA-256 digest of (accountId,txId,operationType )" in {
 
     val accountId = AccountId(UUID.fromString("3bd0b597-3638-4167-9ed3-aa4267efbe0c"))
-    val txId      = Operation.TxId("169e1e83e930853391bc6f35f605c6754cfead57cf8387639d3b4096c54f18f4")
-    val uid       = Operation.uid(accountId, txId, OperationType.Receive, None)
+    val txId =
+      TxHash.fromStringUnsafe("169e1e83e930853391bc6f35f605c6754cfead57cf8387639d3b4096c54f18f4")
+    val anotherTxId =
+      TxHash.fromStringUnsafe("abcd1e83e930853391bc6f35f605c6754cfead57cf8387639d3b4096c54f18f4")
+    val uid = Operation.uid(accountId, txId, OperationType.Receive, None)
 
     uid should be(
       Operation.UID("0135af8e341fb691ba8e4f611635e46637aa9bdfed84d01f1040d180ed3a166386cd1")
@@ -28,7 +32,7 @@ class OperationTest extends AnyFlatSpec with Matchers {
     )
     uid should not be Operation.uid(
       accountId,
-      Operation.TxId("another tx id"),
+      anotherTxId,
       OperationType.Receive,
       None
     )

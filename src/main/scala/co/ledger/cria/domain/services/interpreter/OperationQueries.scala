@@ -16,9 +16,6 @@ import fs2.Stream
 
 object OperationQueries extends DoobieLogHandler {
 
-  implicit val txHashRead: Read[TxHash]   = Read[String].map(TxHash.apply)
-  implicit val txHashWrite: Write[TxHash] = Write[String].contramap(_.hex)
-
   case class Tx(
       id: String,
       hash: TxHash,

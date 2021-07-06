@@ -6,7 +6,7 @@ import io.circe.{Decoder, Encoder}
 import io.circe.generic.extras.semiauto.{deriveConfiguredDecoder, deriveConfiguredEncoder}
 
 case class BlockView(
-    hash: String,
+    hash: BlockHash,
     height: Long,
     time: Instant
 )
