@@ -5,7 +5,7 @@ import io.circe.syntax._
 import io.circe.{Decoder, Encoder}
 
 import java.time.Instant
-import co.ledger.cria.domain.models.circeImplicits._
+import circeImplicits._
 
 sealed trait Transaction {
   val id: String

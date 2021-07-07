@@ -14,7 +14,6 @@ import co.ledger.cria.domain.models.interpreter.{
   BlockHash,
   BlockView,
   Coin,
-  CoinFamily,
   SyncId,
   TransactionView
 }
@@ -48,7 +47,7 @@ class CursorStateServiceIT extends AnyFlatSpecLike with Matchers with DefaultCon
 
       val keychainId = KeychainId(UUID.randomUUID())
       val account =
-        Account(keychainId, CoinFamily.Bitcoin, Coin.Btc)
+        Account(keychainId, Coin.Btc)
       val accountId = account.id
       val syncId    = SyncId(UUID.randomUUID())
 

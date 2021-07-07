@@ -2,13 +2,10 @@ package co.ledger.cria.domain.models.interpreter
 
 import java.time.Instant
 import cats.effect.IO
-import co.ledger.cria.domain.models.circeImplicits._
 import co.ledger.cria.domain.models._
 import co.ledger.cria.logging.{ContextLogging, CriaLogContext}
 import co.ledger.cria.domain.models.account.AccountId
 import fs2.Stream
-import io.circe.generic.extras.semiauto._
-import io.circe.{Decoder, Encoder}
 
 case class OperationToSave(
     uid: Operation.UID,
@@ -21,13 +18,6 @@ case class OperationToSave(
     blockHash: Option[String],
     blockHeight: Option[Long]
 )
-
-object OperationToSave {
-  implicit val encoder: Encoder[OperationToSave] =
-    deriveConfiguredEncoder[OperationToSave]
-  implicit val decoder: Decoder[OperationToSave] =
-    deriveConfiguredDecoder[OperationToSave]
-}
 
 case class TransactionAmounts(
     accountId: AccountId,

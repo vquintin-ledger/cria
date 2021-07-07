@@ -2,8 +2,6 @@ package co.ledger.cria.domain.models.interpreter
 
 import co.ledger.cria.domain.models.TxHash
 import co.ledger.cria.domain.models.account.AccountId
-import co.ledger.cria.domain.models.circeImplicits._
-import io.circe.generic.extras.semiauto.{deriveConfiguredDecoder, deriveConfiguredEncoder}
 import io.circe.{Decoder, Encoder}
 
 import java.security.MessageDigest
@@ -28,9 +26,6 @@ object Operation {
     implicit val encoder: Encoder[UID] = Encoder[String].contramap(_.hex)
     implicit val decoder: Decoder[UID] = Decoder[String].map(UID(_))
   }
-
-  implicit val decoder: Decoder[Operation] = deriveConfiguredDecoder[Operation]
-  implicit val encoder: Encoder[Operation] = deriveConfiguredEncoder[Operation]
 
   def uid(
       accountId: AccountId,

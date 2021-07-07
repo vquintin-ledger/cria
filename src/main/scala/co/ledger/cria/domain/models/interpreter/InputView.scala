@@ -1,9 +1,6 @@
 package co.ledger.cria.domain.models.interpreter
 
 import cats.data.NonEmptyList
-import co.ledger.cria.domain.models.circeImplicits._
-import io.circe.{Decoder, Encoder}
-import io.circe.generic.extras.semiauto.{deriveConfiguredDecoder, deriveConfiguredEncoder}
 
 case class InputView(
     outputHash: String,
@@ -17,9 +14,4 @@ case class InputView(
     derivation: Option[NonEmptyList[Int]]
 ) {
   val belongs: Boolean = derivation.isDefined
-}
-
-object InputView {
-  implicit val encoder: Encoder[InputView] = deriveConfiguredEncoder[InputView]
-  implicit val decoder: Decoder[InputView] = deriveConfiguredDecoder[InputView]
 }

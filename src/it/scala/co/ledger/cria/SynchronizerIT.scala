@@ -15,7 +15,7 @@ import co.ledger.cria.domain.adapters.keychain.KeychainClientMock
 import co.ledger.cria.domain.models.SynchronizationParameters
 import co.ledger.cria.domain.models.SynchronizationResult.SynchronizationSuccess
 import co.ledger.cria.domain.models.account.Account
-import co.ledger.cria.domain.models.interpreter.{Coin, CoinFamily, SyncId}
+import co.ledger.cria.domain.models.interpreter.{Coin, SyncId}
 import co.ledger.cria.domain.models.keychain.KeychainId
 import co.ledger.cria.domain.{Synchronizer, services}
 import co.ledger.cria.domain.services.CursorStateService
@@ -70,7 +70,6 @@ class SynchronizerIT extends AnyFlatSpecLike with Matchers {
 
         val account = Account(
           keychainId,
-          CoinFamily.Bitcoin,
           Coin.Btc
         )
 

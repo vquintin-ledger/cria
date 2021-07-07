@@ -1,4 +1,4 @@
-package co.ledger.cria.domain.models
+package co.ledger.cria.clients.explorer.models
 
 import io.circe.generic.extras.Configuration
 

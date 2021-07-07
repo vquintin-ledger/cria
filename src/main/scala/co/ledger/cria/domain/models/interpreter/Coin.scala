@@ -1,19 +1,17 @@
 package co.ledger.cria.domain.models.interpreter
 
 import cats.effect.IO
-import io.circe.{Decoder, Encoder}
+import io.circe.Decoder
 import pureconfig.ConfigReader
 import pureconfig.error.CannotConvert
 
-sealed abstract class Coin(val name: String, val coinFamily: CoinFamily) {
+sealed abstract class Coin(val name: String) {
   override def toString: String = name
 }
 
-sealed abstract class BitcoinLikeCoin(name: String) extends Coin(name, CoinFamily.Bitcoin)
-
 object BitcoinLikeCoin {
-  def fromKeyIO(key: String): IO[BitcoinLikeCoin] = IO.fromOption(Coin.fromKey(key) collect {
-    case c: BitcoinLikeCoin => c
+  def fromKeyIO(key: String): IO[Coin] = IO.fromOption(Coin.fromKey(key) collect { case c: Coin =>
+    c
   })(
     new IllegalArgumentException(
       s"Coin ${key} is not BitcoinLike, or unknown coin"
@@ -22,13 +20,13 @@ object BitcoinLikeCoin {
 }
 
 object Coin {
-  case object Btc extends BitcoinLikeCoin("btc") {}
+  case object Btc extends Coin("btc") {}
 
-  case object BtcTestnet extends BitcoinLikeCoin("btc_testnet") {}
+  case object BtcTestnet extends Coin("btc_testnet") {}
 
-  case object BtcRegtest extends BitcoinLikeCoin("btc_regtest") {}
+  case object BtcRegtest extends Coin("btc_regtest") {}
 
-  case object Ltc extends BitcoinLikeCoin("ltc") {}
+  case object Ltc extends Coin("ltc") {}
 
   val all: Map[String, Coin] = Map(
     Btc.name        -> Btc,
@@ -45,9 +43,7 @@ object Coin {
     )
   )
 
-  implicit val encoder: Encoder[Coin] =
-    Encoder.encodeString.contramap(_.name)
-
+  // Used in e2e tests
   implicit val decoder: Decoder[Coin] =
     Decoder.decodeString.emap(fromKey(_).toRight("Could not decode as coin"))
 

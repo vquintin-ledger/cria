@@ -167,7 +167,7 @@ class Synchronizer(
           - coin      : ${syncParams.coin}""")(
         CriaLogContext().withCorrelationId(syncParams.syncId)
       )
-      account = Account(syncParams.keychainId, CoinFamily.Bitcoin, syncParams.coin)
+      account = Account(syncParams.keychainId, syncParams.coin)
 
     } yield account
 }

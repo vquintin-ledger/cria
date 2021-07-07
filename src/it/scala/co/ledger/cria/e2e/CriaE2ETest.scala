@@ -7,8 +7,8 @@ import co.ledger.cria.e2e.CriaE2ETest.{RegisterRequest, SyncResult, TestCase}
 import co.ledger.cria.itutils.ContainerFlatSpec
 import co.ledger.cria.domain.models.Sort
 import co.ledger.cria.domain.models.account.Account
-import co.ledger.cria.domain.models.circeImplicits._
-import co.ledger.cria.domain.models.interpreter.{Coin, CoinFamily}
+import co.ledger.cria.clients.explorer.models.circeImplicits._
+import co.ledger.cria.domain.models.interpreter.Coin
 import co.ledger.cria.domain.models.keychain.KeychainId
 import co.ledger.cria.itutils.models.keychain.AccountKey.Xpub
 import co.ledger.cria.itutils.models.keychain.{KeychainInfo, Scheme}
@@ -60,7 +60,6 @@ class CriaE2ETest extends ContainerFlatSpec with Matchers {
             Some(request.coin.toNetwork.toKeychainChainParamsProto),
             request.accountIndex,
             request.metadata
-
           ),
           new Metadata
         )
@@ -77,7 +76,7 @@ class CriaE2ETest extends ContainerFlatSpec with Matchers {
     ).flatMap { case (name, arg) => List(name, arg.toString) }
 
   def getSyncResult(keychainId: KeychainId, coin: Coin): IO[SyncResult] = testResources.use { res =>
-    val account = Account(keychainId, CoinFamily.Bitcoin, coin)
+    val account = Account(keychainId, coin)
     for {
       opsSize   <- res.testUtils.getOperations(account.id, 20, Sort.Ascending, None)
       utxosSize <- res.testUtils.getUtxos(account.id, 20, 0, Sort.Ascending)

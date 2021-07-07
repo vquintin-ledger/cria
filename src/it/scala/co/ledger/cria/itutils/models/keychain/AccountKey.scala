@@ -10,7 +10,7 @@ import io.circe.generic.extras.semiauto.{
 }
 import io.circe.syntax._
 import io.circe.{Decoder, Encoder}
-import co.ledger.cria.domain.models.circeImplicits._
+import co.ledger.cria.clients.explorer.models.circeImplicits._
 
 sealed trait AccountKey {
   def toProto: keychain.CreateKeychainRequest.Account

@@ -8,7 +8,6 @@ import co.ledger.cria.domain.models.interpreter.{
   BlockHash,
   BlockView,
   Coin,
-  CoinFamily,
   SyncId,
   TransactionView
 }
@@ -36,7 +35,6 @@ class SynchronizerSpec extends AnyFlatSpec with Matchers {
   val accountIdentifier: Account =
     Account(
       keychainId,
-      CoinFamily.Bitcoin,
       Coin.Btc
     )
   val accountAddresses = LazyList.from(1).map(_.toString)

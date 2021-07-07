@@ -19,7 +19,6 @@ import co.ledger.cria.domain.models.interpreter.{
   BlockHash,
   BlockView,
   Coin,
-  CoinFamily,
   InputView,
   OutputView,
   SyncId,
@@ -36,7 +35,6 @@ class InterpreterIT extends ContainerFlatSpec with Matchers {
   val account: Account =
     Account(
       KeychainId.fromString("b723c553-3a9a-4130-8883-ee2f6c2f9202").get,
-      CoinFamily.Bitcoin,
       Coin.Btc
     )
   val accountId: AccountId = account.id

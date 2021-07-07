@@ -3,9 +3,6 @@ package co.ledger.cria.itutils.models.keychain
 import co.ledger.cria.domain.models.keychain.KeychainId
 import co.ledger.cria.utils.UuidUtils
 import co.ledger.protobuf.bitcoin.keychain
-import io.circe.generic.extras.semiauto.{deriveConfiguredDecoder, deriveConfiguredEncoder}
-import io.circe.{Decoder, Encoder}
-import co.ledger.cria.domain.models.circeImplicits._
 
 case class KeychainInfo(
     keychainId: KeychainId,
@@ -31,10 +28,6 @@ case class KeychainInfo(
 }
 
 object KeychainInfo {
-
-  implicit val encoder: Encoder[KeychainInfo] = deriveConfiguredEncoder[KeychainInfo]
-  implicit val decoder: Decoder[KeychainInfo] = deriveConfiguredDecoder[KeychainInfo]
-
   def fromProto(proto: keychain.KeychainInfo): KeychainInfo =
     KeychainInfo(
       KeychainId(UuidUtils.unsafeBytesToUuid(proto.keychainId)),

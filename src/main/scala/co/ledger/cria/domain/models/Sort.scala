@@ -1,6 +1,5 @@
 package co.ledger.cria.domain.models
 
-import io.circe.{Decoder, Encoder}
 import pureconfig.ConfigReader
 import pureconfig.error.CannotConvert
 
@@ -21,11 +20,6 @@ object Sort {
   val all: Map[String, Sort] = Map(Ascending.name -> Ascending, Descending.name -> Descending)
 
   def fromKey(key: String): Option[Sort] = all.get(key)
-
-  implicit val encoder: Encoder[Sort] = Encoder.encodeString.contramap(_.name)
-
-  implicit val decoder: Decoder[Sort] =
-    Decoder.decodeString.emap(fromKey(_).toRight("unable to decode sort"))
 
   implicit val configReader: ConfigReader[Sort] =
     ConfigReader.fromString(str => fromKey(str).toRight(CannotConvert(str, "Sort", "unknown")))

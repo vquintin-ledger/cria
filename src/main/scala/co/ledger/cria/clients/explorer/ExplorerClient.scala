@@ -13,7 +13,7 @@ import co.ledger.cria.clients.explorer.models.{
   UnconfirmedTransaction
 }
 import co.ledger.cria.logging.{ContextLogging, CriaLogContext}
-import co.ledger.cria.domain.models.circeImplicits._
+import co.ledger.cria.clients.explorer.models.circeImplicits._
 import co.ledger.cria.utils
 import co.ledger.cria.utils.IOUtils
 import fs2.{Chunk, Pull, Stream}

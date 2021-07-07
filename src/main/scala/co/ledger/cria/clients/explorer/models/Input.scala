@@ -3,7 +3,7 @@ package co.ledger.cria.clients.explorer.models
 import io.circe.generic.extras.semiauto.{deriveConfiguredDecoder, deriveConfiguredEncoder}
 import io.circe.syntax._
 import io.circe.{Decoder, Encoder}
-import co.ledger.cria.domain.models.circeImplicits._
+import circeImplicits._
 
 sealed trait Input
 
