@@ -1,0 +1,55 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "cria.fullname" . }}
+  labels:
+    {{- include "cria.labels" . | nindent 4 }}
+spec:
+  template:
+    metadata:
+      name: {{ include "cria.fullname" . }}-test
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "cria.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "cria.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      restartPolicy: Never
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          env:  
+          - name: BITCOIN_KEYCHAIN_HOST
+            value: {{ .Values.bitcoinKeychainHost }}
+          - name: BITCOIN_INTERPRETER_JDBC_URL
+            value: {{ .Values.bitcoinInterpreterJDBCURL }}
+          - name: LOG_LEVEL
+            value: {{ .Values.logLevel | default "INFO" }}
+          - name: DD_APM_ENABLED
+            value: false
+          args: ["--xpub","xpub6DEHKg8fgKcb9at2u9Xhjtx4tXGyWqUPQAx2zNCzr41gQRyCqpCn7onSoJU4VS96GXyCtAhhFxErnG2pGVvVexaqF7DEfqGGnGk7Havn7C2 ","--scheme","BIP84", "--coin", "btc", "--walletUid", "1dc71640-5bd8-4034-849c-0247d4c4efdd", "--syncId", "7d116618-aa85-42c5-b0c9-29ae5e2c7e7" ]
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

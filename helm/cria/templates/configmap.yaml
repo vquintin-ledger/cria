@@ -1,0 +1,56 @@
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: {{ include "cria.fullname" . }}
+data:
+  application.conf: |-
+    grpc-server {
+      host = "localhost"
+      host = ${?BITCOIN_WORKER_HOST}
+
+      port = 9996
+      port = ${?BITCOIN_WORKER_PORT}
+    }
+
+    keychain {
+      host = "localhost"
+      host = ${?BITCOIN_KEYCHAIN_HOST}
+
+      port = 50052
+      port = ${?BITCOIN_KEYCHAIN_PORT}
+
+      ssl = false
+      ssl = ${?BITCOIN_KEYCHAIN_SSL}
+    }
+
+    explorer {
+      uri = "https://explorers.api.vault.ledger.com"
+      uri = ${?BITCOIN_EXPLORER_URI}
+
+      addresses-size = 20
+      addresses-size = ${?BITCOIN_EXPLORER_ADDRESSES_SIZE}
+
+      txs-batch-size = 500
+      txs-batch-size = ${?BITCOIN_EXPLORER_TXS_BATCH_SIZE}
+
+      timeout = 60 seconds
+      timeout = ${?BITCOIN_EXPLORER_TIMEOUT}
+    }
+
+    db {
+        batch-concurrency = 5
+        batch-concurrency = ${?BITCOIN_INTERPRETER_TWEAK_DB_BATCH_CONCURRENCY}
+        postgres = {
+          # The JDBC URL.
+          url = "jdbc:postgresql:lama_btc"
+          url = ${?BITCOIN_INTERPRETER_JDBC_URL}
+
+          # Username to connect to the database.
+          user = "lama"
+          user = ${?BITCOIN_INTERPRETER_POSTGRES_USER}
+
+          # Password to connect to the database.
+          password = "serge"
+          password = ${?BITCOIN_INTERPRETER_POSTGRES_PASSWORD}
+        }
+    }

@@ -1,0 +1,10 @@
+apiVersion: v2
+name: cria
+description: CRIA (Mini Lama) Helm chart for Kubernetes https://github.com/LedgerHQ/cria
+type: application
+version: 0.1.0
+appVersion: "1.16.0"
+dependency:
+- name: postgresql
+  version: "10.5.0"
+  repository: "https://charts.bitnami.com/bitnami"
