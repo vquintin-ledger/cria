@@ -54,12 +54,21 @@ tolerations: []
 
 affinity: {}
 
+keychain:
+  enabled: true
+  name: keychain
+  fullnameOverride: keychain
+  redis:
+    fullnameOverride: keychain-redis
+
 postgresql:
+  # it has to be ver 12 to support cria schema
+  image:
+    tag: 12.7.0
   postgresqlDatabase: lama_btc
   postgresqlUsername: lama
   postgresqlPassword: serge
 
-logLevel: TRACE
-bitcoinWorkerHost: "192.168.1.103"
+logLevel: INFO
 bitcoinKeychainHost: "keychain"
 bitcoinInterpreterJDBCURL: "jdbc:postgresql://cria-postgresql:5432/lama_btc"

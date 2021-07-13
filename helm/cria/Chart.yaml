@@ -4,7 +4,11 @@ description: CRIA (Mini Lama) Helm chart for Kubernetes https://github.com/Ledge
 type: application
 version: 0.1.0
 appVersion: "1.16.0"
-dependency:
+dependencies:
 - name: postgresql
   version: "10.5.0"
   repository: "https://charts.bitnami.com/bitnami"
+- name: keychain
+  version: "0.1.0"
+  repository: "file://../keychain"
+  condition: keychain.enabled

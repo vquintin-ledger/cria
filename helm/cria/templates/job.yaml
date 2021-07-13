@@ -23,6 +23,15 @@ spec:
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       restartPolicy: Never
+      initContainers:
+        - name: wait-for-wd-database
+          image: "alpine" 
+          command: ['sh', '-c']
+          args: ['until (nc -zv {{ include "cria.fullname" . }}-postgresql:5432) >/dev/null 2>&1 ; do echo waiting for wd postgresql...; sleep 1; done']
+        - name: wait-for-keychain
+          image: "alpine" 
+          command: ['sh', '-c']
+          args: ['until (nc -zv {{ .Values.keychain.name }}:50052) >/dev/null 2>&1; do echo waiting for keychain:50052...; sleep 1; done']
       containers:
         - name: {{ .Chart.Name }}
           securityContext:
@@ -34,13 +43,19 @@ spec:
           env:  
           - name: BITCOIN_KEYCHAIN_HOST
             value: {{ .Values.bitcoinKeychainHost }}
+          - name: BITCOIN_KEYCHAIN_SSL
+            value: "false"
           - name: BITCOIN_INTERPRETER_JDBC_URL
             value: {{ .Values.bitcoinInterpreterJDBCURL }}
+          - name: BITCOIN_LIB_GRPC_SSL
+            value: "false"
           - name: LOG_LEVEL
             value: {{ .Values.logLevel | default "INFO" }}
+          - name: DD_TRACE_ENABLED
+            value: "false"
           - name: DD_APM_ENABLED
-            value: false
-          args: ["--xpub","xpub6DEHKg8fgKcb9at2u9Xhjtx4tXGyWqUPQAx2zNCzr41gQRyCqpCn7onSoJU4VS96GXyCtAhhFxErnG2pGVvVexaqF7DEfqGGnGk7Havn7C2 ","--scheme","BIP84", "--coin", "btc", "--walletUid", "1dc71640-5bd8-4034-849c-0247d4c4efdd", "--syncId", "7d116618-aa85-42c5-b0c9-29ae5e2c7e7" ]
+            value: "false"
+          args: ["--xpub","xpub6DEHKg8fgKcb9at2u9Xhjtx4tXGyWqUPQAx2zNCzr41gQRyCqpCn7onSoJU4VS96GXyCtAhhFxErnG2pGVvVexaqF7DEfqGGnGk7Havn7C2","--scheme","BIP84", "--coin", "btc", "--walletUid", "1dc71640-5bd8-4034-849c-0247d4c4efdd", "--syncId", "7d116618-aa85-42c5-b0c9-29ae5e2c7e7" ]
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

@@ -27,6 +27,15 @@ spec:
       serviceAccountName: {{ include "keychain.serviceAccountName" . }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      initContainers:
+        - name: wait-for-grpc-service
+          image: alpine
+          command: ['sh', '-c']
+          args: ['until (nc -zv {{ include "keychain.fullname" . }}-grpc:50051) >/dev/null 2>&1; do echo waiting for {{ include "keychain.fullname" . }}-grpc:50051 server...; sleep 1; done']
+        - name: wait-for-redis
+          image: alpine
+          command: ['sh', '-c']
+          args: ['until (nc -zv {{ include "keychain.fullname" . }}-redis-master:6379) >/dev/null 2>&1; do echo waiting for {{ include "keychain.fullname" . }}-redis-master:6379 server...; sleep 1; done']
       containers:
         - name: {{ .Chart.Name }}
           securityContext:
