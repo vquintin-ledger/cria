@@ -16,3 +16,6 @@ project/metals.sbt
 /.ivy2/
 
 tooling/xpub-scan/.env
+
+*.swp
+*.swo
