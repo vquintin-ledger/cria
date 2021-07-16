@@ -4,7 +4,7 @@ import java.time.Instant
 
 import cats.data.NonEmptyList
 import co.ledger.cria.domain.models.account.{AccountUid, WalletUid}
-import co.ledger.cria.domain.models.interpreter.{Operation, OperationType, TransactionView}
+import co.ledger.cria.domain.models.interpreter.{OperationType, TransactionView}
 import co.ledger.cria.domain.models.interpreter._
 import co.ledger.cria.domain.models.keychain.ChangeType
 import doobie._
@@ -62,32 +62,5 @@ object implicits {
             blockHashO.map(blockHash => BlockView(blockHash, blockHeightO.get, blockTimeO.get)),
           confirmations = confirmations
         )
-    }
-
-  implicit lazy val readOperation: Read[Operation] =
-    Read[
-      (
-          String,
-          AccountUid,
-          TxHash,
-          OperationType,
-          BigInt,
-          BigInt,
-          Instant,
-          Option[Long],
-          TransactionView
-      )
-    ].map { case (uid, accountId, hash, operationType, value, fees, time, height, tx) =>
-      Operation(
-        Operation.UID(uid),
-        accountId,
-        hash,
-        tx,
-        operationType,
-        value,
-        fees,
-        time,
-        height
-      )
     }
 }
