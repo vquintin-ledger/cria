@@ -3,7 +3,7 @@ package co.ledger.cria.domain.services.interpreter
 import cats.data.NonEmptyList
 import cats.effect.{ContextShift, IO, Timer}
 import cats.implicits._
-import co.ledger.cria.domain.adapters.wd.models.{WDBlock, WDOperation, WDTransaction}
+import co.ledger.cria.domain.adapters.wd.models.{WDOperation, WDTransaction}
 import co.ledger.cria.domain.models.{Sort, TxHash, interpreter}
 import co.ledger.cria.domain.models.interpreter.{Action, BlockView, TransactionView}
 import co.ledger.cria.logging.{ContextLogging, CriaLogContext}
@@ -105,7 +105,7 @@ class InterpreterImpl(
       )
 //      .evalTap(deleteRejectedTransaction)
       .evalTap(saveWDBlocks(coin))
-      .evalTap(saveWDTransactions)
+      .evalTap(saveWDTransactions(coin, accountId))
       .evalMap(saveWDOperations)
       .foldMonoid
 
@@ -116,7 +116,7 @@ class InterpreterImpl(
     tx.block match {
       case Some(_) => IO.pure(Save(tx))
       case None =>
-        explorer(coin).getTransaction(TxHash.fromStringUnsafe(tx.tx.hash)).map {
+        explorer(coin).getTransaction(tx.tx.hash).map {
           case Some(_) => Save(tx)
           case None    => Delete(tx)
         }
@@ -160,13 +160,12 @@ class InterpreterImpl(
 
       operationMap = uncomputedTransactions.map { opToSave =>
         val txView = txToSaveMap(opToSave.hash)
-        val block  = txView.block.map(WDBlock.fromBlock(_, coin))
-        val wdTx   = WDTransaction.fromTransactionView(accountId, txView, block)
+        val wdTx   = WDTransaction.fromTransactionView(accountId, txView, coin)
         val ops =
           opToSave.computeOperations.map(
             WDOperation.fromOperation(_, coin, wdTx, txView, walletUid)
           )
-        interpreter.WDTxToSave(txView.block, wdTx, ops)
+        interpreter.WDTxToSave(txView.block, txView, ops)
       }
 
     } yield operationMap
@@ -177,14 +176,14 @@ class InterpreterImpl(
       block
     }.distinct)
 
-  private def saveWDTransactions(actions: List[Action])(implicit lc: CriaLogContext): IO[Int] = {
+  private def saveWDTransactions(coin: Coin, accountUid: AccountUid)(actions: List[Action])(implicit lc: CriaLogContext): IO[Int] = {
     val txsToSave = actions
       .collect { case Save(a) => a }
 
     log.info(s"Saving ${txsToSave.size} WD transactions") *>
       txsToSave
         .map { a =>
-          wdService.saveTransaction(a.tx)
+          wdService.saveTransaction(coin, accountUid, a.tx)
         }
         .sequence
         .map(_.sum)

@@ -2,9 +2,8 @@ package co.ledger.cria.domain.adapters.wd.models
 
 import java.math.BigInteger
 import java.security.MessageDigest
-
 import co.ledger.cria.domain.models.account.AccountUid
-import co.ledger.cria.domain.models.interpreter.TransactionView
+import co.ledger.cria.domain.models.interpreter.{Coin, TransactionView}
 
 case class WDTransaction(
     uid: String,
@@ -24,8 +23,9 @@ object WDTransaction {
   def fromTransactionView(
       accountId: AccountUid,
       tx: TransactionView,
-      block: Option[WDBlock]
+      coin: Coin
   ): WDTransaction = {
+    val block = tx.block.map(WDBlock.fromBlock(_, coin))
     val accountIdString = accountId.value
     WDTransaction(
       uid = createUid(accountIdString, tx.hash.asString),

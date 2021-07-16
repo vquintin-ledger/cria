@@ -3,7 +3,8 @@ package co.ledger.cria.domain.adapters.wd
 import cats.effect.IO
 import co.ledger.cria.domain.adapters.wd.models.{WDBlock, WDOperation, WDTransaction}
 import co.ledger.cria.domain.adapters.wd.queries.WDQueries
-import co.ledger.cria.domain.models.interpreter.{BlockView, Coin}
+import co.ledger.cria.domain.models.account.AccountUid
+import co.ledger.cria.domain.models.interpreter.{BlockView, Coin, TransactionView}
 import co.ledger.cria.domain.services.interpreter.WDService
 import co.ledger.cria.logging.{CriaLogContext, DefaultContextLogging}
 import doobie.Transactor
@@ -18,7 +19,8 @@ class WDServiceImpl(
       .saveWDOperation(op)
       .transact(db)
 
-  override def saveTransaction(tx: WDTransaction): IO[Int] = {
+  override def saveTransaction(coin: Coin, accountUid: AccountUid, transactionView: TransactionView): IO[Int] = {
+    val tx = WDTransaction.fromTransactionView(accountUid, transactionView, coin)
     for {
       txStatement <- WDQueries.saveTransaction(tx)
       _           <- WDQueries.saveInputs(tx, tx.inputs)
