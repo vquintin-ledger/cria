@@ -2,6 +2,7 @@ package co.ledger.cria.domain.adapters.wd.queries
 
 import cats.data.NonEmptyList
 import cats.implicits._
+import co.ledger.cria.domain.adapters.wd.models.OperationToSave
 import co.ledger.cria.logging.DoobieLogHandler
 import co.ledger.cria.domain.models.{Sort, TxHash}
 import co.ledger.cria.domain.models.account.AccountUid

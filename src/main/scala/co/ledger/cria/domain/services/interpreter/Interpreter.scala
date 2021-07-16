@@ -157,7 +157,7 @@ class InterpreterImpl(
 
       operationMap = uncomputedTransactions.map { opToSave =>
         val txView = txToSaveMap(opToSave.hash)
-        interpreter.WDTxToSave(txView.block, txView, opToSave.computeOperations)
+        interpreter.WDTxToSave(txView.block, txView, opToSave.computeOperations(txView))
       }
 
     } yield operationMap
@@ -184,13 +184,13 @@ class InterpreterImpl(
   private def saveWDOperations(coin: Coin, accountUid: AccountUid, walletUid: WalletUid)(actions: List[Action])(implicit lc: CriaLogContext): IO[Int] = {
     val opsToSave = actions
       .flatMap {
-        case Save(a) => a.ops.map((a.tx, _))
+        case Save(a) => a.ops
         case _       => Nil
       }
 
     log.info(s"Saving ${opsToSave.size} WD Operations") *>
       opsToSave
-        .map{case (tx, ops) => wdService.saveWDOperation(coin, accountUid, walletUid, tx, ops)}
+        .map{ops => wdService.saveWDOperation(coin, accountUid, walletUid, ops)}
         .sequence
         .map(_.sum)
   }

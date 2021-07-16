@@ -5,18 +5,6 @@ import co.ledger.cria.domain.models._
 import co.ledger.cria.logging.{ContextLogging, CriaLogContext}
 import co.ledger.cria.domain.models.account.AccountUid
 
-case class OperationToSave(
-    uid: Operation.UID,
-    accountId: AccountUid,
-    hash: TxHash,
-    operationType: OperationType,
-    value: BigInt,
-    fees: BigInt,
-    time: Instant,
-    blockHash: Option[String],
-    blockHeight: Option[Long]
-)
-
 case class TransactionAmounts(
     accountId: AccountUid,
     hash: TxHash,
@@ -29,18 +17,18 @@ case class TransactionAmounts(
     changeAmount: BigInt
 ) extends ContextLogging {
 
-  def computeOperations(implicit lc: CriaLogContext): List[OperationToSave] = {
+  def computeOperations(transaction: TransactionView)(implicit lc: CriaLogContext): List[Operation] = {
     TransactionType.fromAmounts(inputAmount, outputAmount, changeAmount) match {
       case SendType =>
-        List(makeOperationToSave(inputAmount - changeAmount, OperationType.Send))
+        List(makeOperationToSave(inputAmount - changeAmount, OperationType.Send, transaction))
       case ReceiveType =>
-        List(makeOperationToSave(outputAmount + changeAmount, OperationType.Receive))
+        List(makeOperationToSave(outputAmount + changeAmount, OperationType.Receive, transaction))
       case ChangeOnlyType =>
-        List(makeOperationToSave(changeAmount, OperationType.Receive))
+        List(makeOperationToSave(changeAmount, OperationType.Receive, transaction))
       case BothType =>
         List(
-          makeOperationToSave(inputAmount - changeAmount, OperationType.Send),
-          makeOperationToSave(outputAmount, OperationType.Receive)
+          makeOperationToSave(inputAmount - changeAmount, OperationType.Send, transaction),
+          makeOperationToSave(outputAmount, OperationType.Receive, transaction)
         )
       case NoneType =>
         log
@@ -53,16 +41,16 @@ case class TransactionAmounts(
     }
   }
 
-  private def makeOperationToSave(amount: BigInt, operationType: OperationType) = {
-    OperationToSave(
+  private def makeOperationToSave(amount: BigInt, operationType: OperationType, transaction: TransactionView) = {
+    Operation(
       Operation
         .uid(accountId, hash, operationType, blockHeight),
       accountId = accountId,
       hash = hash,
+      transaction = transaction,
       operationType = operationType,
-      value = amount,
+      amount = amount,
       time = blockTime.getOrElse(Instant.now()),
-      blockHash = blockHash,
       blockHeight = blockHeight,
       fees = fees
     )

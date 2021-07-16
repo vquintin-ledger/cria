@@ -1,10 +1,11 @@
 package co.ledger.cria.domain.adapters.wd
 
 import cats.effect.IO
+import co.ledger.cria.domain.adapters.wd.models.OperationToSave
 import co.ledger.cria.domain.adapters.wd.queries.OperationQueries
 import co.ledger.cria.domain.models.Sort
 import co.ledger.cria.domain.models.account.AccountUid
-import co.ledger.cria.domain.models.interpreter.{OperationToSave, TransactionAmounts}
+import co.ledger.cria.domain.models.interpreter.{Operation, TransactionAmounts}
 import co.ledger.cria.domain.services.interpreter.OperationService
 import co.ledger.cria.logging.ContextLogging
 import doobie._
@@ -27,6 +28,8 @@ class OperationServiceImpl(
       .fetchUncomputedTransactionAmounts(accountId, sort)
       .transact(db)
 
-  override def saveOperations(operations: List[OperationToSave]): IO[Int] =
-    OperationQueries.saveOperations(operations).transact(db)
+  override def saveOperations(operations: List[Operation]): IO[Int] = {
+
+    OperationQueries.saveOperations(operations.map(OperationToSave.fromOperation)).transact(db)
+  }
 }

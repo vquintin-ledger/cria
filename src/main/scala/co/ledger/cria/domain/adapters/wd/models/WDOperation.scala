@@ -4,7 +4,7 @@ import java.math.BigInteger
 import java.security.MessageDigest
 import co.ledger.cria.domain.models.TxHash
 import co.ledger.cria.domain.models.account.{AccountUid, WalletUid}
-import co.ledger.cria.domain.models.interpreter.{Coin, OperationToSave, OperationType, OutputView, TransactionView}
+import co.ledger.cria.domain.models.interpreter.{Coin, Operation, OperationType, OutputView}
 import doobie.Write
 
 case class WDOperation(
@@ -29,11 +29,11 @@ object WDOperation {
   val digester: MessageDigest = MessageDigest.getInstance("SHA-256")
 
   def fromOperation(accountUid: AccountUid,
-      operation: OperationToSave,
+      operation: Operation,
       coin: Coin,
-      view: TransactionView,
       walletUid: WalletUid
   ): WDOperation = {
+    val view = operation.transaction
     val tx = WDTransaction.fromTransactionView(accountUid, view, coin)
     WDOperation(
       uid = computeUid(
@@ -47,7 +47,7 @@ object WDOperation {
       date = operation.time.toString,
       senders = tx.inputs.map(_.address).distinct.mkString(","),
       recipients = getRecipients(operation.operationType, view.outputs).mkString(","),
-      amount = toHexString(netAmount(operation.operationType, operation.value, operation.fees)),
+      amount = toHexString(netAmount(operation.operationType, operation.amount, operation.fees)),
       fees = toHexString(operation.fees),
       blockUid = tx.blockUid,
       currencyName = coin.name,
