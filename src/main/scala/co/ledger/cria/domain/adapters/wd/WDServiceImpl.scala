@@ -3,6 +3,7 @@ package co.ledger.cria.domain.adapters.wd
 import cats.effect.IO
 import co.ledger.cria.domain.adapters.wd.models.{WDBlock, WDOperation, WDTransaction}
 import co.ledger.cria.domain.adapters.wd.queries.WDQueries
+import co.ledger.cria.domain.models.interpreter.{BlockView, Coin}
 import co.ledger.cria.domain.services.interpreter.WDService
 import co.ledger.cria.logging.{CriaLogContext, DefaultContextLogging}
 import doobie.Transactor
@@ -26,10 +27,11 @@ class WDServiceImpl(
   }
     .transact(db)
 
-  override def saveBlocks(blocks: List[WDBlock])(implicit lc: CriaLogContext): IO[Int] = {
+  override def saveBlocks(coin: Coin, blocks: List[BlockView])(implicit lc: CriaLogContext): IO[Int] = {
+    val wdBlocks = blocks.map(WDBlock.fromBlock(_, coin))
     log.info(s"Saving ${blocks.size} WD Blocks") *>
       WDQueries
-        .saveBlocks(blocks)
+        .saveBlocks(wdBlocks)
         .transact(db)
   }
 

@@ -3,8 +3,8 @@ package co.ledger.cria.domain.services.interpreter
 import cats.data.NonEmptyList
 import cats.effect.{ContextShift, IO, Timer}
 import cats.implicits._
-import co.ledger.cria.domain.adapters.wd.models.{WDBlock, WDOperation, WDTransaction, WDTxToSave}
-import co.ledger.cria.domain.models.{Sort, TxHash}
+import co.ledger.cria.domain.adapters.wd.models.{WDBlock, WDOperation, WDTransaction}
+import co.ledger.cria.domain.models.{Sort, TxHash, interpreter}
 import co.ledger.cria.domain.models.interpreter.{Action, BlockView, TransactionView}
 import co.ledger.cria.logging.{ContextLogging, CriaLogContext}
 import co.ledger.cria.domain.models.account.{Account, AccountUid, WalletUid}
@@ -104,7 +104,7 @@ class InterpreterImpl(
         _.traverse(getAction(coin, _))
       )
 //      .evalTap(deleteRejectedTransaction)
-      .evalTap(saveWDBlocks)
+      .evalTap(saveWDBlocks(coin))
       .evalTap(saveWDTransactions)
       .evalMap(saveWDOperations)
       .foldMonoid
@@ -166,14 +166,14 @@ class InterpreterImpl(
           opToSave.computeOperations.map(
             WDOperation.fromOperation(_, coin, wdTx, txView, walletUid)
           )
-        WDTxToSave(block, wdTx, ops)
+        interpreter.WDTxToSave(txView.block, wdTx, ops)
       }
 
     } yield operationMap
   }
 
-  private def saveWDBlocks(actions: List[Action])(implicit lc: CriaLogContext): IO[Int] =
-    wdService.saveBlocks(actions.collect { case Save(WDTxToSave(Some(block), _, _)) =>
+  private def saveWDBlocks(coin: Coin)(actions: List[Action])(implicit lc: CriaLogContext): IO[Int] =
+    wdService.saveBlocks(coin, actions.collect { case Save(WDTxToSave(Some(block), _, _)) =>
       block
     }.distinct)
 
