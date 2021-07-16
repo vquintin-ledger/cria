@@ -1,7 +1,7 @@
 package co.ledger.cria.domain.models.interpreter
 
 import co.ledger.cria.domain.models.TxHash
-import co.ledger.cria.domain.models.account.AccountId
+import co.ledger.cria.domain.models.account.AccountUid
 import io.circe.{Decoder, Encoder}
 
 import java.security.MessageDigest
@@ -9,7 +9,7 @@ import java.time.Instant
 
 case class Operation(
     uid: Operation.UID,
-    accountId: AccountId,
+    accountId: AccountUid,
     hash: TxHash,
     transaction: TransactionView,
     operationType: OperationType,
@@ -28,7 +28,7 @@ object Operation {
   }
 
   def uid(
-      accountId: AccountId,
+      accountId: AccountUid,
       txId: TxHash,
       operationType: OperationType,
       blockHeight: Option[Long]

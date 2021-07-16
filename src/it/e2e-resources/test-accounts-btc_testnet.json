@@ -8,6 +8,7 @@
       "lookahead_size": 20,
       "coin": "btc_testnet",
       "sync_id": "f124f9df-507a-450e-a74c-7ff78c583ed7",
+      "account_uid": "a59deed9-a6c8-4a57-9dbd-e3b1cf7a9428",
       "wallet_uid": "a7f01c2b-fd4b-45a8-b836-b8106448b189",
       "account_index": 1,
       "metadata": "nolibcore:testworkspace"

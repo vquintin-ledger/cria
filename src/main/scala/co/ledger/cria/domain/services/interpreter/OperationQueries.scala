@@ -1,11 +1,12 @@
 package co.ledger.cria.domain.services.interpreter
 
 import java.time.Instant
+
 import cats.data.NonEmptyList
 import cats.implicits._
 import co.ledger.cria.logging.DoobieLogHandler
-import co.ledger.cria.domain.models.TxHash
-import co.ledger.cria.domain.models.account.AccountId
+import co.ledger.cria.domain.models.{Sort, TxHash}
+import co.ledger.cria.domain.models.account.AccountUid
 import co.ledger.cria.domain.models.interpreter._
 import co.ledger.cria.domain.models.implicits._
 import co.ledger.cria.domain.models.keychain.{AccountAddress, ChangeType}
@@ -28,7 +29,7 @@ object OperationQueries extends DoobieLogHandler {
 
   case class Op(
       uid: Operation.UID,
-      accountId: AccountId,
+      accountId: AccountUid,
       hash: TxHash,
       operationType: OperationType,
       amount: BigInt,
@@ -46,9 +47,12 @@ object OperationQueries extends DoobieLogHandler {
   )
 
   def fetchUncomputedTransactionAmounts(
-      accountId: AccountId
-  ): Stream[ConnectionIO, TransactionAmounts] =
-    sql"""SELECT tx.account_id,
+      accountId: AccountUid,
+      sort: Sort
+  ): Stream[ConnectionIO, TransactionAmounts] = {
+    (
+      //TODO: FIX THIS
+      sql"""SELECT tx.account_uid,
                  tx.hash,
                  tx.block_hash,
                  tx.block_height,
@@ -58,14 +62,12 @@ object OperationQueries extends DoobieLogHandler {
                  COALESCE(tx.output_amount, 0),
                  COALESCE(tx.change_amount, 0)
           FROM transaction_amount tx
-            LEFT JOIN operation op
-              ON op.hash = tx.hash
-              AND op.account_id = tx.account_id
-          WHERE op.hash IS null
-          AND tx.account_id = $accountId
-       """
+          WHERE tx.account_uid = $accountId""" ++ Fragment
+        .const(s"ORDER BY tx.block_time $sort, tx.hash $sort")
+    )
       .query[TransactionAmounts]
       .stream
+  }
 
   def saveOperations(operation: List[OperationToSave]): ConnectionIO[Int] = {
     val query =
@@ -77,7 +79,7 @@ object OperationQueries extends DoobieLogHandler {
     Update[OperationToSave](query).updateMany(operation)
   }
 
-  def deleteUnconfirmedOperations(accountId: AccountId): doobie.ConnectionIO[Int] = {
+  def deleteUnconfirmedOperations(accountId: AccountUid): doobie.ConnectionIO[Int] = {
     sql"""DELETE FROM operation
          WHERE account_id = $accountId
          AND block_height IS NULL
@@ -85,13 +87,13 @@ object OperationQueries extends DoobieLogHandler {
   }
 
   def flagBelongingInputs(
-      accountId: AccountId,
+      accountId: AccountUid,
       addresses: NonEmptyList[AccountAddress]
   ): ConnectionIO[Int] = {
     val queries = addresses.map { addr =>
       sql"""UPDATE input
             SET derivation = ${addr.derivation.toList}
-            WHERE account_id = $accountId
+            WHERE account_uid = $accountId
             AND address = ${addr.accountAddress}
          """
     }
@@ -100,7 +102,7 @@ object OperationQueries extends DoobieLogHandler {
   }
 
   def flagBelongingOutputs(
-      accountId: AccountId,
+      accountId: AccountUid,
       addresses: NonEmptyList[AccountAddress],
       changeType: ChangeType
   ): ConnectionIO[Int] = {
@@ -108,7 +110,7 @@ object OperationQueries extends DoobieLogHandler {
       sql"""UPDATE output
             SET change_type = $changeType,
                 derivation = ${addr.derivation.toList}
-            WHERE account_id = $accountId
+            WHERE account_uid = $accountId
             AND address = ${addr.accountAddress}
          """
     }
@@ -116,7 +118,7 @@ object OperationQueries extends DoobieLogHandler {
     queries.traverse(_.update.run).map(_.toList.sum)
   }
 
-  def removeFromCursor(accountId: AccountId, blockHeight: Long): ConnectionIO[Int] =
+  def removeFromCursor(accountId: AccountUid, blockHeight: Long): ConnectionIO[Int] =
     sql"""DELETE from operation
           WHERE account_id = $accountId
           AND (block_height >= $blockHeight

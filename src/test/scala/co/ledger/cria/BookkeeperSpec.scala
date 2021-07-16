@@ -8,7 +8,7 @@ import org.scalatest.matchers.should.Matchers
 
 import java.util.UUID
 import co.ledger.cria.logging.DefaultContextLogging
-import co.ledger.cria.domain.models.account.AccountId
+import co.ledger.cria.domain.models.account.AccountUid
 import co.ledger.cria.domain.models.interpreter.Coin.Btc
 import co.ledger.cria.domain.models.interpreter.{
   BlockHash,
@@ -36,7 +36,7 @@ class BookkeeperSpec extends AnyFlatSpec with Matchers with DefaultContextLoggin
       blockchain: Map[String, List[TransactionView @@ Confirmation.Confirmed]] = Map.empty
   ): Coin => ExplorerClient =
     _ => new ExplorerClientMock(blockchain, mempool)
-  val accountId             = AccountId(UUID.randomUUID())
+  val accountId             = AccountUid(UUID.randomUUID().toString)
   val keychainId            = KeychainId(UUID.randomUUID())
   val usedAndFreshAddresses = LazyList.from(1).map(_.toString).take(150)
 

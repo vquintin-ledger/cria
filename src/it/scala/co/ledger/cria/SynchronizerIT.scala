@@ -5,16 +5,16 @@ import co.ledger.cria.config.Config
 import org.scalatest.flatspec.AnyFlatSpecLike
 import org.scalatest.matchers.should.Matchers
 import pureconfig.ConfigSource
-
 import java.time.Instant
 import java.util.UUID
+
 import co.ledger.cria.clients.explorer.ExplorerHttpClient
 import co.ledger.cria.clients.protocol.http.Clients
 import co.ledger.cria.domain.adapters.explorer.ExplorerClientAdapter
 import co.ledger.cria.domain.adapters.keychain.KeychainClientMock
 import co.ledger.cria.domain.models.SynchronizationParameters
 import co.ledger.cria.domain.models.SynchronizationResult.SynchronizationSuccess
-import co.ledger.cria.domain.models.account.Account
+import co.ledger.cria.domain.models.account.{Account, AccountUid, WalletUid}
 import co.ledger.cria.domain.models.interpreter.{Coin, SyncId}
 import co.ledger.cria.domain.models.keychain.KeychainId
 import co.ledger.cria.domain.{Synchronizer, services}
@@ -58,7 +58,8 @@ class SynchronizerIT extends AnyFlatSpecLike with Matchers {
             Coin.Btc,
             syncId,
             None,
-            UUID.randomUUID()
+            AccountUid(UUID.randomUUID().toString),
+            WalletUid(UUID.randomUUID().toString)
           )
 
         val worker = new Synchronizer(
@@ -69,6 +70,7 @@ class SynchronizerIT extends AnyFlatSpecLike with Matchers {
         )
 
         val account = Account(
+          args.accountUid,
           keychainId,
           Coin.Btc
         )
@@ -84,7 +86,9 @@ class SynchronizerIT extends AnyFlatSpecLike with Matchers {
             val expectedLastBlockHeight = 644553L
 
             it should s"have synchronized $expectedTxsSize txs with last blockHeight > $expectedLastBlockHeight" in {
-              interpreterClient.getSavedTransaction(account.id) should have size expectedTxsSize
+              interpreterClient.getSavedTransaction(
+                account.accountUid
+              ) should have size expectedTxsSize
 
               result match {
                 case SynchronizationSuccess(_, newCursor) =>

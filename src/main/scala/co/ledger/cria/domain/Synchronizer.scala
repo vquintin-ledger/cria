@@ -74,14 +74,14 @@ class Synchronizer(
       addressesUsedByMempool <- (bookkeeper
         .record[Confirmation.Unconfirmed](
           account.coin,
-          account.id,
+          account.accountUid,
           keychainId,
           Internal,
           None
         ) ++ bookkeeper
         .record[Confirmation.Unconfirmed](
           account.coin,
-          account.id,
+          account.accountUid,
           keychainId,
           External,
           None
@@ -101,14 +101,14 @@ class Synchronizer(
           (bookkeeper
             .record[Confirmation.Confirmed](
               account.coin,
-              account.id,
+              account.accountUid,
               keychainId,
               ChangeType.Internal,
               lastValidBlock.map(_.hash)
             ) ++ bookkeeper
             .record[Confirmation.Confirmed](
               account.coin,
-              account.id,
+              account.accountUid,
               keychainId,
               ChangeType.External,
               lastValidBlock.map(_.hash)
@@ -121,9 +121,7 @@ class Synchronizer(
       _ <- log.info(s"Last block synchronized: ${lastMinedBlock.block}")
 
       _ <- IOUtils.withTimer("Computation finished")(
-        interpreterClient.compute(
-          account,
-          syncParams.syncId,
+        interpreterClient.compute(account, syncParams.walletUid)(
           (addressesUsed ++ addressesUsedByMempool).distinct
         )
       )
@@ -155,7 +153,7 @@ class Synchronizer(
           // remove all transactions and operations up until last valid block
           log.info(
             s"${lastKnownBlock.hash} is different than ${lvb.hash}, reorg is happening"
-          ) *> interpreterClient.removeDataFromCursor(account.id, Some(lvb.height), syncId)
+          ) *> interpreterClient.removeDataFromCursor(account.accountUid, Some(lvb.height))
         }
     } yield lvb
 
@@ -167,7 +165,7 @@ class Synchronizer(
           - coin      : ${syncParams.coin}""")(
         CriaLogContext().withCorrelationId(syncParams.syncId)
       )
-      account = Account(syncParams.keychainId, syncParams.coin)
+      account = Account(syncParams.accountUid, syncParams.keychainId, syncParams.coin)
 
     } yield account
 }

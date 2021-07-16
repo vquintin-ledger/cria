@@ -20,13 +20,11 @@ object BitcoinLikeCoin {
 }
 
 object Coin {
-  case object Btc extends Coin("btc") {}
 
-  case object BtcTestnet extends Coin("btc_testnet") {}
-
-  case object BtcRegtest extends Coin("btc_regtest") {}
-
-  case object Ltc extends Coin("ltc") {}
+  case object Btc        extends Coin("bitcoin")         {}
+  case object BtcTestnet extends Coin("bitcoin_testnet") {}
+  case object BtcRegtest extends Coin("bitcoin_regtest") {}
+  case object Ltc        extends Coin("litecoin")        {}
 
   val all: Map[String, Coin] = Map(
     Btc.name        -> Btc,

@@ -3,9 +3,10 @@ package co.ledger.cria.cli
 import cats.data.{NonEmptyList, Validated}
 import com.monovore.decline._
 import cats.implicits._
-
 import java.util.UUID
+
 import co.ledger.cria.domain.models.interpreter.{BlockHash, Coin, SyncId}
+import co.ledger.cria.domain.models.account.{AccountUid, WalletUid}
 import co.ledger.cria.domain.models.keychain.KeychainId
 
 case class CommandLineOptions(
@@ -13,7 +14,8 @@ case class CommandLineOptions(
     coin: Coin,
     syncId: SyncId,
     blockHash: Option[BlockHash],
-    walletUid: UUID
+    accountUid: AccountUid,
+    walletUid: WalletUid
 )
 
 object CommandLineOptions {
@@ -25,15 +27,20 @@ object CommandLineOptions {
         .option[String]("blockHash", "The current hash of the blockchain")
         .mapValidated(h => Validated.fromEither(BlockHash.fromString(h).leftMap(NonEmptyList.one)))
         .orNone
-    val walletUid = Opts.option[UUID]("walletUid", "The id of the wallet the xpub belongs to")
+    val walletUid = Opts
+      .option[String]("walletUid", "The id of the wallet the xpub belongs to")
+      .map(WalletUid.apply)
+    val accountUid = Opts
+      .option[String]("accountUid", "The id of the account the xpub belongs to")
+      .map(AccountUid.apply)
     val coin = Opts
       .option[String]("coin", "The coin to synchronize")
       .mapValidated(c =>
         Validated.fromOption(Coin.fromKey(c), NonEmptyList.one(s"$c is not a valid coin"))
       )
 
-    (keychainId, coin, syncId, blockHash, walletUid).mapN(
-      CommandLineOptions(_, _, _, _, _)
+    (keychainId, coin, syncId, blockHash, accountUid, walletUid).mapN(
+      CommandLineOptions(_, _, _, _, _, _)
     )
   }
 

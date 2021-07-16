@@ -1,11 +1,11 @@
 package co.ledger.cria.logging
 
-import co.ledger.cria.domain.models.account.{Account, AccountId}
+import co.ledger.cria.domain.models.account.{Account, AccountUid}
 import co.ledger.cria.domain.models.interpreter.{Coin, SyncId}
 import co.ledger.cria.domain.models.keychain.KeychainId
 
 case class CriaLogContext(
-    accountId: Option[AccountId] = None,
+    accountId: Option[AccountUid] = None,
     identifier: Option[KeychainId] = None,
     coin: Option[Coin] = None,
     correlationId: Option[SyncId] = None,
@@ -14,11 +14,11 @@ case class CriaLogContext(
 
   def withAccount(account: Account): CriaLogContext =
     copy(
-      accountId = Some(account.id),
+      accountId = Some(account.accountUid),
       identifier = Some(account.identifier)
     )
 
-  def withAccountId(accountId: AccountId): CriaLogContext =
+  def withAccountId(accountId: AccountUid): CriaLogContext =
     copy(accountId = Some(accountId))
 
   def withIdentifier(identifier: KeychainId): CriaLogContext =

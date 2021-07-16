@@ -1,31 +1,31 @@
 package co.ledger.cria.domain.services.interpreter
 
 import cats.effect.IO
-import co.ledger.cria.domain.models.account.{Account, AccountId}
+import co.ledger.cria.domain.models.account.{Account, AccountUid, WalletUid}
 import co.ledger.cria.domain.models.interpreter._
 import co.ledger.cria.domain.models.keychain.{AccountAddress, ChangeType}
 import co.ledger.cria.logging.CriaLogContext
 import fs2._
-
 import java.time.Instant
+
 import scala.collection.mutable
 
 class InterpreterClientMock extends Interpreter {
 
-  var savedTransactions: mutable.Map[AccountId, List[TransactionView]] = mutable.Map.empty
-  var savedUnconfirmedTransactions: mutable.ArrayDeque[(AccountId, List[TransactionView])] =
+  var savedTransactions: mutable.Map[AccountUid, List[TransactionView]] = mutable.Map.empty
+  var savedUnconfirmedTransactions: mutable.ArrayDeque[(AccountUid, List[TransactionView])] =
     mutable.ArrayDeque.empty
-  var transactions: mutable.Map[AccountId, List[TransactionView]] = mutable.Map.empty
-  var operations: mutable.Map[AccountId, List[Operation]]         = mutable.Map.empty
+  var transactions: mutable.Map[AccountUid, List[TransactionView]] = mutable.Map.empty
+  var operations: mutable.Map[AccountUid, List[Operation]]         = mutable.Map.empty
 
-  def saveUnconfirmedTransactions(accountId: AccountId, txs: List[TransactionView]): IO[Int] =
+  def saveUnconfirmedTransactions(accountId: AccountUid, txs: List[TransactionView]): IO[Int] =
     IO.pure {
       savedUnconfirmedTransactions += accountId -> txs
       txs.size
     }
 
   def saveTransactions(
-      accountId: AccountId
+      accountId: AccountUid
   )(implicit lc: CriaLogContext): Pipe[IO, TransactionView, Unit] =
     _.chunks.evalMap { chunk =>
       val txs = chunk.toList
@@ -42,40 +42,40 @@ class InterpreterClientMock extends Interpreter {
       IO.unit
     }
 
-  def getSavedTransaction(accountId: AccountId): List[TransactionView] = savedTransactions
+  def getSavedTransaction(accountId: AccountUid): List[TransactionView] = savedTransactions
     .getOrElse(
       accountId,
       List.empty
     )
     .distinctBy(_.id)
 
+  //TODO: fix
   def removeDataFromCursor(
-      accountId: AccountId,
-      blockHeightCursor: Option[Long],
-      followUpId: SyncId
+      accountId: AccountUid,
+      blockHeight: Option[Long]
   )(implicit lc: CriaLogContext): IO[Int] = {
     savedTransactions.update(
       accountId,
       savedTransactions(accountId)
-        .filter(tx => tx.block.map(_.height).getOrElse(0L) < blockHeightCursor.getOrElse(0L))
+        .filter(tx => tx.block.map(_.height).getOrElse(0L) < blockHeight.getOrElse(0L))
     )
 
     transactions.update(
       accountId,
       transactions(accountId)
-        .filter(tx => tx.block.exists(_.height < blockHeightCursor.getOrElse(0L)))
+        .filter(tx => tx.block.exists(_.height < blockHeight.getOrElse(0L)))
     )
 
     operations.update(
       accountId,
       operations(accountId)
-        .filter(op => op.transaction.block.exists(_.height < blockHeightCursor.getOrElse(0L)))
+        .filter(op => op.transaction.block.exists(_.height < blockHeight.getOrElse(0L)))
     )
 
     IO.pure(0)
   }
 
-  def getLastBlocks(accountId: AccountId)(implicit lc: CriaLogContext): IO[List[BlockView]] = {
+  def getLastBlocks(accountId: AccountUid)(implicit lc: CriaLogContext): IO[List[BlockView]] = {
     val lastBlocks: List[BlockView] = savedTransactions(accountId)
       .collect { case TransactionView(_, _, _, _, _, _, _, Some(block), _) =>
         BlockView(
@@ -90,14 +90,12 @@ class InterpreterClientMock extends Interpreter {
     IO(lastBlocks)
   }
 
-  def compute(
-      account: Account,
-      syncId: SyncId,
+  def compute(account: Account, walletUid: WalletUid)(
       addresses: List[AccountAddress]
   )(implicit lc: CriaLogContext): IO[Int] = {
 
     val txViews = savedTransactions
-      .getOrElse(account.id, List.empty)
+      .getOrElse(account.accountUid, List.empty)
 
     val computedTxViews = txViews.map { tx =>
       tx.copy(
@@ -117,11 +115,11 @@ class InterpreterClientMock extends Interpreter {
     }
 
     transactions.update(
-      account.id,
+      account.accountUid,
       computedTxViews
     )
 
-    val operationToSave = transactions(account.id).flatMap { tx =>
+    val operationToSave = transactions(account.accountUid).flatMap { tx =>
       val inputAmount =
         tx.inputs.filter(i => addresses.exists(_.accountAddress == i.address)).map(_.value).sum
       val outputAmount = tx.outputs
@@ -136,15 +134,24 @@ class InterpreterClientMock extends Interpreter {
       (inputAmount > 0, outputAmount > 0) match {
         // only input, consider changeAmount as deducted from spent
         case (true, false) =>
-          List(makeOperation(account.id, tx, inputAmount - changeAmount, OperationType.Send))
+          List(
+            makeOperation(account.accountUid, tx, inputAmount - changeAmount, OperationType.Send)
+          )
         // only output, consider changeAmount as received
         case (false, true) =>
-          List(makeOperation(account.id, tx, outputAmount + changeAmount, OperationType.Receive))
+          List(
+            makeOperation(
+              account.accountUid,
+              tx,
+              outputAmount + changeAmount,
+              OperationType.Receive
+            )
+          )
         // both input and output, consider change as deducted from spend
         case (true, true) =>
           List(
-            makeOperation(account.id, tx, inputAmount - changeAmount, OperationType.Send),
-            makeOperation(account.id, tx, outputAmount, OperationType.Receive)
+            makeOperation(account.accountUid, tx, inputAmount - changeAmount, OperationType.Send),
+            makeOperation(account.accountUid, tx, outputAmount, OperationType.Receive)
           )
         case _ => Nil
       }
@@ -152,7 +159,7 @@ class InterpreterClientMock extends Interpreter {
     }
 
     operations.update(
-      account.id,
+      account.accountUid,
       operationToSave
     )
 
@@ -160,7 +167,7 @@ class InterpreterClientMock extends Interpreter {
   }
 
   private def makeOperation(
-      accountId: AccountId,
+      accountId: AccountUid,
       tx: TransactionView,
       amount: BigInt,
       operationType: OperationType

@@ -1,20 +1,23 @@
 package co.ledger.cria.e2e
 
 import java.util.UUID
+
 import cats.effect.{ExitCode, IO}
 import co.ledger.cria.App
+import co.ledger.cria.App.ClientResources
 import co.ledger.cria.e2e.CriaE2ETest.{RegisterRequest, SyncResult, TestCase}
 import co.ledger.cria.itutils.ContainerFlatSpec
+import co.ledger.cria.itutils.TestUtils
 import co.ledger.cria.domain.models.Sort
-import co.ledger.cria.domain.models.account.Account
 import co.ledger.cria.clients.explorer.models.circeImplicits._
+import co.ledger.cria.domain.models.account.{Account, AccountUid, WalletUid}
 import co.ledger.cria.domain.models.interpreter.Coin
 import co.ledger.cria.domain.models.keychain.KeychainId
 import co.ledger.cria.itutils.models.keychain.AccountKey.Xpub
 import co.ledger.cria.itutils.models.keychain.{KeychainInfo, Scheme}
-import co.ledger.cria.utils.IOAssertion
 import io.circe.Decoder
 import co.ledger.cria.itutils.models.keychain.CoinImplicits._
+import co.ledger.cria.utils.IOAssertion
 import co.ledger.protobuf.bitcoin.keychain
 import io.circe.generic.extras.semiauto.deriveConfiguredDecoder
 import org.scalatest.matchers.should.Matchers
@@ -28,16 +31,47 @@ class CriaE2ETest extends ContainerFlatSpec with Matchers {
   readTestCases().foreach { tc =>
     val request = tc.registerRequest
 
-    "App" should s"perform correct sync on account ${request.accountKey.extendedPublicKey}" in IOAssertion {
+    s"${request.accountKey.extendedPublicKey}" should "perform correct sync on account" in IOAssertion {
+
       for {
+        _          <- setup
+        _          <- setupAccount(request)
         keychainId <- makeKeychainId(request)
         args = makeArgs(request, keychainId)
         exitCode <- App.run(args, conf)
-        actual   <- getSyncResult(keychainId, request.coin)
+        actual   <- getSyncResult(request.accountUid, keychainId, request.coin)
       } yield {
-        exitCode shouldBe ExitCode.Success
-        actual shouldBe tc.expected
+        withClue(s"perform correct sync on account") {
+          exitCode shouldBe ExitCode.Success
+        }
+
+        withClue(s"Balance should be ${tc.expected.balance}") {
+          actual.balance shouldBe tc.expected.balance
+        }
+
+        withClue(s"have ${tc.expected.opsSize} operations") {
+          actual.opsSize shouldBe tc.expected.opsSize
+        }
+
+        withClue(s"have ${tc.expected.utxosSize} utxos") {
+          actual.utxosSize shouldBe tc.expected.utxosSize
+        }
+
+        withClue(s"have received ${tc.expected.amountReceived} in total") {
+          actual.amountReceived shouldBe tc.expected.amountReceived
+        }
+
+        withClue(s"have sent ${tc.expected.amountSent} in total") {
+          actual.amountSent shouldBe tc.expected.amountSent
+        }
       }
+    }
+  }
+
+  private def setupAccount(request: RegisterRequest): IO[Int] = {
+    appResources.use { case ClientResources(_, _, db) =>
+      val utils = new TestUtils(db)
+      utils.setupAccount(AccountUid(request.accountUid), WalletUid(request.walletUid))
     }
   }
 
@@ -57,9 +91,10 @@ class CriaE2ETest extends ContainerFlatSpec with Matchers {
             request.accountKey.toProto,
             request.scheme.toProto,
             request.lookaheadSize,
-            Some(request.coin.toNetwork.toKeychainChainParamsProto),
-            request.accountIndex,
-            request.metadata
+            Some(request.coin.toNetwork.toKeychainChainParamsProto)
+//            ,
+//            request.accountIndex,
+//            request.metadata
           ),
           new Metadata
         )
@@ -72,23 +107,25 @@ class CriaE2ETest extends ContainerFlatSpec with Matchers {
       ("--keychainId", keychainId.value.toString),
       ("--coin", request.coin),
       ("--syncId", request.syncId),
+      ("--accountUid", request.accountUid),
       ("--walletUid", request.walletUid)
     ).flatMap { case (name, arg) => List(name, arg.toString) }
 
-  def getSyncResult(keychainId: KeychainId, coin: Coin): IO[SyncResult] = testResources.use { res =>
-    val account = Account(keychainId, coin)
-    for {
-      opsSize   <- res.testUtils.getOperations(account.id, 20, Sort.Ascending, None)
-      utxosSize <- res.testUtils.getUtxos(account.id, 20, 0, Sort.Ascending)
-      balance   <- res.testUtils.getBalance(account.id)
-    } yield SyncResult(
-      opsSize.total,
-      utxosSize.total,
-      balance.balance.longValue,
-      balance.received.longValue,
-      balance.sent.longValue
-    )
-  }
+  def getSyncResult(accountUid: String, keychainId: KeychainId, coin: Coin): IO[SyncResult] =
+    testResources.use { res =>
+      val account = Account(AccountUid(accountUid), keychainId, coin)
+      for {
+        opsSize   <- res.testUtils.getOperationCount(account.accountUid)
+        utxosSize <- res.testUtils.getUtxos(account.accountUid, 20, 0, Sort.Ascending)
+        balance   <- res.testUtils.getBalance(account.accountUid)
+      } yield SyncResult(
+        opsSize,
+        utxosSize.total,
+        balance.balance.longValue,
+        balance.received.longValue,
+        balance.netSent.longValue + balance.fees.longValue
+      )
+    }
 
   private def readJson[A: Decoder](file: String): A = {
     val raw = Source.fromResource(file).getLines().foldLeft("")(_ + _)
@@ -106,7 +143,8 @@ object CriaE2ETest {
       lookaheadSize: Int,
       coin: Coin,
       syncId: UUID,
-      walletUid: UUID,
+      accountUid: String,
+      walletUid: String,
       accountIndex: Int,
       metadata: String
   )

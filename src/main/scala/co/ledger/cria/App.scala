@@ -18,7 +18,7 @@ import co.ledger.cria.domain.models.{SynchronizationParameters, SynchronizationR
 import co.ledger.cria.domain.models.interpreter.Coin
 import co.ledger.cria.domain.services.{CursorStateService, HealthService}
 import co.ledger.cria.domain.services.interpreter.InterpreterImpl
-import co.ledger.cria.utils.{DbUtils, ResourceUtils}
+import co.ledger.cria.utils.ResourceUtils
 import doobie.util.transactor.Transactor
 
 object App extends IOApp with DefaultContextLogging {
@@ -63,8 +63,7 @@ object App extends IOApp with DefaultContextLogging {
         val interpreterClient = new InterpreterImpl(
           explorerClient,
           clientResources.transactor,
-          conf.maxConcurrent,
-          conf.db.batchConcurrency
+          conf.maxConcurrent
         )
 
         val cursorStateService: Coin => CursorStateService[IO] =
@@ -77,6 +76,7 @@ object App extends IOApp with DefaultContextLogging {
           cliOptions.coin,
           cliOptions.syncId,
           cliOptions.blockHash,
+          cliOptions.accountUid,
           cliOptions.walletUid
         )
 
@@ -88,7 +88,7 @@ object App extends IOApp with DefaultContextLogging {
         )
 
         for {
-          _          <- DbUtils.flywayMigrate(conf.db.postgres)
+//          _          <- DbUtils.flywayMigrate(conf.db.postgres)
           _          <- IO(resources.server.start()) *> log.info("Worker started")
           syncResult <- worker.run(syncParams)
           _          <- IO(resources.server.shutdown()) *> log.info("Worker stopped")

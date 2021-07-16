@@ -2,7 +2,7 @@ package co.ledger.cria.domain.services
 
 import cats.effect.{IO, Timer}
 import co.ledger.cria.logging.{ContextLogging, CriaLogContext}
-import co.ledger.cria.domain.models.account.{Account, AccountId}
+import co.ledger.cria.domain.models.account.{Account, AccountUid}
 import co.ledger.cria.domain.models.interpreter.{BlockView, SyncId}
 import co.ledger.cria.domain.services.interpreter.Interpreter
 import org.http4s.client.UnexpectedStatus
@@ -41,17 +41,17 @@ object CursorStateService {
         .getBlock(block.hash)
         .flatMap {
           case Some(lvb) => IO.pure(lvb)
-          case None      => fetchLastBlocksUntilValid(account.id, block)
+          case None      => fetchLastBlocksUntilValid(account.accountUid, block)
         }
         .handleErrorWith {
           case serverError: UnexpectedStatus if serverError.status.code != 404 =>
             logUnexpectedError(block, serverError)
           case notFoundError: UnexpectedStatus if notFoundError.status.code == 404 =>
-            fetchLastBlocksUntilValid(account.id, block)
+            fetchLastBlocksUntilValid(account.accountUid, block)
         }
     }
 
-    private def fetchLastBlocksUntilValid(accountId: AccountId, block: BlockView)(implicit
+    private def fetchLastBlocksUntilValid(accountId: AccountUid, block: BlockView)(implicit
         lc: CriaLogContext
     ): IO[BlockView] = {
       for {

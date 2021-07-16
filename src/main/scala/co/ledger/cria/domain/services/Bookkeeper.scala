@@ -3,7 +3,7 @@ package co.ledger.cria.domain.services
 import cats.effect.{ContextShift, IO, Timer}
 import fs2.{Pipe, Stream}
 import co.ledger.cria.logging.{ContextLogging, CriaLogContext}
-import co.ledger.cria.domain.models.account.AccountId
+import co.ledger.cria.domain.models.account.AccountUid
 import co.ledger.cria.domain.models.interpreter.{BlockHash, Coin, Confirmation, TransactionView}
 import co.ledger.cria.domain.models.keychain.{AccountAddress, ChangeType, KeychainId}
 import co.ledger.cria.domain.services.interpreter.Interpreter
@@ -12,7 +12,7 @@ import shapeless.tag.@@
 trait Bookkeeper[F[_]] {
   def record[Tx <: Confirmation: Bookkeeper.Recordable](
       coin: Coin,
-      accountId: AccountId,
+      accountId: AccountUid,
       keychainId: KeychainId,
       change: ChangeType,
       blockHash: Option[BlockHash]
@@ -30,7 +30,7 @@ object Bookkeeper extends ContextLogging {
 
     override def record[Tx <: Confirmation: Recordable](
         coin: Coin,
-        accountId: AccountId,
+        accountId: AccountUid,
         keychainId: KeychainId,
         change: ChangeType,
         blockHash: Option[BlockHash]
@@ -92,12 +92,12 @@ object Bookkeeper extends ContextLogging {
 
   def saveTransactionRecords[Tx <: Confirmation: Recordable](
       interpreter: Interpreter,
-      accountId: AccountId
+      accountId: AccountUid
   )(implicit
       recordable: Recordable[Tx],
       lc: CriaLogContext
   ): Pipe[IO, TransactionRecord[Tx], List[AccountAddress]] =
-    _.chunks.flatMap { chunk =>
+    _.chunkN(100).flatMap { chunk =>
       Stream
         .chunk(chunk.map(_.tx))
         .through(recordable.save(interpreter)(accountId))
@@ -132,7 +132,7 @@ object Bookkeeper extends ContextLogging {
         explorer: ExplorerClient
     )(addresses: Set[Address], block: Option[BlockHash]): Stream[IO, TransactionView @@ T]
 
-    def save(interpreter: Interpreter)(accountId: AccountId)(implicit
+    def save(interpreter: Interpreter)(accountId: AccountUid)(implicit
         lc: CriaLogContext
     ): Pipe[IO, TransactionView, Unit] =
       interpreter.saveTransactions(accountId)

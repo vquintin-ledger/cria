@@ -13,10 +13,10 @@ import co.ledger.cria.domain.models.interpreter.{
 }
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
-
 import java.time.Instant
 import java.util.UUID
-import co.ledger.cria.domain.models.account.Account
+
+import co.ledger.cria.domain.models.account.{Account, AccountUid, WalletUid}
 import co.ledger.cria.domain.models.keychain.KeychainId
 import co.ledger.cria.domain.services.{CursorStateService, ExplorerClient}
 import co.ledger.cria.domain.services.interpreter.{Interpreter, InterpreterClientMock}
@@ -31,9 +31,11 @@ class SynchronizerSpec extends AnyFlatSpec with Matchers {
   implicit val t: Timer[IO]         = IO.timer(ExecutionContext.global)
 
   val keychainId = KeychainId(UUID.randomUUID())
+  val accountUid = AccountUid(UUID.randomUUID().toString)
 
   val accountIdentifier: Account =
     Account(
+      accountUid,
       keychainId,
       Coin.Btc
     )
@@ -79,14 +81,14 @@ class SynchronizerSpec extends AnyFlatSpec with Matchers {
 
     val interpreter = new InterpreterClientMock
 
-    interpreter.getSavedTransaction(accountIdentifier.id) shouldBe empty
+    interpreter.getSavedTransaction(accountIdentifier.accountUid) shouldBe empty
 
     val syncParams = mkSyncParams(None)
 
     for {
       _ <- worker(interpreter).run(syncParams)
     } yield {
-      val txs: List[TransactionView] = interpreter.getSavedTransaction(accountIdentifier.id)
+      val txs: List[TransactionView] = interpreter.getSavedTransaction(syncParams.accountUid)
       txs should have size 4
     }
   }
@@ -98,7 +100,7 @@ class SynchronizerSpec extends AnyFlatSpec with Matchers {
     val explorer =
       new ExplorerClientMock(blockchain.flatMap(_._2).toMap)
 
-    interpreter.getSavedTransaction(accountIdentifier.id) shouldBe empty
+    interpreter.getSavedTransaction(accountIdentifier.accountUid) shouldBe empty
 
     val syncParams = mkSyncParams(Some(lastMinedBlock))
 
@@ -106,7 +108,7 @@ class SynchronizerSpec extends AnyFlatSpec with Matchers {
       _ <- worker(interpreter, explorer).run(syncParams)
     } yield {
 
-      interpreter.getSavedTransaction(accountIdentifier.id) shouldBe empty
+      interpreter.getSavedTransaction(accountIdentifier.accountUid) shouldBe empty
       explorer.getConfirmedTransactionsCount = 0
     }
   }
@@ -135,6 +137,7 @@ class SynchronizerSpec extends AnyFlatSpec with Matchers {
       syncId = SyncId(UUID.randomUUID()),
       coin = Coin.Btc,
       blockHash = cursor.map(_.hash),
-      walletUid = UUID.randomUUID()
+      accountUid = AccountUid(UUID.randomUUID().toString),
+      walletUid = WalletUid(UUID.randomUUID().toString)
     )
 }

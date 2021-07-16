@@ -6,19 +6,17 @@
       },
       "scheme": "BIP49",
       "lookahead_size": 20,
-      "coin": "btc",
+      "coin": "bitcoin",
       "sync_id": "9e4669c2-f7ed-48cb-86e6-c4727be8ddbc",
+      "account_uid": "a59deed9-a6c8-4a57-9dbd-e3b1cf7a9428",
       "wallet_uid": "a59deed9-a6c8-4a57-9dbd-e3b1cf7a9428",
       "account_index": 2,
       "metadata": "nolibcore:testworkspace"
     },
     "expected": {
-      "extended_public_key": "xpub6DDeKs272C9xQyta6cxqz4JwVLFsVSHhv6dbj89ZptN7pt2QHtGt119YtXTKdfA5Hk2TD4F35FuyzXCEQujSDRowuVMnPfY57cnqmk2AKVX",
       "ops_size": 6,
       "utxos_size": 0,
-      "last_tx_hash": "87c56939aafe72cd9dafa23379444c5c771f9e02ea014da79748a6b5cc320ba9",
       "balance": 0,
-      "balance_history_size": 5,
       "amount_received": 2324546,
       "amount_sent": 2324546
     }
@@ -30,19 +28,17 @@
       },
       "scheme": "BIP49",
       "lookahead_size": 20,
-      "coin": "btc",
+      "coin": "bitcoin",
       "sync_id": "2bbba9e6-aaa3-41f7-b855-bdae869cfd65",
+      "account_uid": "a59deed9-a6c8-4a57-9dbd-e3b1cf7a9428",
       "wallet_uid": "52580123-df98-4ead-bb4b-2ae4eeeab93b",
       "account_index": 3,
       "metadata": "nolibcore:testworkspace"
     },
     "expected": {
-      "extended_public_key": "xpub6CKb86o7RHSCxuwP5dnxyDySLbnVWypQUxhWpycFZWFTzXuXy3UgGtG3o51oGER6X2UY6zRqd5AXgzNghb9va1FkfzXz6k1RT6EwTwCKejE",
       "ops_size": 71,
       "utxos_size": 0,
-      "last_tx_hash": "d8b60f324c652ed78d97e8673355a8d411bd2a80a9914420a82db706e2838ed2",
       "balance": 0,
-      "balance_history_size": 48,
       "amount_received": 1133622,
       "amount_sent": 1133622
     }
@@ -54,19 +50,17 @@
       },
       "scheme": "BIP84",
       "lookahead_size": 20,
-      "coin": "btc",
+      "coin": "bitcoin",
       "sync_id": "7d116618-aa85-42c5-b0c9-29ae5e2c7e78",
+      "account_uid": "a59deed9-a6c8-4a57-9dbd-e3b1cf7a9428",
       "wallet_uid": "1dc71640-5bd8-4034-849c-0247d4c4efdd",
       "account_index": 4,
       "metadata": "nolibcore:testworkspace"
     },
     "expected": {
-      "extended_public_key": "xpub6DEHKg8fgKcb9at2u9Xhjtx4tXGyWqUPQAx2zNCzr41gQRyCqpCn7onSoJU4VS96GXyCtAhhFxErnG2pGVvVexaqF7DEfqGGnGk7Havn7C2",
       "ops_size": 118,
       "utxos_size": 1,
-      "last_tx_hash": "865ff00af6407d053252356b69dcb8dfe6ea477208b76031243b33307bc3abf9",
       "balance": 2717,
-      "balance_history_size": 67,
       "amount_received": 1787929,
       "amount_sent": 1785212
     }

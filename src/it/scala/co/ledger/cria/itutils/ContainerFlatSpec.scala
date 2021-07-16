@@ -57,7 +57,6 @@ trait ContainerFlatSpec extends AnyFlatSpec with ForAllTestContainer with Defaul
 
   def setup: IO[Unit] = {
     lazy val flyway: Flyway = DbUtils.flyway(conf.db.postgres)
-
     IO(flyway.clean()) *> IO(flyway.migrate())
   }
 
@@ -76,8 +75,7 @@ trait ContainerFlatSpec extends AnyFlatSpec with ForAllTestContainer with Defaul
       val interpreterClient = new InterpreterImpl(
         explorerClient,
         resources.transactor,
-        conf.maxConcurrent,
-        conf.db.batchConcurrency
+        conf.maxConcurrent
       )
       val keychainClient = new KeychainGrpcClient(resources.keychainGrpcChannel)
       TestResources(

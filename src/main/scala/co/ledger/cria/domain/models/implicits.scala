@@ -1,8 +1,10 @@
 package co.ledger.cria.domain.models
 
 import java.time.Instant
+
 import cats.data.NonEmptyList
-import co.ledger.cria.domain.models.account.AccountId
+import co.ledger.cria.domain.adapters.wd.models.{WDInput, WDOperation, WDTransaction}
+import co.ledger.cria.domain.models.account.{AccountUid, WalletUid}
 import co.ledger.cria.domain.models.interpreter.{Operation, OperationType, TransactionView}
 import co.ledger.cria.domain.models.interpreter._
 import co.ledger.cria.domain.models.keychain.ChangeType
@@ -27,6 +29,12 @@ object implicits {
 
   implicit val changeTypeMeta: Meta[ChangeType] =
     pgEnumStringOpt("change_type", ChangeType.fromKey, _.toString.toLowerCase())
+
+  implicit val doobieMetaAccountUId: Meta[AccountUid] =
+    Meta[String].timap[AccountUid](AccountUid)(_.value)
+
+  implicit val doobieMetaWalletUid: Meta[WalletUid] =
+    Meta[String].timap[WalletUid](WalletUid)(_.value)
 
   implicit lazy val readTransactionView: Read[TransactionView] =
     Read[
@@ -61,7 +69,7 @@ object implicits {
     Read[
       (
           String,
-          AccountId,
+          AccountUid,
           TxHash,
           OperationType,
           BigInt,
@@ -81,6 +89,85 @@ object implicits {
         fees,
         time,
         height
+      )
+    }
+
+  implicit lazy val writeWDOperation: Write[WDOperation] =
+    Write[
+      (
+          String,
+          String,
+          String,
+          String,
+          String,
+          String,
+          String,
+          String,
+          String,
+          Option[String],
+          String,
+          String
+      )
+    ].contramap { op =>
+      (
+        op.uid,
+        op.accountUid,
+        op.walletUid,
+        op.operationType,
+        op.date,
+        op.senders,
+        op.recipients,
+        op.amount,
+        op.fees,
+        op.blockUid,
+        op.currencyName,
+        op.trust
+      )
+    }
+
+  implicit lazy val writeWDInput: Write[WDInput] =
+    Write[
+      (
+          String,
+          Int,
+          String,
+          String,
+          BigInt,
+          String,
+          Option[String],
+          Long
+      )
+    ].contramap { i =>
+      (
+        i.uid,
+        i.previousOutputIdx,
+        i.previousTxHash,
+        i.previousTxUid,
+        i.amount,
+        i.address,
+        i.coinbase,
+        i.sequence
+      )
+    }
+
+  implicit lazy val writeWDTransaction: Write[WDTransaction] =
+    Write[
+      (
+          String,
+          String,
+          Int,
+          Option[String],
+          String,
+          Int
+      )
+    ].contramap { tx =>
+      (
+        tx.uid,
+        tx.hash,
+        tx.version,
+        tx.blockUid,
+        tx.time,
+        tx.locktime
       )
     }
 

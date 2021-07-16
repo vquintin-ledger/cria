@@ -2,6 +2,7 @@ package co.ledger.cria.domain.services
 
 import java.time.Instant
 import java.util.UUID
+
 import cats.effect.{ContextShift, IO, Resource, Timer}
 import co.ledger.cria.clients.explorer.ExplorerHttpClient
 import co.ledger.cria.clients.protocol.http.Clients
@@ -9,7 +10,7 @@ import co.ledger.cria.config.Config
 import co.ledger.cria.domain.adapters.explorer.ExplorerClientAdapter
 import co.ledger.cria.domain.models.TxHash
 import co.ledger.cria.logging.DefaultContextLogging
-import co.ledger.cria.domain.models.account.Account
+import co.ledger.cria.domain.models.account.{Account, AccountUid}
 import co.ledger.cria.domain.models.interpreter.{
   BlockHash,
   BlockView,
@@ -47,8 +48,8 @@ class CursorStateServiceIT extends AnyFlatSpecLike with Matchers with DefaultCon
 
       val keychainId = KeychainId(UUID.randomUUID())
       val account =
-        Account(keychainId, Coin.Btc)
-      val accountId = account.id
+        Account(AccountUid(UUID.randomUUID().toString), keychainId, Coin.Btc)
+      val accountId = account.accountUid
       val syncId    = SyncId(UUID.randomUUID())
 
       val lastValidHash = BlockHash.fromStringUnsafe(
