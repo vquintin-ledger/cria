@@ -203,7 +203,7 @@ class InterpreterIT extends ContainerFlatSpec with Matchers {
       testResources.use { tr =>
         val db = tr.clients.transactor
         val interpreter =
-          new InterpreterImpl(_ => explorer, db, tr.flaggingService, tr.transactionService, tr.operationService)
+          new InterpreterImpl(_ => explorer, db, tr.flaggingService, tr.transactionService, tr.operationService, tr.wdService)
 
         val utils = new TestUtils(db)
 
@@ -256,7 +256,7 @@ class InterpreterIT extends ContainerFlatSpec with Matchers {
       testResources.use { tr =>
         val db = tr.clients.transactor
         val interpreter =
-          new InterpreterImpl(_ => explorer, db, tr.flaggingService, tr.transactionService, tr.operationService)
+          new InterpreterImpl(_ => explorer, db, tr.flaggingService, tr.transactionService, tr.operationService, tr.wdService)
 
         val utils = tr.testUtils
 
@@ -309,7 +309,7 @@ class InterpreterIT extends ContainerFlatSpec with Matchers {
       testResources.use { tr =>
         val db = tr.clients.transactor
         val interpreter =
-          new InterpreterImpl(_ => explorer, db, tr.flaggingService, tr.transactionService, tr.operationService)
+          new InterpreterImpl(_ => explorer, db, tr.flaggingService, tr.transactionService, tr.operationService, tr.wdService)
 
         val utils = new TestUtils(db)
 

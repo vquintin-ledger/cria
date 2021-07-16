@@ -14,7 +14,7 @@ import co.ledger.cria.clients.protocol.http.Clients
 import co.ledger.cria.domain.Synchronizer
 import co.ledger.cria.domain.adapters.explorer.ExplorerClientAdapter
 import co.ledger.cria.domain.adapters.keychain.KeychainGrpcClient
-import co.ledger.cria.domain.adapters.wd.{FlaggingServiceImpl, OperationServiceImpl, TransactionServiceImpl}
+import co.ledger.cria.domain.adapters.wd.{FlaggingServiceImpl, OperationServiceImpl, TransactionServiceImpl, WDServiceImpl}
 import co.ledger.cria.domain.models.{SynchronizationParameters, SynchronizationResult}
 import co.ledger.cria.domain.models.interpreter.Coin
 import co.ledger.cria.domain.services.{CursorStateService, HealthService}
@@ -64,12 +64,14 @@ object App extends IOApp with DefaultContextLogging {
         val flaggingService = new FlaggingServiceImpl(clientResources.transactor)
         val transactionService = new TransactionServiceImpl(clientResources.transactor, conf.maxConcurrent)
         val operationService = new OperationServiceImpl(clientResources.transactor)
+        val wdService = new WDServiceImpl(clientResources.transactor)
         val interpreterClient = new InterpreterImpl(
           explorerClient,
           clientResources.transactor,
           flaggingService,
           transactionService,
-          operationService
+          operationService,
+          wdService
         )
 
         val cursorStateService: Coin => CursorStateService[IO] =

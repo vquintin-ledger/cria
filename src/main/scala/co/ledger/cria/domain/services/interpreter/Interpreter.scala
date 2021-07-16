@@ -38,11 +38,11 @@ class InterpreterImpl(
     db: Transactor[IO],
     flaggingService: FlaggingService,
     transactionService: TransactionService,
-    operationService: OperationService)(implicit cs: ContextShift[IO], t: Timer[IO])
+    operationService: OperationService,
+    wdService: WDService)(implicit cs: ContextShift[IO], t: Timer[IO])
     extends Interpreter
     with ContextLogging {
 
-  val wdService            = new WDService(db)
   val postSyncCheckService = new PostSyncCheckService(db)
 
   def saveTransactions(
