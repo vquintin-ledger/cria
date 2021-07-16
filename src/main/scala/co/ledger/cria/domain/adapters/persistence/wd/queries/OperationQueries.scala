@@ -2,7 +2,7 @@ package co.ledger.cria.domain.adapters.persistence.wd.queries
 
 import cats.data.NonEmptyList
 import cats.implicits._
-import co.ledger.cria.domain.adapters.persistence.wd.models.OperationToSave
+import co.ledger.cria.domain.adapters.persistence.wd.models.WDOperationToSave
 import co.ledger.cria.logging.DoobieLogHandler
 import co.ledger.cria.domain.models.{Sort, TxHash}
 import co.ledger.cria.domain.models.account.AccountUid
@@ -70,14 +70,14 @@ object OperationQueries extends DoobieLogHandler {
       .stream
   }
 
-  def saveOperations(operation: List[OperationToSave]): ConnectionIO[Int] = {
+  def saveOperations(operation: List[WDOperationToSave]): ConnectionIO[Int] = {
     val query =
       """INSERT INTO operation (
          uid, account_id, hash, operation_type, amount, fees, time, block_hash, block_height
        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
        ON CONFLICT ON CONSTRAINT operation_pkey DO NOTHING
     """
-    Update[OperationToSave](query).updateMany(operation)
+    Update[WDOperationToSave](query).updateMany(operation)
   }
 
   def deleteUnconfirmedOperations(accountId: AccountUid): doobie.ConnectionIO[Int] = {

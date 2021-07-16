@@ -6,7 +6,7 @@ import co.ledger.cria.domain.models.interpreter.{Operation, OperationType}
 
 import java.time.Instant
 
-case class OperationToSave(
+case class WDOperationToSave(
                             uid: Operation.UID,
                             accountId: AccountUid,
                             hash: TxHash,
@@ -18,9 +18,9 @@ case class OperationToSave(
                             blockHeight: Option[Long]
                           )
 
-object OperationToSave {
-  def fromOperation(op: Operation): OperationToSave =
-    new OperationToSave(
+object WDOperationToSave {
+  def fromOperation(op: Operation): WDOperationToSave =
+    new WDOperationToSave(
       op.uid,
       op.accountId,
       op.hash,

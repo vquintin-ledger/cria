@@ -1,7 +1,7 @@
 package co.ledger.cria.domain.adapters.persistence.wd
 
 import cats.effect.IO
-import co.ledger.cria.domain.adapters.persistence.wd.models.OperationToSave
+import co.ledger.cria.domain.adapters.persistence.wd.models.WDOperationToSave
 import co.ledger.cria.domain.adapters.persistence.wd.queries.OperationQueries
 import co.ledger.cria.domain.models.Sort
 import co.ledger.cria.domain.models.account.AccountUid
@@ -30,6 +30,6 @@ class OperationServiceImpl(
 
   override def saveOperations(operations: List[Operation]): IO[Int] = {
 
-    OperationQueries.saveOperations(operations.map(OperationToSave.fromOperation)).transact(db)
+    OperationQueries.saveOperations(operations.map(WDOperationToSave.fromOperation)).transact(db)
   }
 }
