@@ -1,4 +1,4 @@
-package co.ledger.cria.domain.adapters.wd.queries
+package co.ledger.cria.domain.adapters.persistence.wd.queries
 
 import cats.data.NonEmptyList
 import co.ledger.cria.logging.DoobieLogHandler

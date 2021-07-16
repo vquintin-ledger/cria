@@ -1,8 +1,8 @@
 package co.ledger.cria.itutils
 
 import cats.effect.{ContextShift, IO, Resource, Timer}
-import co.ledger.cria.domain.adapters.wd.Db
-import co.ledger.cria.domain.adapters.wd.queries.BalanceQueries
+import co.ledger.cria.domain.adapters.persistence.wd.Db
+import co.ledger.cria.domain.adapters.persistence.wd.queries.BalanceQueries
 import co.ledger.cria.itutils.models.GetUtxosResult
 import co.ledger.cria.itutils.queries.{AccountTestQueries, OperationTestQueries}
 import co.ledger.cria.domain.models.account.{AccountUid, WalletUid}

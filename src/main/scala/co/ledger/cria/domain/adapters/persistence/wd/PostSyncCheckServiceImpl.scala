@@ -1,7 +1,7 @@
-package co.ledger.cria.domain.adapters.wd
+package co.ledger.cria.domain.adapters.persistence.wd
 
 import cats.effect.IO
-import co.ledger.cria.domain.adapters.wd.queries.BalanceQueries
+import co.ledger.cria.domain.adapters.persistence.wd.queries.BalanceQueries
 import co.ledger.cria.domain.models.account.AccountUid
 import co.ledger.cria.domain.models.interpreter.CurrentBalance
 import co.ledger.cria.domain.services.interpreter.PostSyncCheckService

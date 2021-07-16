@@ -1,9 +1,9 @@
-package co.ledger.cria.domain.adapters.wd
+package co.ledger.cria.domain.adapters.persistence.wd
 
 import cats.data.NonEmptyList
 import cats.effect.{ContextShift, IO}
 import cats.implicits._
-import co.ledger.cria.domain.adapters.wd.queries.OperationQueries
+import co.ledger.cria.domain.adapters.persistence.wd.queries.OperationQueries
 import co.ledger.cria.domain.models.account.AccountUid
 import co.ledger.cria.domain.models.keychain.{AccountAddress, ChangeType}
 import co.ledger.cria.domain.services.interpreter.FlaggingService

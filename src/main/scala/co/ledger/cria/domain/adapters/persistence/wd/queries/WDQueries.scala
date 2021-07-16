@@ -1,7 +1,7 @@
-package co.ledger.cria.domain.adapters.wd.queries
+package co.ledger.cria.domain.adapters.persistence.wd.queries
 
 import cats.implicits._
-import co.ledger.cria.domain.adapters.wd.models.{
+import co.ledger.cria.domain.adapters.persistence.wd.models.{
   WDBlock,
   WDInput,
   WDOperation,

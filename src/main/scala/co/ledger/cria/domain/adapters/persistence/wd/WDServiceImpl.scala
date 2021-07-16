@@ -1,8 +1,8 @@
-package co.ledger.cria.domain.adapters.wd
+package co.ledger.cria.domain.adapters.persistence.wd
 
 import cats.effect.IO
-import co.ledger.cria.domain.adapters.wd.models.{WDBlock, WDOperation, WDTransaction}
-import co.ledger.cria.domain.adapters.wd.queries.WDQueries
+import co.ledger.cria.domain.adapters.persistence.wd.models.{WDBlock, WDOperation, WDTransaction}
+import co.ledger.cria.domain.adapters.persistence.wd.queries.WDQueries
 import co.ledger.cria.domain.models.account.{AccountUid, WalletUid}
 import co.ledger.cria.domain.models.interpreter.{BlockView, Coin, Operation, TransactionView}
 import co.ledger.cria.domain.services.interpreter.WDService

@@ -1,4 +1,4 @@
-package co.ledger.cria.domain.adapters.wd.models
+package co.ledger.cria.domain.adapters.persistence.wd.models
 
 import cats.data.NonEmptyList
 import co.ledger.cria.domain.models.TxHash

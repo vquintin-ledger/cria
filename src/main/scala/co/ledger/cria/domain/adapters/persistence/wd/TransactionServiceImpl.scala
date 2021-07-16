@@ -1,8 +1,8 @@
-package co.ledger.cria.domain.adapters.wd
+package co.ledger.cria.domain.adapters.persistence.wd
 
 import cats.data.NonEmptyList
 import cats.effect.{ContextShift, IO}
-import co.ledger.cria.domain.adapters.wd.queries.TransactionQueries
+import co.ledger.cria.domain.adapters.persistence.wd.queries.TransactionQueries
 import co.ledger.cria.domain.models.account.AccountUid
 import co.ledger.cria.domain.models.interpreter.{AccountTxView, BlockView, TransactionView}
 import co.ledger.cria.domain.models.{Sort, TxHash}

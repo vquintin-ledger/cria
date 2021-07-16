@@ -1,8 +1,8 @@
-package co.ledger.cria.domain.adapters.wd
+package co.ledger.cria.domain.adapters.persistence.wd
 
 import cats.effect.IO
-import co.ledger.cria.domain.adapters.wd.models.OperationToSave
-import co.ledger.cria.domain.adapters.wd.queries.OperationQueries
+import co.ledger.cria.domain.adapters.persistence.wd.models.OperationToSave
+import co.ledger.cria.domain.adapters.persistence.wd.queries.OperationQueries
 import co.ledger.cria.domain.models.Sort
 import co.ledger.cria.domain.models.account.AccountUid
 import co.ledger.cria.domain.models.interpreter.{Operation, TransactionAmounts}
