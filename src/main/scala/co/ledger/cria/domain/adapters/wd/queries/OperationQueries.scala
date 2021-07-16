@@ -1,6 +1,4 @@
-package co.ledger.cria.domain.services.interpreter
-
-import java.time.Instant
+package co.ledger.cria.domain.adapters.wd.queries
 
 import cats.data.NonEmptyList
 import cats.implicits._
@@ -14,6 +12,8 @@ import doobie._
 import doobie.implicits._
 import doobie.postgres.implicits._
 import fs2.Stream
+
+import java.time.Instant
 
 object OperationQueries extends DoobieLogHandler {
 

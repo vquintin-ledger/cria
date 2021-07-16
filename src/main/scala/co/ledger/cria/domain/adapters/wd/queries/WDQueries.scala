@@ -1,4 +1,4 @@
-package co.ledger.cria.domain.services.interpreter
+package co.ledger.cria.domain.adapters.wd.queries
 
 import cats.implicits._
 import co.ledger.cria.domain.adapters.wd.models.{
@@ -52,7 +52,7 @@ object WDQueries extends DoobieLogHandler {
         ${op.blockUid},
         ${op.currencyName},
         ${op.trust})
-      ON CONFLICT ON CONSTRAINT operations_pkey 
+      ON CONFLICT ON CONSTRAINT operations_pkey
     """ ++
         op.blockUid.map(_ => update).getOrElse(noUpdate)
 
@@ -105,10 +105,10 @@ object WDQueries extends DoobieLogHandler {
 
     val links = inputs.map { i =>
       sql"""INSERT INTO bitcoin_transaction_inputs(
-                transaction_uid, 
-                transaction_hash, 
-                input_uid, 
-                input_idx 
+                transaction_uid,
+                transaction_hash,
+                input_uid,
+                input_idx
               ) VALUES (${tx.uid}, ${tx.hash}, ${i.uid}, ${i.inputIndex})
               ON CONFLICT DO NOTHING
            """.update.run
@@ -118,10 +118,10 @@ object WDQueries extends DoobieLogHandler {
   }
 
   def saveOutputs(
-      outputs: List[WDOutput],
-      txUid: String,
-      txHash: String
-  ): doobie.ConnectionIO[Int] = {
+                   outputs: List[WDOutput],
+                   txUid: String,
+                   txHash: String
+                 ): doobie.ConnectionIO[Int] = {
     val outputsQuery =
       s"""INSERT INTO bitcoin_outputs(
         idx,
@@ -178,8 +178,8 @@ object WDQueries extends DoobieLogHandler {
   }
 
   def deleteBlocksFrom(blockHeight: Option[Long]): doobie.ConnectionIO[Int] =
-    sql"""DELETE 
-          FROM blocks 
+    sql"""DELETE
+          FROM blocks
           WHERE height >= $blockHeight
        """.update.run
 

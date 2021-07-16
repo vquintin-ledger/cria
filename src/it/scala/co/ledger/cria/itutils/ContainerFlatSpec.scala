@@ -8,18 +8,14 @@ import co.ledger.cria.clients.protocol.grpc.GrpcClient
 import co.ledger.cria.config.{Config, GrpcClientConfig}
 import co.ledger.cria.domain.adapters.explorer.ExplorerClientAdapter
 import co.ledger.cria.domain.adapters.keychain.KeychainGrpcClient
+import co.ledger.cria.domain.adapters.wd.{FlaggingServiceImpl, OperationServiceImpl, TransactionServiceImpl}
 import co.ledger.cria.domain.services.KeychainClient
-import co.ledger.cria.domain.services.interpreter.{Interpreter, InterpreterImpl}
+import co.ledger.cria.domain.services.interpreter.{FlaggingService, Interpreter, InterpreterImpl, OperationService, TransactionService}
 import co.ledger.cria.logging.DefaultContextLogging
 import co.ledger.cria.utils.DbUtils
 import co.ledger.protobuf.bitcoin.keychain
 import co.ledger.protobuf.bitcoin.keychain.KeychainServiceFs2Grpc
-import com.dimafeng.testcontainers.{
-  DockerComposeContainer,
-  ExposedService,
-  ForAllTestContainer,
-  ServiceLogConsumer
-}
+import com.dimafeng.testcontainers.{DockerComposeContainer, ExposedService, ForAllTestContainer, ServiceLogConsumer}
 import io.grpc.Metadata
 import org.flywaydb.core.Flyway
 import org.scalatest.flatspec.AnyFlatSpec
@@ -68,14 +64,20 @@ trait ContainerFlatSpec extends AnyFlatSpec with ForAllTestContainer with Defaul
    */
   def testResources: Resource[IO, TestResources] =
     appResources.map { resources =>
-      val explorerClient =
+      val explorerClient = {
         ExplorerClientAdapter.explorerForCoin(
           new ExplorerHttpClient(resources.httpClient, conf.explorer, _)
         ) _
+      }
+      val flaggingService = new FlaggingServiceImpl(resources.transactor)
+      val transactionService = new TransactionServiceImpl(resources.transactor, conf.maxConcurrent)
+      val operationService = new OperationServiceImpl(resources.transactor)
       val interpreterClient = new InterpreterImpl(
         explorerClient,
         resources.transactor,
-        conf.maxConcurrent
+        flaggingService,
+        transactionService,
+        operationService
       )
       val keychainClient = new KeychainGrpcClient(resources.keychainGrpcChannel)
       TestResources(
@@ -87,7 +89,10 @@ trait ContainerFlatSpec extends AnyFlatSpec with ForAllTestContainer with Defaul
           resources.keychainGrpcChannel,
           "keychainClient"
         ),
-        new TestUtils(resources.transactor)
+        new TestUtils(resources.transactor),
+        flaggingService,
+        transactionService,
+        operationService
       )
     }
 
@@ -96,7 +101,10 @@ trait ContainerFlatSpec extends AnyFlatSpec with ForAllTestContainer with Defaul
       interpreter: Interpreter,
       keychainClient: KeychainClient,
       rawKeychainClient: KeychainServiceFs2Grpc[IO, Metadata],
-      testUtils: TestUtils
+      testUtils: TestUtils,
+      flaggingService: FlaggingService,
+      transactionService: TransactionService,
+      operationService: OperationService
   )
 
   lazy val conf: Config = {

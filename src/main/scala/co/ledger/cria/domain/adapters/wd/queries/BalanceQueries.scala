@@ -1,4 +1,4 @@
-package co.ledger.cria.domain.services.interpreter
+package co.ledger.cria.domain.adapters.wd.queries
 
 import co.ledger.cria.logging.DoobieLogHandler
 import co.ledger.cria.domain.models.account.AccountUid
@@ -10,8 +10,8 @@ import doobie.implicits._
 object BalanceQueries extends DoobieLogHandler {
 
   def getBlockchainBalance(
-      accountId: AccountUid
-  ): ConnectionIO[BlockchainBalance] = {
+                            accountId: AccountUid
+                          ): ConnectionIO[BlockchainBalance] = {
     val balanceAndUtxosQuery =
       sql"""
           WITH confirmed_utxos as (
@@ -23,9 +23,9 @@ object BalanceQueries extends DoobieLogHandler {
                 AND tx.block_hash IS NOT NULL
             WHERE o.account_uid = $accountId
             AND   o.derivation IS NOT NULL
-            
+
             EXCEPT
-            
+
             SELECT i.account_uid, i.output_hash, i.output_index, i.address, i.value
             FROM input i
               INNER JOIN transaction tx
@@ -35,7 +35,7 @@ object BalanceQueries extends DoobieLogHandler {
             WHERE i.account_uid = $accountId
             AND   i.derivation IS NOT NULL
           )
-          
+
           SELECT COALESCE(SUM(value), 0), COALESCE(COUNT(value), 0)
           FROM confirmed_utxos
       """
@@ -58,15 +58,15 @@ object BalanceQueries extends DoobieLogHandler {
       result1 <- balanceAndUtxosQuery
       result2 <- receivedAndSentQuery
     } yield {
-      val (balance, utxos)       = result1
+      val (balance, utxos) = result1
       val (received, sent, fees) = result2
       BlockchainBalance(balance, utxos, received, sent, fees)
     }
   }
 
   def getUnconfirmedBalance(
-      accountId: AccountUid
-  ): ConnectionIO[BigInt] =
+                             accountId: AccountUid
+                           ): ConnectionIO[BigInt] =
     sql"""
           WITH new_utxo as (SELECT COALESCE(SUM(o.value), 0) as value
           FROM output o
@@ -77,7 +77,7 @@ object BalanceQueries extends DoobieLogHandler {
           WHERE o.account_uid = $accountId
             AND o.derivation IS NOT NULL
           ),
-          
+
           used_utxos as (
             SELECT COALESCE(SUM(i.value), 0) as value
             FROM input i
@@ -86,9 +86,9 @@ object BalanceQueries extends DoobieLogHandler {
                 AND i.hash       = tx.hash
                 AND tx.block_hash IS NULL
             WHERE i.account_uid = $accountId
-              AND i.derivation IS NOT NULL              
+              AND i.derivation IS NOT NULL
           )
-          
+
           SELECT new_utxo.value - used_utxos.value as pending_amount
           FROM new_utxo, used_utxos
       """

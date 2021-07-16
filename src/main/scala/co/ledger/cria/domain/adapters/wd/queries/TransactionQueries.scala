@@ -1,4 +1,4 @@
-package co.ledger.cria.domain.services.interpreter
+package co.ledger.cria.domain.adapters.wd.queries
 
 import cats.data.NonEmptyList
 import co.ledger.cria.logging.DoobieLogHandler
@@ -14,10 +14,10 @@ import fs2._
 object TransactionQueries extends DoobieLogHandler {
 
   case class TransactionDetails(
-      txHash: TxHash,
-      inputs: List[InputView],
-      outputs: List[OutputView]
-  )
+                                 txHash: TxHash,
+                                 inputs: List[InputView],
+                                 outputs: List[OutputView]
+                               )
 
   def fetchMostRecentBlocks(accountId: AccountUid): Stream[ConnectionIO, BlockView] = {
     sql"""SELECT DISTINCT block_hash, block_height, block_time
@@ -49,9 +49,9 @@ object TransactionQueries extends DoobieLogHandler {
   }
 
   def deleteUnconfirmedTransaction(
-      accountId: AccountUid,
-      hash: TxHash
-  ): doobie.ConnectionIO[String] = {
+                                    accountId: AccountUid,
+                                    hash: TxHash
+                                  ): doobie.ConnectionIO[String] = {
     sql"""DELETE FROM transaction
          WHERE account_uid = $accountId
          AND block_hash IS NULL
@@ -61,21 +61,22 @@ object TransactionQueries extends DoobieLogHandler {
   }
 
   private def insertTx(
-      accountId: AccountUid,
-      tx: TransactionView
-  ): doobie.ConnectionIO[Int] = {
+                        accountId: AccountUid,
+                        tx: TransactionView
+                      ): doobie.ConnectionIO[Int] = {
 
     val update =
       fr"""DO UPDATE SET
-              block_hash   = ${tx.block.map(_.hash)}, 
-              block_height = ${tx.block.map(_.height)}, 
+              block_hash   = ${tx.block.map(_.hash)},
+              block_height = ${tx.block.map(_.height)},
               block_time   = ${tx.block.map(_.time)}
             WHERE transaction.block_hash IS NULL
        """
 
     val noUpdate = fr"""DO NOTHING"""
 
-    val query = sql"""INSERT INTO transaction (
+    val query =
+      sql"""INSERT INTO transaction (
             account_uid, id, hash, block_hash, block_height, block_time, received_at, lock_time, fees, confirmations
           ) VALUES (
             $accountId,
@@ -89,16 +90,16 @@ object TransactionQueries extends DoobieLogHandler {
             ${tx.fees},
             ${tx.confirmations}
           ) ON CONFLICT ON CONSTRAINT transaction_pkey """ ++
-      tx.block.map(_ => update).getOrElse(noUpdate)
+        tx.block.map(_ => update).getOrElse(noUpdate)
 
     query.update.run
   }
 
   private def insertInputs(
-      accountId: AccountUid,
-      txHash: TxHash,
-      inputs: List[InputView]
-  ): doobie.ConnectionIO[Int] = {
+                            accountId: AccountUid,
+                            txHash: TxHash,
+                            inputs: List[InputView]
+                          ): doobie.ConnectionIO[Int] = {
     val query =
       s"""INSERT INTO input (
             account_uid, hash, output_hash, output_index, input_index, value, address, script_signature, txinwitness, sequence, derivation
@@ -111,11 +112,12 @@ object TransactionQueries extends DoobieLogHandler {
   }
 
   private def insertOutputs(
-      accountId: AccountUid,
-      txHash: TxHash,
-      outputs: List[OutputView]
-  ) = {
-    val query = s"""INSERT INTO output (
+                             accountId: AccountUid,
+                             txHash: TxHash,
+                             outputs: List[OutputView]
+                           ) = {
+    val query =
+      s"""INSERT INTO output (
             account_uid, hash, output_index, value, address, script_hex, change_type, derivation
           ) VALUES (
             '${accountId.value}', '${txHash.asString}', ?, ?, ?, ?, ?, ?
@@ -131,10 +133,10 @@ object TransactionQueries extends DoobieLogHandler {
        """.update.run
 
   def fetchTransaction(
-      accountId: AccountUid,
-      sort: Sort,
-      txHashes: NonEmptyList[TxHash]
-  ): Stream[doobie.ConnectionIO, TransactionView] = {
+                        accountId: AccountUid,
+                        sort: Sort,
+                        txHashes: NonEmptyList[TxHash]
+                      ): Stream[doobie.ConnectionIO, TransactionView] = {
     log.logger.debug(
       s"Fetching transactions for accountId $accountId and hashes in $txHashes"
     )
@@ -142,7 +144,7 @@ object TransactionQueries extends DoobieLogHandler {
     val belongsToTxs = withTxHashIn(txHashes)
 
     (sql"""
-          SELECT 
+          SELECT
             id,
             hash,
             block_hash,
@@ -151,7 +153,7 @@ object TransactionQueries extends DoobieLogHandler {
             received_at,
             lock_time,
             fees,
-            confirmations      
+            confirmations
           FROM transaction t
          WHERE t.account_uid = $accountId
            AND $belongsToTxs
@@ -161,10 +163,10 @@ object TransactionQueries extends DoobieLogHandler {
   }
 
   def fetchTransactionDetails(
-      accountId: AccountUid,
-      sort: Sort,
-      txHashes: NonEmptyList[TxHash]
-  ): Stream[doobie.ConnectionIO, TransactionDetails] = {
+                               accountId: AccountUid,
+                               sort: Sort,
+                               txHashes: NonEmptyList[TxHash]
+                             ): Stream[doobie.ConnectionIO, TransactionDetails] = {
     log.logger.debug(
       s"Fetching inputs and outputs for accountId $accountId and hashes in $txHashes"
     )
@@ -173,7 +175,7 @@ object TransactionQueries extends DoobieLogHandler {
       _.groupAdjacentBy { case (txHash, _) => txHash }
         .map { case (txHash, chunks) => txHash -> chunks.map(_._2) }
 
-    val inputs  = fetchInputs(accountId, sort, txHashes).stream.through(groupByTxHash)
+    val inputs = fetchInputs(accountId, sort, txHashes).stream.through(groupByTxHash)
     val outputs = fetchOutputs(accountId, sort, txHashes).stream.through(groupByTxHash)
 
     inputs
@@ -195,10 +197,10 @@ object TransactionQueries extends DoobieLogHandler {
     Fragments.in(fr"t.hash", hashes.map(_.asString))
 
   private def fetchInputs(
-      accountId: AccountUid,
-      sort: Sort,
-      txHashes: NonEmptyList[TxHash]
-  ) = {
+                           accountId: AccountUid,
+                           sort: Sort,
+                           txHashes: NonEmptyList[TxHash]
+                         ) = {
 
     val belongsToTxs = withTxHashIn(txHashes)
 
@@ -213,21 +215,21 @@ object TransactionQueries extends DoobieLogHandler {
   }
 
   private def fetchOutputs(
-      accountId: AccountUid,
-      sort: Sort,
-      txHashes: NonEmptyList[TxHash]
-  ) = {
+                            accountId: AccountUid,
+                            sort: Sort,
+                            txHashes: NonEmptyList[TxHash]
+                          ) = {
 
     val belongsToTxs = withTxHashIn(txHashes)
 
     (
       sql"""
           SELECT t.hash, output.output_index, output.value, output.address, output.script_hex, output.change_type, output.derivation
-            FROM transaction t  
+            FROM transaction t
             LEFT JOIN output on output.account_uid = t.account_uid and output.hash = t.hash
            WHERE t.account_uid = $accountId
              AND $belongsToTxs
        """ ++ transactionOrder(sort)
-    ).query[(TxHash, Option[OutputView])]
+      ).query[(TxHash, Option[OutputView])]
   }
 }

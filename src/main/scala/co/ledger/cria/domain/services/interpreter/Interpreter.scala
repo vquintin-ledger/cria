@@ -36,14 +36,12 @@ trait Interpreter {
 class InterpreterImpl(
     explorer: Coin => ExplorerClient,
     db: Transactor[IO],
-    maxConcurrent: Int
-)(implicit cs: ContextShift[IO], t: Timer[IO])
+    flaggingService: FlaggingService,
+    transactionService: TransactionService,
+    operationService: OperationService)(implicit cs: ContextShift[IO], t: Timer[IO])
     extends Interpreter
     with ContextLogging {
 
-  val transactionService   = new TransactionService(db, maxConcurrent)
-  val operationService     = new OperationService(db)
-  val flaggingService      = new FlaggingService(db)
   val wdService            = new WDService(db)
   val postSyncCheckService = new PostSyncCheckService(db)
 

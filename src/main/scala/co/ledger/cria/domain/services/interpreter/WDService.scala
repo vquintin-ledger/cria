@@ -2,6 +2,7 @@ package co.ledger.cria.domain.services.interpreter
 
 import cats.effect.IO
 import co.ledger.cria.domain.adapters.wd.models.{WDBlock, WDOperation, WDTransaction}
+import co.ledger.cria.domain.adapters.wd.queries.WDQueries
 import co.ledger.cria.logging.{CriaLogContext, DefaultContextLogging}
 import doobie.Transactor
 import doobie.implicits._
@@ -30,8 +31,6 @@ class WDService(
         .saveBlocks(blocks)
         .transact(db)
   }
-
-  def deleteRejectedTransaction(hash: String): IO[Int] = ???
 
   def removeFromCursor(blockHeight: Option[Long]): IO[Int] = {
     // remove block & operations & transactions

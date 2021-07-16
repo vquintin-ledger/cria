@@ -1,6 +1,7 @@
 package co.ledger.cria.domain.services.interpreter
 
 import cats.effect.IO
+import co.ledger.cria.domain.adapters.wd.queries.BalanceQueries
 import co.ledger.cria.logging.{ContextLogging, CriaLogContext}
 import co.ledger.cria.domain.models.account.AccountUid
 import co.ledger.cria.domain.models.interpreter.CurrentBalance

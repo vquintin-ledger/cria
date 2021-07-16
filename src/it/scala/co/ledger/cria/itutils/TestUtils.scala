@@ -1,12 +1,12 @@
 package co.ledger.cria.itutils
 
 import cats.effect.IO
+import co.ledger.cria.domain.adapters.wd.queries.BalanceQueries
 import co.ledger.cria.itutils.models.GetUtxosResult
 import co.ledger.cria.itutils.queries.{AccountTestQueries, OperationTestQueries}
 import co.ledger.cria.domain.models.account.{AccountUid, WalletUid}
 import co.ledger.cria.domain.models.interpreter.CurrentBalance
 import co.ledger.cria.domain.models.Sort
-import co.ledger.cria.domain.services.interpreter.BalanceQueries
 import doobie.implicits._
 import doobie.util.transactor.Transactor
 
