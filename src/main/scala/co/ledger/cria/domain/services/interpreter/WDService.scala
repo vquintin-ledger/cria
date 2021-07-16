@@ -1,14 +1,13 @@
 package co.ledger.cria.domain.services.interpreter
 
 import cats.effect.IO
-import co.ledger.cria.domain.adapters.wd.models.WDOperation
-import co.ledger.cria.domain.models.account.AccountUid
-import co.ledger.cria.domain.models.interpreter.{BlockView, Coin, TransactionView}
+import co.ledger.cria.domain.models.account.{AccountUid, WalletUid}
+import co.ledger.cria.domain.models.interpreter.{BlockView, Coin, OperationToSave, TransactionView}
 import co.ledger.cria.logging.CriaLogContext
 
 trait WDService {
 
-  def saveWDOperation(op: WDOperation): IO[Int]
+  def saveWDOperation(coin: Coin, accountUid: AccountUid, walletUid: WalletUid, txView: TransactionView,opToSave: OperationToSave): IO[Int]
 
   def saveTransaction(coin: Coin, accountUid: AccountUid, transactionView: TransactionView): IO[Int]
 

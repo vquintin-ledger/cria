@@ -4,6 +4,7 @@ import java.math.BigInteger
 import java.security.MessageDigest
 import co.ledger.cria.domain.models.account.AccountUid
 import co.ledger.cria.domain.models.interpreter.{Coin, TransactionView}
+import doobie.Write
 
 case class WDTransaction(
     uid: String,
@@ -48,4 +49,25 @@ object WDTransaction {
       )
     )
   }
+
+  implicit lazy val writeWDTransaction: Write[WDTransaction] =
+    Write[
+      (
+        String,
+          String,
+          Int,
+          Option[String],
+          String,
+          Int
+        )
+    ].contramap { tx =>
+      (
+        tx.uid,
+        tx.hash,
+        tx.version,
+        tx.blockUid,
+        tx.time,
+        tx.locktime
+      )
+    }
 }

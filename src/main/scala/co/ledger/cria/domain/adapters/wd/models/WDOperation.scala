@@ -2,16 +2,10 @@ package co.ledger.cria.domain.adapters.wd.models
 
 import java.math.BigInteger
 import java.security.MessageDigest
-
 import co.ledger.cria.domain.models.TxHash
 import co.ledger.cria.domain.models.account.{AccountUid, WalletUid}
-import co.ledger.cria.domain.models.interpreter.{
-  Coin,
-  OperationToSave,
-  OperationType,
-  OutputView,
-  TransactionView
-}
+import co.ledger.cria.domain.models.interpreter.{Coin, OperationToSave, OperationType, OutputView, TransactionView}
+import doobie.Write
 
 case class WDOperation(
     uid: String,
@@ -34,14 +28,13 @@ object WDOperation {
 
   val digester: MessageDigest = MessageDigest.getInstance("SHA-256")
 
-  def fromOperation(
+  def fromOperation(accountUid: AccountUid,
       operation: OperationToSave,
       coin: Coin,
-      tx: WDTransaction,
       view: TransactionView,
       walletUid: WalletUid
   ): WDOperation = {
-
+    val tx = WDTransaction.fromTransactionView(accountUid, view, coin)
     WDOperation(
       uid = computeUid(
         operation.accountId,
@@ -107,4 +100,36 @@ object WDOperation {
     )
   }
 
+  implicit lazy val writeWDOperation: Write[WDOperation] =
+    Write[
+      (
+        String,
+          String,
+          String,
+          String,
+          String,
+          String,
+          String,
+          String,
+          String,
+          Option[String],
+          String,
+          String
+        )
+    ].contramap { op =>
+      (
+        op.uid,
+        op.accountUid,
+        op.walletUid,
+        op.operationType,
+        op.date,
+        op.senders,
+        op.recipients,
+        op.amount,
+        op.fees,
+        op.blockUid,
+        op.currencyName,
+        op.trust
+      )
+    }
 }

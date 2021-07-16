@@ -2,8 +2,9 @@ package co.ledger.cria.domain.adapters.wd.models
 
 import java.math.BigInteger
 import java.security.MessageDigest
-
 import co.ledger.cria.domain.models.interpreter.InputView
+import doobie.Write
+import co.ledger.cria.domain.models.implicits._
 
 case class WDInput(
     uid: String,
@@ -56,4 +57,29 @@ object WDInput {
       )
     )
   }
+
+  implicit lazy val writeWDInput: Write[WDInput] =
+    Write[
+      (
+          String,
+          Int,
+          String,
+          String,
+          BigInt,
+          String,
+          Option[String],
+          Long
+        )
+    ].contramap { i =>
+      (
+        i.uid,
+        i.previousOutputIdx,
+        i.previousTxHash,
+        i.previousTxUid,
+        i.amount,
+        i.address,
+        i.coinbase,
+        i.sequence
+      )
+    }
 }

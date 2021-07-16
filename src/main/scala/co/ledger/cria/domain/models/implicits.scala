@@ -3,7 +3,6 @@ package co.ledger.cria.domain.models
 import java.time.Instant
 
 import cats.data.NonEmptyList
-import co.ledger.cria.domain.adapters.wd.models.{WDInput, WDOperation, WDTransaction}
 import co.ledger.cria.domain.models.account.{AccountUid, WalletUid}
 import co.ledger.cria.domain.models.interpreter.{Operation, OperationType, TransactionView}
 import co.ledger.cria.domain.models.interpreter._
@@ -91,84 +90,4 @@ object implicits {
         height
       )
     }
-
-  implicit lazy val writeWDOperation: Write[WDOperation] =
-    Write[
-      (
-          String,
-          String,
-          String,
-          String,
-          String,
-          String,
-          String,
-          String,
-          String,
-          Option[String],
-          String,
-          String
-      )
-    ].contramap { op =>
-      (
-        op.uid,
-        op.accountUid,
-        op.walletUid,
-        op.operationType,
-        op.date,
-        op.senders,
-        op.recipients,
-        op.amount,
-        op.fees,
-        op.blockUid,
-        op.currencyName,
-        op.trust
-      )
-    }
-
-  implicit lazy val writeWDInput: Write[WDInput] =
-    Write[
-      (
-          String,
-          Int,
-          String,
-          String,
-          BigInt,
-          String,
-          Option[String],
-          Long
-      )
-    ].contramap { i =>
-      (
-        i.uid,
-        i.previousOutputIdx,
-        i.previousTxHash,
-        i.previousTxUid,
-        i.amount,
-        i.address,
-        i.coinbase,
-        i.sequence
-      )
-    }
-
-  implicit lazy val writeWDTransaction: Write[WDTransaction] =
-    Write[
-      (
-          String,
-          String,
-          Int,
-          Option[String],
-          String,
-          Int
-      )
-    ].contramap { tx =>
-      (
-        tx.uid,
-        tx.hash,
-        tx.version,
-        tx.blockUid,
-        tx.time,
-        tx.locktime
-      )
-    }
-
 }
