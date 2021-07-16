@@ -203,7 +203,7 @@ class InterpreterIT extends ContainerFlatSpec with Matchers {
       testResources.use { tr =>
         val db = tr.clients.transactor
         val interpreter =
-          new InterpreterImpl(_ => explorer, db, tr.flaggingService, tr.transactionService, tr.operationService, tr.wdService)
+          new InterpreterImpl(_ => explorer, tr.flaggingService, tr.transactionService, tr.operationService, tr.wdService)
 
         val utils = new TestUtils(db)
 
@@ -254,9 +254,8 @@ class InterpreterIT extends ContainerFlatSpec with Matchers {
   "an unconfirmed transaction" should "be updated if it's been mined" in IOAssertion {
     setup *>
       testResources.use { tr =>
-        val db = tr.clients.transactor
         val interpreter =
-          new InterpreterImpl(_ => explorer, db, tr.flaggingService, tr.transactionService, tr.operationService, tr.wdService)
+          new InterpreterImpl(_ => explorer, tr.flaggingService, tr.transactionService, tr.operationService, tr.wdService)
 
         val utils = tr.testUtils
 
@@ -309,7 +308,7 @@ class InterpreterIT extends ContainerFlatSpec with Matchers {
       testResources.use { tr =>
         val db = tr.clients.transactor
         val interpreter =
-          new InterpreterImpl(_ => explorer, db, tr.flaggingService, tr.transactionService, tr.operationService, tr.wdService)
+          new InterpreterImpl(_ => explorer, tr.flaggingService, tr.transactionService, tr.operationService, tr.wdService)
 
         val utils = new TestUtils(db)
 

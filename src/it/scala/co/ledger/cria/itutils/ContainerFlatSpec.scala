@@ -75,7 +75,6 @@ trait ContainerFlatSpec extends AnyFlatSpec with ForAllTestContainer with Defaul
       val wdService = new WDServiceImpl(resources.transactor)
       val interpreterClient = new InterpreterImpl(
         explorerClient,
-        resources.transactor,
         flaggingService,
         transactionService,
         operationService,

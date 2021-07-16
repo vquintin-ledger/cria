@@ -12,7 +12,6 @@ import co.ledger.cria.domain.models.interpreter._
 import co.ledger.cria.domain.models.keychain.AccountAddress
 import co.ledger.cria.domain.services.ExplorerClient
 import co.ledger.cria.utils.IOUtils
-import doobie.Transactor
 import fs2._
 
 trait Interpreter {
@@ -35,15 +34,12 @@ trait Interpreter {
 
 class InterpreterImpl(
     explorer: Coin => ExplorerClient,
-    db: Transactor[IO],
     flaggingService: FlaggingService,
     transactionService: TransactionService,
     operationService: OperationService,
     wdService: WDService)(implicit cs: ContextShift[IO], t: Timer[IO])
     extends Interpreter
     with ContextLogging {
-
-  val postSyncCheckService = new PostSyncCheckService(db)
 
   def saveTransactions(
       accountId: AccountUid

@@ -67,7 +67,6 @@ object App extends IOApp with DefaultContextLogging {
         val wdService = new WDServiceImpl(clientResources.transactor)
         val interpreterClient = new InterpreterImpl(
           explorerClient,
-          clientResources.transactor,
           flaggingService,
           transactionService,
           operationService,
