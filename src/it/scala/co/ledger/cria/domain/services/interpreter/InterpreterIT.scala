@@ -7,7 +7,7 @@ import java.util.UUID
 import cats.data.NonEmptyList
 import cats.effect.IO
 import co.ledger.cria.domain.mocks.ExplorerClientMock
-import co.ledger.cria.itutils.{ContainerFlatSpec, TestUtils}
+import co.ledger.cria.itutils.ContainerFlatSpec
 import co.ledger.cria.utils.IOAssertion
 import co.ledger.cria.logging.CriaLogContext
 import co.ledger.cria.domain.models.{TxHash, keychain}
@@ -201,11 +201,10 @@ class InterpreterIT extends ContainerFlatSpec with Matchers {
   "an unconfirmed transaction" should "have a full lifecycle" in IOAssertion {
     setup *>
       testResources.use { tr =>
-        val db = tr.clients.transactor
         val interpreter =
-          new InterpreterImpl(_ => explorer, tr.flaggingService, tr.transactionService, tr.operationService, tr.wdService)
+          new InterpreterImpl(_ => explorer, tr.clients.persistenceFacade)
 
-        val utils = new TestUtils(db)
+        val utils = tr.testUtils
 
         val uTx = TransactionView(
           "txId",
@@ -255,7 +254,7 @@ class InterpreterIT extends ContainerFlatSpec with Matchers {
     setup *>
       testResources.use { tr =>
         val interpreter =
-          new InterpreterImpl(_ => explorer, tr.flaggingService, tr.transactionService, tr.operationService, tr.wdService)
+          new InterpreterImpl(_ => explorer, tr.clients.persistenceFacade)
 
         val utils = tr.testUtils
 
@@ -306,11 +305,10 @@ class InterpreterIT extends ContainerFlatSpec with Matchers {
   "an account" should "go through multiple cycles" in IOAssertion {
     setup *>
       testResources.use { tr =>
-        val db = tr.clients.transactor
         val interpreter =
-          new InterpreterImpl(_ => explorer, tr.flaggingService, tr.transactionService, tr.operationService, tr.wdService)
+          new InterpreterImpl(_ => explorer, tr.clients.persistenceFacade)
 
-        val utils = new TestUtils(db)
+        val utils = tr.testUtils
 
         val uTx1 = TransactionView(
           "tx1",

@@ -1,4 +1,4 @@
-package co.ledger.cria.domain
+package co.ledger.cria.domain.services
 
 import cats.effect.{ContextShift, IO, Timer}
 import cats.implicits._
@@ -8,7 +8,6 @@ import co.ledger.cria.domain.models.keychain.ChangeType
 import co.ledger.cria.domain.models.keychain.ChangeType.{External, Internal}
 import co.ledger.cria.domain.models.{SynchronizationParameters, SynchronizationResult}
 import co.ledger.cria.domain.services.interpreter.Interpreter
-import co.ledger.cria.domain.services._
 import co.ledger.cria.logging.{ContextLogging, CriaLogContext}
 import co.ledger.cria.utils.IOUtils
 import fs2.Stream

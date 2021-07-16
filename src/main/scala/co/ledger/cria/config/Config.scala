@@ -1,7 +1,7 @@
 package co.ledger.cria.config
 
 import co.ledger.cria.clients.explorer.models.ExplorerConfig
-import co.ledger.cria.domain.services.interpreter.Db
+import co.ledger.cria.domain.adapters.wd.Db
 import pureconfig.ConfigReader
 import pureconfig.generic.semiauto.deriveReader
 

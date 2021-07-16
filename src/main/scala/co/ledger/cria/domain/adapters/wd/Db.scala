@@ -1,4 +1,4 @@
-package co.ledger.cria.domain.services.interpreter
+package co.ledger.cria.domain.adapters.wd
 
 import co.ledger.cria.config.PostgresConfig
 import pureconfig.ConfigReader

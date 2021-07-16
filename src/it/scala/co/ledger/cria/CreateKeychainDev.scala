@@ -8,7 +8,7 @@ import co.ledger.cria.domain.adapters.keychain.KeychainGrpcClient
 import co.ledger.cria.domain.models.interpreter.Coin
 import co.ledger.cria.domain.models.keychain.KeychainId
 import co.ledger.cria.domain.services.KeychainClient
-import co.ledger.cria.itutils.TestUtils
+import co.ledger.cria.itutils.{TestUtils, WDTestUtils}
 import co.ledger.cria.itutils.models.keychain.AccountKey.Xpub
 import co.ledger.cria.itutils.models.keychain.{KeychainInfo, Scheme}
 import co.ledger.cria.itutils.models.keychain.CoinImplicits._
@@ -64,20 +64,22 @@ class CreateKeychainDev extends AnyFlatSpec {
   def appResources: Resource[IO, ClientResources] =
     App.makeClientResources(conf)
 
-  def testResources: Resource[IO, TestResources] =
-    appResources.map { resources =>
-      val keychainClient = new KeychainGrpcClient(resources.keychainGrpcChannel)
-      TestResources(
-        resources,
-        keychainClient,
-        GrpcClient.resolveClient(
-          keychain.KeychainServiceFs2Grpc.stub[IO],
-          resources.keychainGrpcChannel,
-          "keychainClient"
-        ),
-        new TestUtils(resources.transactor)
-      )
-    }
+  def testResources: Resource[IO, TestResources] = {
+    for {
+      resources <- appResources
+      testUtils <- WDTestUtils(conf.db)
+      keychainClient = new KeychainGrpcClient(resources.keychainGrpcChannel)
+    } yield       TestResources(
+      resources,
+      keychainClient,
+      GrpcClient.resolveClient(
+        keychain.KeychainServiceFs2Grpc.stub[IO],
+        resources.keychainGrpcChannel,
+        "keychainClient"
+      ),
+      testUtils,
+    )
+  }
 
   def makeKeychainId(request: RegisterRequest): IO[KeychainId] =
     testResources.use { tr =>

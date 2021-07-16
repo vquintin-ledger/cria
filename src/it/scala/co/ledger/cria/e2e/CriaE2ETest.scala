@@ -4,10 +4,8 @@ import java.util.UUID
 
 import cats.effect.{ExitCode, IO}
 import co.ledger.cria.App
-import co.ledger.cria.App.ClientResources
 import co.ledger.cria.e2e.CriaE2ETest.{RegisterRequest, SyncResult, TestCase}
 import co.ledger.cria.itutils.ContainerFlatSpec
-import co.ledger.cria.itutils.TestUtils
 import co.ledger.cria.domain.models.Sort
 import co.ledger.cria.clients.explorer.models.circeImplicits._
 import co.ledger.cria.domain.models.account.{Account, AccountUid, WalletUid}
@@ -69,8 +67,8 @@ class CriaE2ETest extends ContainerFlatSpec with Matchers {
   }
 
   private def setupAccount(request: RegisterRequest): IO[Int] = {
-    appResources.use { case ClientResources(_, _, db) =>
-      val utils = new TestUtils(db)
+    testResources.use { tr =>
+      val utils = tr.testUtils
       utils.setupAccount(AccountUid(request.accountUid), WalletUid(request.walletUid))
     }
   }

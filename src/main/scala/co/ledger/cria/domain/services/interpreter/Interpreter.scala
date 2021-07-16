@@ -34,12 +34,14 @@ trait Interpreter {
 
 class InterpreterImpl(
     explorer: Coin => ExplorerClient,
-    flaggingService: FlaggingService,
-    transactionService: TransactionService,
-    operationService: OperationService,
-    wdService: WDService)(implicit cs: ContextShift[IO], t: Timer[IO])
+    persistenceFacade: PersistenceFacade)(implicit cs: ContextShift[IO], t: Timer[IO])
     extends Interpreter
     with ContextLogging {
+
+  private val transactionService   = persistenceFacade.transactionService
+  private val operationService     = persistenceFacade.operationService
+  private val flaggingService      = persistenceFacade.flaggingService
+  private val wdService            = persistenceFacade.wdService
 
   def saveTransactions(
       accountId: AccountUid

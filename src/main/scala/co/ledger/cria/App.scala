@@ -11,23 +11,21 @@ import co.ledger.cria.cli.CommandLineOptions
 import co.ledger.cria.config.Config
 import co.ledger.cria.clients.explorer.ExplorerHttpClient
 import co.ledger.cria.clients.protocol.http.Clients
-import co.ledger.cria.domain.Synchronizer
+import co.ledger.cria.domain.CriaModule
 import co.ledger.cria.domain.adapters.explorer.ExplorerClientAdapter
 import co.ledger.cria.domain.adapters.keychain.KeychainGrpcClient
-import co.ledger.cria.domain.adapters.wd.{FlaggingServiceImpl, OperationServiceImpl, TransactionServiceImpl, WDServiceImpl}
+import co.ledger.cria.domain.adapters.wd.PersistenceFacadeImpl
 import co.ledger.cria.domain.models.{SynchronizationParameters, SynchronizationResult}
-import co.ledger.cria.domain.models.interpreter.Coin
-import co.ledger.cria.domain.services.{CursorStateService, HealthService}
-import co.ledger.cria.domain.services.interpreter.InterpreterImpl
+import co.ledger.cria.domain.services.HealthService
+import co.ledger.cria.domain.services.interpreter.PersistenceFacade
 import co.ledger.cria.utils.ResourceUtils
-import doobie.util.transactor.Transactor
 
 object App extends IOApp with DefaultContextLogging {
 
   case class ClientResources(
       httpClient: Client[IO],
       keychainGrpcChannel: ManagedChannel,
-      transactor: Transactor[IO]
+      persistenceFacade: PersistenceFacade
   )
 
   case class WorkerResources(
@@ -61,20 +59,6 @@ object App extends IOApp with DefaultContextLogging {
             .explorerForCoin(
               new ExplorerHttpClient(clientResources.httpClient, conf.explorer, _)
             ) _
-        val flaggingService = new FlaggingServiceImpl(clientResources.transactor)
-        val transactionService = new TransactionServiceImpl(clientResources.transactor, conf.maxConcurrent)
-        val operationService = new OperationServiceImpl(clientResources.transactor)
-        val wdService = new WDServiceImpl(clientResources.transactor)
-        val interpreterClient = new InterpreterImpl(
-          explorerClient,
-          flaggingService,
-          transactionService,
-          operationService,
-          wdService
-        )
-
-        val cursorStateService: Coin => CursorStateService[IO] =
-          c => CursorStateService(explorerClient(c), interpreterClient).getLastValidState(_, _, _)
 
         val cliOptions = resources.args
 
@@ -87,17 +71,12 @@ object App extends IOApp with DefaultContextLogging {
           cliOptions.walletUid
         )
 
-        val worker = new Synchronizer(
-          keychainClient,
-          explorerClient,
-          interpreterClient,
-          cursorStateService
-        )
+        val criaModule = new CriaModule(clientResources.persistenceFacade, keychainClient, explorerClient)
 
         for {
 //          _          <- DbUtils.flywayMigrate(conf.db.postgres)
           _          <- IO(resources.server.start()) *> log.info("Worker started")
-          syncResult <- worker.run(syncParams)
+          syncResult <- criaModule.synchronizer.run(syncParams)
           _          <- IO(resources.server.shutdown()) *> log.info("Worker stopped")
         } yield syncResult
       }
@@ -124,6 +103,6 @@ object App extends IOApp with DefaultContextLogging {
     for {
       httpClient          <- Clients.htt4s
       keychainGrpcChannel <- grpcManagedChannel(conf.keychain)
-      transactor          <- ResourceUtils.postgresTransactor(conf.db.postgres)
-    } yield ClientResources(httpClient, keychainGrpcChannel, transactor)
+      persistenceFacade          <- PersistenceFacadeImpl(conf.db)
+    } yield ClientResources(httpClient, keychainGrpcChannel, persistenceFacade)
 }
