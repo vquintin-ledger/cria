@@ -12,7 +12,6 @@ case class CurrentBalance(
     balance: BigInt,
     utxos: Int,
     received: BigInt,
-    netSent: BigInt,
-    fees: BigInt,
+    sent: BigInt,
     unconfirmedBalance: BigInt
 )

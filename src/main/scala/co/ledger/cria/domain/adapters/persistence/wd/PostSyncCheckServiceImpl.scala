@@ -29,13 +29,12 @@ class PostSyncCheckServiceImpl(db: Transactor[IO]) extends ContextLogging with P
       balance = blockchainBalance.balance,
       utxos = blockchainBalance.utxos,
       received = blockchainBalance.received,
-      netSent = blockchainBalance.netSent,
-      fees = blockchainBalance.fees,
+      sent = blockchainBalance.netSent,
       unconfirmedBalance = unconfirmedBalance
     )
 
   private def checkBalance(balance: CurrentBalance): IO[Unit] = {
-    val balanceFromFlow = balance.received - balance.netSent - balance.fees
+    val balanceFromFlow = balance.received - balance.sent
     IO.raiseUnless(balanceFromFlow == balance.balance)(
       new RuntimeException(
         s"Balance invariant is not respected. received - sent = ${balanceFromFlow}. balance = ${balance.balance}"

@@ -121,7 +121,7 @@ class CriaE2ETest extends ContainerFlatSpec with Matchers {
         utxosSize.total,
         balance.balance.longValue,
         balance.received.longValue,
-        balance.netSent.longValue + balance.fees.longValue
+        balance.sent.longValue
       )
     }
 

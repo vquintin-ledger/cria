@@ -9,7 +9,7 @@ trait WDService {
 
   def saveWDOperation(coin: Coin, accountUid: AccountUid, walletUid: WalletUid, op: Operation): IO[Int]
 
-  def saveTransaction(coin: Coin, accountUid: AccountUid, transactionView: TransactionView): IO[Int]
+  def saveTransaction(coin: Coin, accountUid: AccountUid, transactionView: TransactionView): IO[Unit]
 
   def saveBlocks(coin: Coin, blocks: List[BlockView])(implicit lc: CriaLogContext): IO[Int]
 

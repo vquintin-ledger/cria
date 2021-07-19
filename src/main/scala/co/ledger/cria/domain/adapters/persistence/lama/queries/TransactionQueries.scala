@@ -42,12 +42,12 @@ object TransactionQueries extends DoobieLogHandler {
        """.query[BlockView].stream
   }
 
-  def fetchTransactions(accountUid: AccountUid): Stream[ConnectionIO, TransactionRow] =
-    sql"""SELECT account_id, id, hash, block_hash, block_height, block_time, received_at, lock_time, fees, confirmations
+  def fetchTransactions(accountUid: AccountUid, sort: Sort): Stream[ConnectionIO, TransactionRow] =
+    (sql"""SELECT account_id, id, hash, block_hash, block_height, block_time, received_at, lock_time, fees, confirmations
           FROM transaction
           WHERE account_id = $accountUid
-          ORDER BY block_height DESC
-       """.query[TransactionRow].stream
+       """ ++ Fragment.const(s"ORDER BY block_time $sort, hash $sort"))
+      .query[TransactionRow].stream
 
   def saveTransaction(accountId: AccountUid, tx: TransactionView): ConnectionIO[Int] =
     for {

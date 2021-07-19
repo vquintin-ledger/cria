@@ -53,8 +53,7 @@ final class WDTestUtils private (conf: WalletDaemonDb, db: Transactor[IO]) exten
         blockchainBalance.balance,
         blockchainBalance.utxos,
         blockchainBalance.received,
-        blockchainBalance.netSent,
-        blockchainBalance.fees,
+        blockchainBalance.netSent + blockchainBalance.fees,
         mempoolBalance
       )
     }).transact(db)

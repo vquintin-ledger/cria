@@ -168,17 +168,16 @@ class InterpreterImpl(
       block
     }.distinct)
 
-  private def saveWDTransactions(coin: Coin, accountUid: AccountUid)(actions: List[Action])(implicit lc: CriaLogContext): IO[Int] = {
+  private def saveWDTransactions(coin: Coin, accountUid: AccountUid)(actions: List[Action])(implicit lc: CriaLogContext): IO[Unit] = {
     val txsToSave = actions
       .collect { case Save(a) => a }
 
     log.info(s"Saving ${txsToSave.size} WD transactions") *>
       txsToSave
-        .map { a =>
+        .traverse { a =>
           wdService.saveTransaction(coin, accountUid, a.tx)
         }
-        .sequence
-        .map(_.sum)
+        .void
   }
 
   private def saveWDOperations(coin: Coin, accountUid: AccountUid, walletUid: WalletUid)(actions: List[Action])(implicit lc: CriaLogContext): IO[Int] = {

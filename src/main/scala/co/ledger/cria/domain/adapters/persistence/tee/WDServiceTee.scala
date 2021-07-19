@@ -10,7 +10,7 @@ final class WDServiceTee(primary: WDService, secondary: WDService, combiner: Com
   override def saveWDOperation(coin: Coin, accountUid: AccountUid, walletUid: WalletUid, op: Operation): IO[Int] =
     combiner.combineAction(primary.saveWDOperation(coin, accountUid, walletUid, op), secondary.saveWDOperation(coin, accountUid, walletUid, op))
 
-  override def saveTransaction(coin: Coin, accountUid: AccountUid, transactionView: TransactionView): IO[Int] =
+  override def saveTransaction(coin: Coin, accountUid: AccountUid, transactionView: TransactionView): IO[Unit] =
     combiner.combineAction(primary.saveTransaction(coin, accountUid, transactionView), secondary.saveTransaction(coin, accountUid, transactionView))
 
   override def saveBlocks(coin: Coin, blocks: List[BlockView])(implicit lc: CriaLogContext): IO[Int] =

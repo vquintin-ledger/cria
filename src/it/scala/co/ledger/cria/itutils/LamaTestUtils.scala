@@ -184,8 +184,7 @@ final class LamaTestUtils private(conf: LamaDb, db: Transactor[IO]) extends Test
         blockchainBalance.balance,
         blockchainBalance.utxos,
         blockchainBalance.received,
-        blockchainBalance.netSent,
-        0,
+        blockchainBalance.netSent + blockchainBalance.fees,
         mempoolBalance
       )
     }).transact(db)

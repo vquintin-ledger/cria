@@ -18,12 +18,13 @@ final class WDServiceImpl(db: Transactor[IO], transactionService: TransactionSer
       .transact(db)
   }
 
-  override def saveTransaction(coin: Coin, accountUid: AccountUid, transactionView: TransactionView): IO[Int] =
+  override def saveTransaction(coin: Coin, accountUid: AccountUid, transactionView: TransactionView): IO[Unit] =
     TransactionQueries.saveTransaction(accountUid, transactionView)
       .transact(db)
+      .void
 
   override def saveBlocks(coin: Coin, blocks: List[BlockView])(implicit lc: CriaLogContext): IO[Int] =
-    IO.pure(0)
+    IO.pure(blocks.size)
 
   override def removeFromCursor(accountUid: AccountUid, blockHeight: Option[Long]): IO[Int] =
     blockHeight.fold(IO.pure(0))(h => transactionService.removeFromCursor(accountUid, h))

@@ -21,15 +21,15 @@ class WDServiceImpl(
       .transact(db)
   }
 
-  override def saveTransaction(coin: Coin, accountUid: AccountUid, transactionView: TransactionView): IO[Int] = {
+  override def saveTransaction(coin: Coin, accountUid: AccountUid, transactionView: TransactionView): IO[Unit] = {
     val tx = WDTransaction.fromTransactionView(accountUid, transactionView, coin)
     for {
       txStatement <- WDQueries.saveTransaction(tx)
       _           <- WDQueries.saveInputs(tx, tx.inputs)
       _           <- WDQueries.saveOutputs(tx.outputs, tx.uid, tx.hash)
     } yield txStatement
-  }
-    .transact(db)
+  }.transact(db)
+    .void
 
   override def saveBlocks(coin: Coin, blocks: List[BlockView])(implicit lc: CriaLogContext): IO[Int] = {
     val wdBlocks = blocks.map(WDBlock.fromBlock(_, coin))
