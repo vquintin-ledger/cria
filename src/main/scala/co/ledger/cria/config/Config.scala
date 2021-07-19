@@ -1,7 +1,7 @@
 package co.ledger.cria.config
 
 import co.ledger.cria.clients.explorer.models.ExplorerConfig
-import co.ledger.cria.domain.adapters.persistence.wd.Db
+import co.ledger.cria.domain.adapters.persistence.lama.LamaDb
 import pureconfig.ConfigReader
 import pureconfig.generic.semiauto.deriveReader
 
@@ -10,7 +10,7 @@ case class Config(
     keychain: GrpcClientConfig,
     grpcServer: GrpcServerConfig,
     maxConcurrent: Int = 50, // TODO : bench [Runtime.getRuntime.availableProcessors() * x]
-    db: Db
+    db: LamaDb
 )
 
 object Config {

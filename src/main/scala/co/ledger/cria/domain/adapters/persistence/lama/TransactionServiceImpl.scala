@@ -52,5 +52,20 @@ final class TransactionServiceImpl(db: Transactor[IO], maxConcurrent: Int) exten
       .transact(db)
 
   override def fetchTransactions(accountId: AccountUid, sort: Sort, hashes: NonEmptyList[TxHash]): Stream[IO, TransactionView] =
-    ???
+    TransactionQueries.fetchTransactions(accountId)
+      .flatMap(row => TransactionQueries.fetchTransactionDetails(accountId, sort, NonEmptyList.one(row.hash)).map((row, _)))
+      .map{ case (row, details) =>
+        TransactionView(
+          id = row.id,
+          hash = row.hash,
+          receivedAt = row.receivedAt,
+          lockTime = row.lockTime,
+          fees = row.fees,
+          inputs = details.inputs,
+          outputs = details.outputs,
+          block = Some(BlockView(row.blockHash, row.blockHeight, row.blockTime)),
+          confirmations = row.confirmations
+        )
+      }
+      .transact(db)
 }

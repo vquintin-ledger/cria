@@ -7,23 +7,23 @@ import doobie.Transactor
 
 final class PersistenceFacadeImpl private (transactor: Transactor[IO], maxConcurrent: Int) extends PersistenceFacade {
 
-  override def transactionService: TransactionService =
+  override val transactionService: TransactionService =
     new TransactionServiceImpl(transactor, maxConcurrent)
 
-  override def operationService: OperationService =
+  override val operationService: OperationService =
     new OperationServiceImpl(transactor)
 
-  override def postSyncCheckService: PostSyncCheckService =
+  override val postSyncCheckService: PostSyncCheckService =
     new PostSyncCheckServiceImpl(transactor)
 
-  override def flaggingService: FlaggingService =
+  override val flaggingService: FlaggingService =
     new FlaggingServiceImpl(transactor)
 
-  override def wdService: WDService =
+  override val wdService: WDService =
     new WDServiceImpl(transactor)
 }
 
 object PersistenceFacadeImpl {
-  def apply(db: Db)(implicit cs: ContextShift[IO], timer: Timer[IO]): Resource[IO, PersistenceFacade] =
+  def apply(db: WalletDaemonDb)(implicit cs: ContextShift[IO], timer: Timer[IO]): Resource[IO, PersistenceFacade] =
     ResourceUtils.postgresTransactor(db.postgres).map(transactor => new PersistenceFacadeImpl(transactor, db.batchConcurrency.value))
 }

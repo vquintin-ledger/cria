@@ -1,18 +1,19 @@
 package co.ledger.cria.itutils
 
 import cats.effect.{ContextShift, IO, Resource, Timer}
-import co.ledger.cria.domain.adapters.persistence.wd.Db
+import co.ledger.cria.domain.adapters.persistence.wd.WalletDaemonDb
 import co.ledger.cria.domain.adapters.persistence.wd.queries.BalanceQueries
 import co.ledger.cria.itutils.models.GetUtxosResult
-import co.ledger.cria.itutils.queries.{AccountTestQueries, OperationTestQueries}
+import co.ledger.cria.itutils.queries.{AccountTestQueries, WDOperationTestQueries}
 import co.ledger.cria.domain.models.account.{AccountUid, WalletUid}
 import co.ledger.cria.domain.models.interpreter.CurrentBalance
 import co.ledger.cria.domain.models.Sort
-import co.ledger.cria.utils.ResourceUtils
+import co.ledger.cria.utils.{DbUtils, ResourceUtils}
 import doobie.implicits._
 import doobie.util.transactor.Transactor
+import org.flywaydb.core.Flyway
 
-final class WDTestUtils private (db: Transactor[IO]) extends TestUtils {
+final class WDTestUtils private (conf: WalletDaemonDb, db: Transactor[IO]) extends TestUtils {
 
   override def setupAccount(accountUid: AccountUid, walletUid: WalletUid): IO[Int] =
     AccountTestQueries.addAccount(accountUid, walletUid).transact(db)
@@ -20,7 +21,7 @@ final class WDTestUtils private (db: Transactor[IO]) extends TestUtils {
   override def getOperationCount(
                                   accountId: AccountUid
                                 ): IO[Int] = {
-    OperationTestQueries.countOperations(accountId).transact(db)
+    WDOperationTestQueries.countOperations(accountId).transact(db)
   }
 
   override def getUtxos(
@@ -30,13 +31,13 @@ final class WDTestUtils private (db: Transactor[IO]) extends TestUtils {
                          sort: Sort
                        ): IO[GetUtxosResult] =
     for {
-      utxos <- OperationTestQueries
+      utxos <- WDOperationTestQueries
         .fetchConfirmedUTXOs(accountId, sort, Some(limit + 1), Some(offset))
         .transact(db)
         .compile
         .toList
 
-      total <- OperationTestQueries.countUTXOs(accountId).transact(db)
+      total <- WDOperationTestQueries.countUTXOs(accountId).transact(db)
 
     } yield {
       // We get 1 more than necessary to know if there's more, then we return the correct number
@@ -57,9 +58,15 @@ final class WDTestUtils private (db: Transactor[IO]) extends TestUtils {
         mempoolBalance
       )
     }).transact(db)
+
+  private lazy val flyway: Flyway = DbUtils.flyway(conf.postgres, "classpath:/db/lama_migration/")
+
+  override def migrate: IO[Unit] = IO(flyway.migrate())
+
+  override def clean: IO[Unit] = IO(flyway.clean())
 }
 
 object WDTestUtils {
-  def apply(db: Db)(implicit cs: ContextShift[IO], t: Timer[IO]): Resource[IO, TestUtils] =
-    ResourceUtils.postgresTransactor(db.postgres).map(transactor => new WDTestUtils(transactor))
+  def apply(conf: WalletDaemonDb)(implicit cs: ContextShift[IO], t: Timer[IO]): Resource[IO, TestUtils] =
+    ResourceUtils.postgresTransactor(conf.postgres).map(transactor => new WDTestUtils(conf, transactor))
 }

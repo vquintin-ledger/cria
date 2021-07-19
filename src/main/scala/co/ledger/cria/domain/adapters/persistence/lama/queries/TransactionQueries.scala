@@ -3,13 +3,15 @@ package co.ledger.cria.domain.adapters.persistence.lama.queries
 import cats.data.NonEmptyList
 import co.ledger.cria.logging.DoobieLogHandler
 import co.ledger.cria.domain.models.account.AccountUid
-import co.ledger.cria.domain.models.interpreter.{BlockView, InputView, OutputView, TransactionView}
+import co.ledger.cria.domain.models.interpreter.{BlockHash, BlockView, InputView, OutputView, TransactionView}
 import co.ledger.cria.domain.models.{Sort, TxHash}
 import doobie._
 import doobie.implicits._
 import doobie.postgres.implicits._
 import co.ledger.cria.domain.models.implicits._
 import fs2._
+
+import java.time.Instant
 
 object TransactionQueries extends DoobieLogHandler {
 
@@ -19,6 +21,18 @@ object TransactionQueries extends DoobieLogHandler {
                                  outputs: List[OutputView]
                                )
 
+  case class TransactionRow(accountId: String,
+                            id: String,
+                            hash: TxHash,
+                            blockHash: BlockHash,
+                            blockHeight: Long,
+                            blockTime: Instant,
+                            receivedAt: Instant,
+                            lockTime: Long,
+                            fees: BigInt,
+                            confirmations: Int
+                           )
+
   def fetchMostRecentBlocks(accountId: AccountUid): Stream[ConnectionIO, BlockView] = {
     sql"""SELECT DISTINCT block_hash, block_height, block_time
           FROM transaction
@@ -27,6 +41,13 @@ object TransactionQueries extends DoobieLogHandler {
           LIMIT 200 -- the biggest reorg that happened on bitcoin was 53 blocks long
        """.query[BlockView].stream
   }
+
+  def fetchTransactions(accountUid: AccountUid): Stream[ConnectionIO, TransactionRow] =
+    sql"""SELECT account_id, id, hash, block_hash, block_height, block_time, received_at, lock_time, fees, confirmations
+          FROM transaction
+          WHERE account_id = $accountUid
+          ORDER BY block_height DESC
+       """.query[TransactionRow].stream
 
   def saveTransaction(accountId: AccountUid, tx: TransactionView): ConnectionIO[Int] =
     for {

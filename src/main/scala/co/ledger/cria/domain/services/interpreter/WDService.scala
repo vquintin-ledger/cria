@@ -13,5 +13,5 @@ trait WDService {
 
   def saveBlocks(coin: Coin, blocks: List[BlockView])(implicit lc: CriaLogContext): IO[Int]
 
-  def removeFromCursor(blockHeight: Option[Long]): IO[Int]
+  def removeFromCursor(accountUid: AccountUid, blockHeight: Option[Long]): IO[Int]
 }

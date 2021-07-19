@@ -10,7 +10,7 @@ import doobie.implicits._
 import doobie.postgres.implicits._
 import fs2.Stream
 
-object OperationTestQueries extends DoobieLogHandler {
+object WDOperationTestQueries extends DoobieLogHandler {
 
   def countUTXOs(accountId: AccountUid): ConnectionIO[Int] =
     sql"""SELECT COUNT(*)

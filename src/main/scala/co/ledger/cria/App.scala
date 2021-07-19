@@ -14,7 +14,7 @@ import co.ledger.cria.clients.protocol.http.Clients
 import co.ledger.cria.domain.CriaModule
 import co.ledger.cria.domain.adapters.explorer.ExplorerClientAdapter
 import co.ledger.cria.domain.adapters.keychain.KeychainGrpcClient
-import co.ledger.cria.domain.adapters.persistence.wd.PersistenceFacadeImpl
+import co.ledger.cria.domain.adapters.persistence.lama.PersistenceFacadeImpl
 import co.ledger.cria.domain.models.{SynchronizationParameters, SynchronizationResult}
 import co.ledger.cria.domain.services.HealthService
 import co.ledger.cria.domain.services.interpreter.PersistenceFacade
@@ -74,7 +74,6 @@ object App extends IOApp with DefaultContextLogging {
         val criaModule = new CriaModule(clientResources.persistenceFacade, keychainClient, explorerClient)
 
         for {
-//          _          <- DbUtils.flywayMigrate(conf.db.postgres)
           _          <- IO(resources.server.start()) *> log.info("Worker started")
           syncResult <- criaModule.synchronizer.run(syncParams)
           _          <- IO(resources.server.shutdown()) *> log.info("Worker stopped")

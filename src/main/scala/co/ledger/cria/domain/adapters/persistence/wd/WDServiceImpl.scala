@@ -39,7 +39,7 @@ class WDServiceImpl(
         .transact(db)
   }
 
-  override def removeFromCursor(blockHeight: Option[Long]): IO[Int] = {
+  override def removeFromCursor(accountUid: AccountUid, blockHeight: Option[Long]): IO[Int] = {
     // remove block & operations & transactions
     WDQueries
       .deleteBlocksFrom(blockHeight)

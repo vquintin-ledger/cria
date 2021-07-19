@@ -1,5 +1,5 @@
 CREATE TABLE unconfirmed_transaction_view (
-    account_id UUID NOT NULL,
+    account_id VARCHAR NOT NULL,
     transaction_views JSON NOT NULL,
 
     PRIMARY KEY (account_id)

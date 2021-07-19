@@ -70,7 +70,7 @@ class InterpreterImpl(
       _ <- log.info(s"""Deleting data with parameters:
                       - blockHeight: $blockHeight""")
 //      txRes <- transactionService.removeFromCursor(accountId, blockHeight.getOrElse(0L))
-      txRes <- wdService.removeFromCursor(blockHeight)
+      txRes <- wdService.removeFromCursor(accountId, blockHeight)
       _     <- log.info(s"Deleted $txRes operations")
     } yield txRes
   }

@@ -1,6 +1,7 @@
 package co.ledger.cria.itutils
 
 import cats.effect.{ContextShift, IO, Resource, Timer}
+import cats.implicits.catsSyntaxFlatMapOps
 import co.ledger.cria.App
 import co.ledger.cria.App.ClientResources
 import co.ledger.cria.clients.explorer.ExplorerHttpClient
@@ -11,12 +12,10 @@ import co.ledger.cria.domain.adapters.keychain.KeychainGrpcClient
 import co.ledger.cria.domain.services.KeychainClient
 import co.ledger.cria.domain.services.interpreter.{Interpreter, InterpreterImpl}
 import co.ledger.cria.logging.DefaultContextLogging
-import co.ledger.cria.utils.DbUtils
 import co.ledger.protobuf.bitcoin.keychain
 import co.ledger.protobuf.bitcoin.keychain.KeychainServiceFs2Grpc
 import com.dimafeng.testcontainers.{DockerComposeContainer, ExposedService, ForAllTestContainer, ServiceLogConsumer}
 import io.grpc.Metadata
-import org.flywaydb.core.Flyway
 import org.scalatest.flatspec.AnyFlatSpec
 import pureconfig.ConfigSource
 
@@ -50,10 +49,11 @@ trait ContainerFlatSpec extends AnyFlatSpec with ForAllTestContainer with Defaul
       )
     )
 
-  def setup: IO[Unit] = {
-    lazy val flyway: Flyway = DbUtils.flyway(conf.db.postgres)
-    IO(flyway.clean()) *> IO(flyway.migrate())
-  }
+  def setup: IO[Unit] =
+    testResources.use{r =>
+      val utils = r.testUtils
+      utils.clean >> utils.migrate
+    }
 
   def appResources: Resource[IO, ClientResources] =
     App.makeClientResources(conf)
@@ -64,7 +64,7 @@ trait ContainerFlatSpec extends AnyFlatSpec with ForAllTestContainer with Defaul
   def testResources: Resource[IO, TestResources] =
     for {
       resources <- appResources
-      testUtils <- WDTestUtils(conf.db)
+      testUtils <- LamaTestUtils(conf.db)
       explorerClient = {
         ExplorerClientAdapter.explorerForCoin(
           new ExplorerHttpClient(resources.httpClient, conf.explorer, _)

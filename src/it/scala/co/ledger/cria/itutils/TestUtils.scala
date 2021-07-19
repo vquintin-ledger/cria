@@ -22,4 +22,8 @@ trait TestUtils {
               ): IO[GetUtxosResult]
 
   def getBalance(accountId: AccountUid): IO[CurrentBalance]
+
+  def migrate: IO[Unit]
+
+  def clean: IO[Unit]
 }
