@@ -8,7 +8,7 @@ import co.ledger.cria.domain.adapters.keychain.KeychainGrpcClient
 import co.ledger.cria.domain.models.interpreter.Coin
 import co.ledger.cria.domain.models.keychain.KeychainId
 import co.ledger.cria.domain.services.KeychainClient
-import co.ledger.cria.itutils.{LamaTestUtils, TestUtils}
+import co.ledger.cria.itutils.TestUtils
 import co.ledger.cria.itutils.models.keychain.AccountKey.Xpub
 import co.ledger.cria.itutils.models.keychain.{KeychainInfo, Scheme}
 import co.ledger.cria.itutils.models.keychain.CoinImplicits._
@@ -67,7 +67,7 @@ class CreateKeychainDev extends AnyFlatSpec {
   def testResources: Resource[IO, TestResources] = {
     for {
       resources <- appResources
-      testUtils <- LamaTestUtils(conf.db)
+      testUtils <- TestUtils.fromConfig(conf.db)
       keychainClient = new KeychainGrpcClient(resources.keychainGrpcChannel)
     } yield       TestResources(
       resources,

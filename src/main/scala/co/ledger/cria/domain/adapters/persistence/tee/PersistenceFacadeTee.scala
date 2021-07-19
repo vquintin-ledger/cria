@@ -2,7 +2,7 @@ package co.ledger.cria.domain.adapters.persistence.tee
 
 import co.ledger.cria.domain.services.interpreter.{FlaggingService, OperationService, PersistenceFacade, PostSyncCheckService, TransactionService, WDService}
 
-final class PersistenceFacadeTee(primary: PersistenceFacade, secondary: PersistenceFacade, combiner: Combiner) extends PersistenceFacade{
+final class PersistenceFacadeTee(primary: PersistenceFacade, secondary: PersistenceFacade, combiner: Combiner) extends PersistenceFacade {
   override val transactionService: TransactionService =
     new TransactionServiceTee(primary.transactionService, secondary.transactionService, combiner)
 

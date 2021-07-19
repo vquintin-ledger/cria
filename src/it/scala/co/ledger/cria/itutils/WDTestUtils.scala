@@ -59,7 +59,7 @@ final class WDTestUtils private (conf: WalletDaemonDb, db: Transactor[IO]) exten
       )
     }).transact(db)
 
-  private lazy val flyway: Flyway = DbUtils.flyway(conf.postgres, "classpath:/db/lama_migration/")
+  private lazy val flyway: Flyway = DbUtils.flyway(conf.postgres)
 
   override def migrate: IO[Unit] = IO(flyway.migrate())
 

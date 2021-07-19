@@ -6,9 +6,11 @@ import co.ledger.cria.App
 import co.ledger.cria.App.ClientResources
 import co.ledger.cria.clients.explorer.ExplorerHttpClient
 import co.ledger.cria.clients.protocol.grpc.GrpcClient
-import co.ledger.cria.config.{Config, GrpcClientConfig}
+import co.ledger.cria.config.{Config, GrpcClientConfig, PersistenceConfig}
 import co.ledger.cria.domain.adapters.explorer.ExplorerClientAdapter
 import co.ledger.cria.domain.adapters.keychain.KeychainGrpcClient
+import co.ledger.cria.domain.adapters.persistence.lama.LamaDb
+import co.ledger.cria.domain.adapters.persistence.wd.WalletDaemonDb
 import co.ledger.cria.domain.services.KeychainClient
 import co.ledger.cria.domain.services.interpreter.{Interpreter, InterpreterImpl}
 import co.ledger.cria.logging.DefaultContextLogging
@@ -64,7 +66,7 @@ trait ContainerFlatSpec extends AnyFlatSpec with ForAllTestContainer with Defaul
   def testResources: Resource[IO, TestResources] =
     for {
       resources <- appResources
-      testUtils <- LamaTestUtils(conf.db)
+      testUtils <- TestUtils.fromConfig(conf.db)
       explorerClient = {
         ExplorerClientAdapter.explorerForCoin(
           new ExplorerHttpClient(resources.httpClient, conf.explorer, _)
@@ -99,18 +101,36 @@ trait ContainerFlatSpec extends AnyFlatSpec with ForAllTestContainer with Defaul
 
   lazy val conf: Config = {
     val defaultConf        = ConfigSource.default.loadOrThrow[Config]
-    val mappedPostgresHost = container.getServiceHost("postgres_1", postgresPort)
-    val mappedPostgresPort = container.getServicePort("postgres_1", postgresPort)
     defaultConf.copy(
       keychain = new GrpcClientConfig(
         container.getServiceHost("bitcoin-keychain_1", keychainPort),
         container.getServicePort("bitcoin-keychain_1", keychainPort),
         false
       ),
-      db = defaultConf.db.copy(postgres =
-        defaultConf.db.postgres
-          .copy(url = s"jdbc:postgresql://$mappedPostgresHost:$mappedPostgresPort/test_lama_btc")
-      )
+      db = adaptedPersistenceConfig(defaultConf.db)
     )
+  }
+
+  private def adaptedPersistenceConfig(conf: PersistenceConfig): PersistenceConfig = {
+    def wd(db: WalletDaemonDb): PersistenceConfig.WalletDaemon = {
+      val mappedPostgresHost = container.getServiceHost("postgres_1", postgresPort)
+      val mappedPostgresPort = container.getServicePort("postgres_1", postgresPort)
+      PersistenceConfig.WalletDaemon(
+        db.copy(postgres = db.postgres.copy(url = s"jdbc:postgresql://$mappedPostgresHost:$mappedPostgresPort/test_lama_btc"))
+      )
+    }
+
+    def lama(db: LamaDb): PersistenceConfig.Lama = {
+      val mappedPostgresHost = container.getServiceHost("postgres_1", postgresPort)
+      val mappedPostgresPort = container.getServicePort("postgres_1", postgresPort)
+      PersistenceConfig.Lama(
+        db.copy(postgres = db.postgres.copy(url = s"jdbc:postgresql://$mappedPostgresHost:$mappedPostgresPort/test_lama_btc"))
+      )
+    }
+
+    def both(left: PersistenceConfig, right: PersistenceConfig) =
+      PersistenceConfig.Both(left, right)
+
+    PersistenceConfig.fold(wd, lama, both)(conf)
   }
 }

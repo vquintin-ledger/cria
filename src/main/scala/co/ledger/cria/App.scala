@@ -8,13 +8,16 @@ import org.http4s.client.Client
 import pureconfig.ConfigSource
 import cats.implicits._
 import co.ledger.cria.cli.CommandLineOptions
-import co.ledger.cria.config.Config
+import co.ledger.cria.config.{Config, PersistenceConfig}
 import co.ledger.cria.clients.explorer.ExplorerHttpClient
 import co.ledger.cria.clients.protocol.http.Clients
 import co.ledger.cria.domain.CriaModule
 import co.ledger.cria.domain.adapters.explorer.ExplorerClientAdapter
 import co.ledger.cria.domain.adapters.keychain.KeychainGrpcClient
-import co.ledger.cria.domain.adapters.persistence.lama.PersistenceFacadeImpl
+import co.ledger.cria.domain.adapters.persistence.lama
+import co.ledger.cria.domain.adapters.persistence.wd
+import co.ledger.cria.domain.adapters.persistence.tee
+import co.ledger.cria.domain.adapters.persistence.tee.Combiner
 import co.ledger.cria.domain.models.{SynchronizationParameters, SynchronizationResult}
 import co.ledger.cria.domain.services.HealthService
 import co.ledger.cria.domain.services.interpreter.PersistenceFacade
@@ -102,6 +105,13 @@ object App extends IOApp with DefaultContextLogging {
     for {
       httpClient          <- Clients.htt4s
       keychainGrpcChannel <- grpcManagedChannel(conf.keychain)
-      persistenceFacade          <- PersistenceFacadeImpl(conf.db)
+      persistenceFacade          <- makePersistenceFacade(conf.db)
     } yield ClientResources(httpClient, keychainGrpcChannel, persistenceFacade)
+
+  def makePersistenceFacade(config: PersistenceConfig): Resource[IO, PersistenceFacade] =
+    PersistenceConfig.foldM[Resource[IO, *], PersistenceFacade](
+      wd.PersistenceFacadeImpl.apply,
+      lama.PersistenceFacadeImpl.apply,
+      (f1, f2) => Resource.pure[IO, PersistenceFacade](new tee.PersistenceFacadeTee(f1, f2, Combiner.parallel(Combiner.failOnDiff)))
+    )(config)
 }
