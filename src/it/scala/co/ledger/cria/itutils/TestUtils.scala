@@ -2,11 +2,11 @@ package co.ledger.cria.itutils
 
 import cats.effect.{ContextShift, IO, Resource, Timer}
 import co.ledger.cria.config.PersistenceConfig
-import co.ledger.cria.domain.adapters.persistence.tee.Combiner
 import co.ledger.cria.domain.models.Sort
 import co.ledger.cria.domain.models.account.{AccountUid, WalletUid}
 import co.ledger.cria.domain.models.interpreter.CurrentBalance
 import co.ledger.cria.itutils.models.GetUtxosResult
+import co.ledger.cria.logging.{IOLogger, LogContext}
 
 trait TestUtils {
 
@@ -31,10 +31,10 @@ trait TestUtils {
 }
 
 object TestUtils {
-  def fromConfig(c: PersistenceConfig)(implicit cs: ContextShift[IO], t: Timer[IO]): Resource[IO, TestUtils] =
+  def fromConfig(c: PersistenceConfig, log: IOLogger)(implicit cs: ContextShift[IO], t: Timer[IO], lc: LogContext): Resource[IO, TestUtils] =
     PersistenceConfig.foldM[Resource[IO, *], TestUtils](
       WDTestUtils.apply,
       LamaTestUtils.apply,
-      (t1, t2) => Resource.pure[IO, TestUtils](new TestUtilsTee(t1, t2, Combiner.sequential(Combiner.failOnDiff)))
+      (t1, t2, conf) => Resource.pure[IO, TestUtils](TestUtilsTee(t1, t2, conf, log))
     )(c)
 }

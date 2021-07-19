@@ -3,6 +3,7 @@ package co.ledger.cria.domain.adapters.persistence.tee
 import cats.arrow.FunctionK
 import cats.effect.{ContextShift, IO}
 import cats.~>
+import co.ledger.cria.logging.{IOLogger, LogContext}
 
 trait Combiner {
   def combineAction[A](l: IO[A], r: IO[A]): IO[A]
@@ -53,5 +54,16 @@ object Combiner {
              |Secondary: ${p._2}
              |""".stripMargin
         ))
+    }
+
+  def logOnDiff(log: IOLogger)(implicit lc: LogContext): OnDiff =
+    new FunctionK[Pair, SideEffect] {
+      override def apply[A](p: (A, A)): SideEffect[A] =
+        log.info(
+          s"""Values returned by the two persistence layers did not match.
+             |Primary:   ${p._1}
+             |Secondary: ${p._2}
+             |""".stripMargin
+        )
     }
 }

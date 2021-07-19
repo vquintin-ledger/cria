@@ -17,7 +17,6 @@ import co.ledger.cria.domain.adapters.keychain.KeychainGrpcClient
 import co.ledger.cria.domain.adapters.persistence.lama
 import co.ledger.cria.domain.adapters.persistence.wd
 import co.ledger.cria.domain.adapters.persistence.tee
-import co.ledger.cria.domain.adapters.persistence.tee.Combiner
 import co.ledger.cria.domain.models.{SynchronizationParameters, SynchronizationResult}
 import co.ledger.cria.domain.services.HealthService
 import co.ledger.cria.domain.services.interpreter.PersistenceFacade
@@ -112,6 +111,6 @@ object App extends IOApp with DefaultContextLogging {
     PersistenceConfig.foldM[Resource[IO, *], PersistenceFacade](
       wd.PersistenceFacadeImpl.apply,
       lama.PersistenceFacadeImpl.apply,
-      (f1, f2) => Resource.pure[IO, PersistenceFacade](new tee.PersistenceFacadeTee(f1, f2, Combiner.sequential(Combiner.failOnDiff)))
+      (f1, f2, conf) => Resource.pure[IO, PersistenceFacade](tee.PersistenceFacadeTee(f1, f2, conf, log))
     )(config)
 }

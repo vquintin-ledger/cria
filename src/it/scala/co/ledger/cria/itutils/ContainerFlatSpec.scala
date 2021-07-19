@@ -10,6 +10,7 @@ import co.ledger.cria.config.{Config, GrpcClientConfig, PersistenceConfig}
 import co.ledger.cria.domain.adapters.explorer.ExplorerClientAdapter
 import co.ledger.cria.domain.adapters.keychain.KeychainGrpcClient
 import co.ledger.cria.domain.adapters.persistence.lama.LamaDb
+import co.ledger.cria.domain.adapters.persistence.tee.TeeConfig
 import co.ledger.cria.domain.adapters.persistence.wd.WalletDaemonDb
 import co.ledger.cria.domain.services.KeychainClient
 import co.ledger.cria.domain.services.interpreter.{Interpreter, InterpreterImpl}
@@ -66,7 +67,7 @@ trait ContainerFlatSpec extends AnyFlatSpec with ForAllTestContainer with Defaul
   def testResources: Resource[IO, TestResources] =
     for {
       resources <- appResources
-      testUtils <- TestUtils.fromConfig(conf.db)
+      testUtils <- TestUtils.fromConfig(conf.db, log)
       explorerClient = {
         ExplorerClientAdapter.explorerForCoin(
           new ExplorerHttpClient(resources.httpClient, conf.explorer, _)
@@ -128,8 +129,8 @@ trait ContainerFlatSpec extends AnyFlatSpec with ForAllTestContainer with Defaul
       )
     }
 
-    def both(left: PersistenceConfig, right: PersistenceConfig) =
-      PersistenceConfig.Both(left, right)
+    def both(left: PersistenceConfig, right: PersistenceConfig, tee: TeeConfig) =
+      PersistenceConfig.Both(left, right, tee)
 
     PersistenceConfig.fold(wd, lama, both)(conf)
   }
