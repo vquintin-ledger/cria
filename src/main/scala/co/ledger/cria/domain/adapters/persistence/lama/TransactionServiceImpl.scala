@@ -11,6 +11,7 @@ import co.ledger.cria.domain.services.interpreter.TransactionService
 import doobie.Transactor
 import doobie.implicits._
 import fs2._
+import cats.implicits._
 
 final class TransactionServiceImpl(db: Transactor[IO], maxConcurrent: Int) extends TransactionService with ContextLogging {
 
@@ -63,7 +64,7 @@ final class TransactionServiceImpl(db: Transactor[IO], maxConcurrent: Int) exten
           fees = row.fees,
           inputs = details.inputs,
           outputs = details.outputs,
-          block = Some(BlockView(row.blockHash, row.blockHeight, row.blockTime)),
+          block = (row.blockHash, row.blockHeight, row.blockTime).mapN(BlockView(_,_,_)),
           confirmations = row.confirmations
         )
       }
