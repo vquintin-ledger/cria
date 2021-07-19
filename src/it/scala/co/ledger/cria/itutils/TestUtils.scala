@@ -35,6 +35,6 @@ object TestUtils {
     PersistenceConfig.foldM[Resource[IO, *], TestUtils](
       WDTestUtils.apply,
       LamaTestUtils.apply,
-      (t1, t2) => Resource.pure[IO, TestUtils](new TestUtilsTee(t1, t2, Combiner.parallel(Combiner.failOnDiff)))
+      (t1, t2) => Resource.pure[IO, TestUtils](new TestUtilsTee(t1, t2, Combiner.sequential(Combiner.failOnDiff)))
     )(c)
 }

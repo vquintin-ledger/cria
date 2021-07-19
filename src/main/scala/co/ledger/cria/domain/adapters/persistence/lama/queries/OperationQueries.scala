@@ -5,7 +5,7 @@ import cats.data.NonEmptyList
 import cats.implicits._
 import co.ledger.cria.domain.adapters.persistence.lama.models.OperationToSave
 import co.ledger.cria.logging.DoobieLogHandler
-import co.ledger.cria.domain.models.TxHash
+import co.ledger.cria.domain.models.{Sort, TxHash}
 import co.ledger.cria.domain.models.account.AccountUid
 import co.ledger.cria.domain.models.interpreter._
 import co.ledger.cria.domain.models.implicits._
@@ -47,9 +47,9 @@ object OperationQueries extends DoobieLogHandler {
                              )
 
   def fetchUncomputedTransactionAmounts(
-                                         accountId: AccountUid
+                                         accountId: AccountUid, sort: Sort
                                        ): Stream[ConnectionIO, TransactionAmounts] =
-    sql"""SELECT tx.account_id,
+    (sql"""SELECT tx.account_id,
                  tx.hash,
                  tx.block_hash,
                  tx.block_height,
@@ -64,7 +64,8 @@ object OperationQueries extends DoobieLogHandler {
               AND op.account_id = tx.account_id
           WHERE op.hash IS null
           AND tx.account_id = $accountId
-       """
+       """ ++ Fragment
+      .const(s"ORDER BY tx.block_time $sort, tx.hash $sort"))
       .query[TransactionAmounts]
       .stream
 

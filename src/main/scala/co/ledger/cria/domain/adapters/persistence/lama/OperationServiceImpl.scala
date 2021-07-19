@@ -25,7 +25,7 @@ class OperationServiceImpl(
 
   def getUncomputedOperations(accountId: AccountUid, sort: Sort) =
     OperationQueries
-      .fetchUncomputedTransactionAmounts(accountId)
+      .fetchUncomputedTransactionAmounts(accountId, sort)
       .transact(db)
 
   def saveOperations(operations: List[Operation]) = {

@@ -191,7 +191,7 @@ final class LamaTestUtils private(conf: LamaDb, db: Transactor[IO]) extends Test
     }).transact(db)
 
   override def setupAccount(accountUid: AccountUid, walletUid: WalletUid): IO[Int] =
-    IO.pure(0)
+    IO.pure(1)
 
   override def getOperationCount(accountId: AccountUid): IO[Int] =
     getOperations(accountId, Int.MaxValue, Sort.Ascending, None).map(_.total)

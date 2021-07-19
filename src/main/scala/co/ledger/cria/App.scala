@@ -112,6 +112,6 @@ object App extends IOApp with DefaultContextLogging {
     PersistenceConfig.foldM[Resource[IO, *], PersistenceFacade](
       wd.PersistenceFacadeImpl.apply,
       lama.PersistenceFacadeImpl.apply,
-      (f1, f2) => Resource.pure[IO, PersistenceFacade](new tee.PersistenceFacadeTee(f1, f2, Combiner.parallel(Combiner.failOnDiff)))
+      (f1, f2) => Resource.pure[IO, PersistenceFacade](new tee.PersistenceFacadeTee(f1, f2, Combiner.sequential(Combiner.failOnDiff)))
     )(config)
 }

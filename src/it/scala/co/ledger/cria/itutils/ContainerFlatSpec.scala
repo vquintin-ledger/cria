@@ -116,7 +116,7 @@ trait ContainerFlatSpec extends AnyFlatSpec with ForAllTestContainer with Defaul
       val mappedPostgresHost = container.getServiceHost("postgres_1", postgresPort)
       val mappedPostgresPort = container.getServicePort("postgres_1", postgresPort)
       PersistenceConfig.WalletDaemon(
-        db.copy(postgres = db.postgres.copy(url = s"jdbc:postgresql://$mappedPostgresHost:$mappedPostgresPort/test_lama_btc"))
+        db.copy(postgres = db.postgres.copy(url = s"jdbc:postgresql://$mappedPostgresHost:$mappedPostgresPort/wd_local_pool"))
       )
     }
 

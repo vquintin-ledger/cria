@@ -29,6 +29,21 @@ object Combiner {
           .unNone
     }
 
+  def sequential(onDiff: OnDiff): Combiner =
+    new Combiner {
+      override def combineAction[A](l: IO[A], r: IO[A]): IO[A] =
+        for {
+          leftA <- l
+          rightA <- r
+          _ <- IO.whenA(leftA != rightA)(onDiff(leftA, rightA))
+        } yield leftA
+
+      override def combineStream[A](l: fs2.Stream[IO, A], r: fs2.Stream[IO, A]): fs2.Stream[IO, A] =
+        l.map(Some(_)).zipAll[IO, Option[A], Option[A]](r.map(Some(_)))(None, None)
+          .evalMap{ case (left, right) => IO.whenA(left != right)(onDiff(left, right)).as(left)}
+          .unNone
+    }
+
   val failOnDiff: OnDiff =
     new FunctionK[Pair, SideEffect] {
       override def apply[A](p: (A, A)): SideEffect[A] =
