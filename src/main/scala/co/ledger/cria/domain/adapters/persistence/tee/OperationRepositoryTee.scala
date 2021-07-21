@@ -1,22 +1,27 @@
 package co.ledger.cria.domain.adapters.persistence.tee
 
 import cats.effect.IO
+import co.ledger.cria.domain.models.TxHash
 import co.ledger.cria.domain.models.account.{AccountUid, WalletUid}
 import co.ledger.cria.domain.models.interpreter.{BlockView, Coin, Operation, TransactionView}
-import co.ledger.cria.domain.services.interpreter.WDService
+import co.ledger.cria.domain.services.interpreter.OperationRepository
 import co.ledger.cria.logging.CriaLogContext
 
-final class WDServiceTee(primary: WDService, secondary: WDService, combiner: Combiner)
-    extends WDService {
-  override def saveWDOperation(
+final class OperationRepositoryTee(
+    primary: OperationRepository,
+    secondary: OperationRepository,
+    combiner: Combiner
+) extends OperationRepository {
+
+  override def saveOperation(
       coin: Coin,
       accountUid: AccountUid,
       walletUid: WalletUid,
       op: Operation
   ): IO[Int] =
     combiner.combineAction(
-      primary.saveWDOperation(coin, accountUid, walletUid, op),
-      secondary.saveWDOperation(coin, accountUid, walletUid, op)
+      primary.saveOperation(coin, accountUid, walletUid, op),
+      secondary.saveOperation(coin, accountUid, walletUid, op)
     )
 
   override def saveTransaction(
@@ -32,11 +37,14 @@ final class WDServiceTee(primary: WDService, secondary: WDService, combiner: Com
   override def saveBlocks(coin: Coin, blocks: List[BlockView])(implicit
       lc: CriaLogContext
   ): IO[Int] =
-    combiner.combineAction(primary.saveBlocks(coin, blocks), secondary.saveBlocks(coin, blocks))
-
-  override def removeFromCursor(accountUid: AccountUid, blockHeight: Option[Long]): IO[Int] =
     combiner.combineAction(
-      primary.removeFromCursor(accountUid, blockHeight),
-      secondary.removeFromCursor(accountUid, blockHeight)
+      primary.saveBlocks(coin, blocks),
+      secondary.saveBlocks(coin, blocks)
+    )
+
+  override def deleteRejectedTransaction(accountId: AccountUid, hash: TxHash): IO[String] =
+    combiner.combineAction(
+      primary.deleteRejectedTransaction(accountId, hash),
+      secondary.deleteRejectedTransaction(accountId, hash)
     )
 }

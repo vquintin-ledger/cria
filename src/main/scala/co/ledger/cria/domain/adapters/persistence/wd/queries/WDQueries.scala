@@ -177,7 +177,7 @@ object WDQueries extends DoobieLogHandler {
     WHERE hash = $hash""".update.run
   }
 
-  def deleteBlocksFrom(blockHeight: Option[Long]): doobie.ConnectionIO[Int] =
+  def deleteBlocksFrom(blockHeight: Long): doobie.ConnectionIO[Int] =
     sql"""DELETE
           FROM blocks
           WHERE height >= $blockHeight

@@ -1,12 +1,14 @@
-package co.ledger.cria.domain.services.interpreter
+package co.ledger.cria.domain.mocks
+
+import java.time.Instant
 
 import cats.effect.IO
 import co.ledger.cria.domain.models.account.{Account, AccountUid, WalletUid}
 import co.ledger.cria.domain.models.interpreter._
 import co.ledger.cria.domain.models.keychain.{AccountAddress, ChangeType}
+import co.ledger.cria.domain.services.interpreter.Interpreter
 import co.ledger.cria.logging.CriaLogContext
 import fs2._
-import java.time.Instant
 
 import scala.collection.mutable
 
@@ -52,24 +54,24 @@ class InterpreterClientMock extends Interpreter {
   //TODO: fix
   def removeDataFromCursor(
       accountId: AccountUid,
-      blockHeight: Option[Long]
+      blockHeight: Long
   )(implicit lc: CriaLogContext): IO[Int] = {
     savedTransactions.update(
       accountId,
       savedTransactions(accountId)
-        .filter(tx => tx.block.map(_.height).getOrElse(0L) < blockHeight.getOrElse(0L))
+        .filter(tx => tx.block.map(_.height).getOrElse(0L) < blockHeight)
     )
 
     transactions.update(
       accountId,
       transactions(accountId)
-        .filter(tx => tx.block.exists(_.height < blockHeight.getOrElse(0L)))
+        .filter(tx => tx.block.exists(_.height < blockHeight))
     )
 
     operations.update(
       accountId,
       operations(accountId)
-        .filter(op => op.transaction.block.exists(_.height < blockHeight.getOrElse(0L)))
+        .filter(op => op.transaction.block.exists(_.height < blockHeight))
     )
 
     IO.pure(0)

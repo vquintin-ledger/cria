@@ -1,13 +1,11 @@
 package co.ledger.cria.domain.services.interpreter
 
 trait PersistenceFacade {
-  def transactionService: TransactionService
+  def transactionRecordRepository: TransactionRecordRepository
 
-  def operationService: OperationService
+  def operationComputationService: OperationComputationService
 
   def postSyncCheckService: PostSyncCheckService
 
-  def flaggingService: FlaggingService
-
-  def wdService: WDService
+  def operationRepository: OperationRepository
 }

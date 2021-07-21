@@ -1,13 +1,14 @@
 package co.ledger.cria.domain.services.interpreter
 
 import cats.effect.IO
+import co.ledger.cria.domain.models.TxHash
 import co.ledger.cria.domain.models.account.{AccountUid, WalletUid}
 import co.ledger.cria.domain.models.interpreter.{BlockView, Coin, Operation, TransactionView}
 import co.ledger.cria.logging.CriaLogContext
 
-trait WDService {
+trait OperationRepository {
 
-  def saveWDOperation(
+  def saveOperation(
       coin: Coin,
       accountUid: AccountUid,
       walletUid: WalletUid,
@@ -22,5 +23,6 @@ trait WDService {
 
   def saveBlocks(coin: Coin, blocks: List[BlockView])(implicit lc: CriaLogContext): IO[Int]
 
-  def removeFromCursor(accountUid: AccountUid, blockHeight: Option[Long]): IO[Int]
+  def deleteRejectedTransaction(accountId: AccountUid, hash: TxHash): IO[String]
+
 }

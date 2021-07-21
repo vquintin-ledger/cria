@@ -2,20 +2,21 @@ package co.ledger.cria.domain.adapters.persistence.wd
 
 import cats.effect.IO
 import co.ledger.cria.domain.adapters.persistence.wd.models.{WDBlock, WDOperation, WDTransaction}
-import co.ledger.cria.domain.adapters.persistence.wd.queries.WDQueries
+import co.ledger.cria.domain.adapters.persistence.wd.queries.{WDTransactionQueries, WDQueries}
+import co.ledger.cria.domain.models.TxHash
 import co.ledger.cria.domain.models.account.{AccountUid, WalletUid}
 import co.ledger.cria.domain.models.interpreter.{BlockView, Coin, Operation, TransactionView}
-import co.ledger.cria.domain.services.interpreter.WDService
+import co.ledger.cria.domain.services.interpreter.OperationRepository
 import co.ledger.cria.logging.{CriaLogContext, DefaultContextLogging}
 import doobie.Transactor
 import doobie.implicits._
 
-class WDServiceImpl(
+class WDOperationRepository(
     db: Transactor[IO]
 ) extends DefaultContextLogging
-    with WDService {
+    with OperationRepository {
 
-  override def saveWDOperation(
+  override def saveOperation(
       coin: Coin,
       accountUid: AccountUid,
       walletUid: WalletUid,
@@ -50,11 +51,9 @@ class WDServiceImpl(
         .transact(db)
   }
 
-  override def removeFromCursor(accountUid: AccountUid, blockHeight: Option[Long]): IO[Int] = {
-    // remove block & operations & transactions
-    WDQueries
-      .deleteBlocksFrom(blockHeight)
+  //TODO: not doing what it should, FIX plz
+  override def deleteRejectedTransaction(accountId: AccountUid, hash: TxHash): IO[String] =
+    WDTransactionQueries
+      .deleteRejectedTransaction(accountId, hash)
       .transact(db)
-  }
-
 }

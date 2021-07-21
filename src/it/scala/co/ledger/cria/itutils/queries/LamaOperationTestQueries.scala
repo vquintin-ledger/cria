@@ -3,7 +3,12 @@ package co.ledger.cria.itutils.queries
 import cats.data.NonEmptyList
 import cats.implicits._
 import co.ledger.cria.domain.models.account.AccountUid
-import co.ledger.cria.itutils.models.{ConfirmedUtxo, OperationPaginationState, PaginationToken, Utxo}
+import co.ledger.cria.itutils.models.{
+  ConfirmedUtxo,
+  OperationPaginationState,
+  PaginationToken,
+  Utxo
+}
 import co.ledger.cria.logging.DoobieLogHandler
 import co.ledger.cria.domain.models.interpreter.{InputView, Operation, OutputView}
 import co.ledger.cria.domain.models.{Sort, TxHash}
@@ -15,13 +20,13 @@ import fs2.{Chunk, Pipe, Stream}
 
 object LamaOperationTestQueries extends DoobieLogHandler {
 
-  import co.ledger.cria.domain.adapters.persistence.lama.queries.OperationQueries._
+  import co.ledger.cria.domain.adapters.persistence.lama.queries.LamaOperationQueries._
 
   def fetchOperationDetails(
-                             accountId: AccountUid,
-                             sort: Sort,
-                             opHashes: NonEmptyList[TxHash]
-                           ): Stream[doobie.ConnectionIO, OperationDetails] = {
+      accountId: AccountUid,
+      sort: Sort,
+      opHashes: NonEmptyList[TxHash]
+  ): Stream[doobie.ConnectionIO, OperationDetails] = {
     log.logger.debug(
       s"Fetching inputs and outputs for accountId $accountId and hashes in $opHashes"
     )
@@ -65,11 +70,11 @@ object LamaOperationTestQueries extends DoobieLogHandler {
       .unique
 
   def fetchConfirmedUTXOs(
-                           accountId: AccountUid,
-                           sort: Sort = Sort.Ascending,
-                           limit: Option[Int] = None,
-                           offset: Option[Int] = None
-                         ): Stream[ConnectionIO, ConfirmedUtxo] = {
+      accountId: AccountUid,
+      sort: Sort = Sort.Ascending,
+      limit: Option[Int] = None,
+      offset: Option[Int] = None
+  ): Stream[ConnectionIO, ConfirmedUtxo] = {
     val orderF  = Fragment.const(s"ORDER BY tx.block_time $sort, tx.hash $sort")
     val limitF  = limit.map(l => fr"LIMIT $l").getOrElse(Fragment.empty)
     val offsetF = offset.map(o => fr"OFFSET $o").getOrElse(Fragment.empty)
@@ -94,8 +99,8 @@ object LamaOperationTestQueries extends DoobieLogHandler {
   }
 
   def fetchUnconfirmedUTXOs(
-                             accountId: AccountUid
-                           ): Stream[ConnectionIO, Utxo] =
+      accountId: AccountUid
+  ): Stream[ConnectionIO, Utxo] =
     sql"""SELECT tx.hash, o.output_index, o.value, o.address, o.script_hex, o.change_type, o.derivation, tx.received_at
             FROM output o
               LEFT JOIN input i
@@ -119,10 +124,10 @@ object LamaOperationTestQueries extends DoobieLogHandler {
     Fragments.in(fr"o.hash", hashes.map(_.asString))
 
   private def fetchInputs(
-                           accountId: AccountUid,
-                           sort: Sort,
-                           opHashes: NonEmptyList[TxHash]
-                         ) = {
+      accountId: AccountUid,
+      sort: Sort,
+      opHashes: NonEmptyList[TxHash]
+  ) = {
 
     val belongsToOps = allOpHashes(opHashes)
 
@@ -137,10 +142,10 @@ object LamaOperationTestQueries extends DoobieLogHandler {
   }
 
   private def fetchOutputs(
-                            accountId: AccountUid,
-                            sort: Sort,
-                            opHashes: NonEmptyList[TxHash]
-                          ) = {
+      accountId: AccountUid,
+      sort: Sort,
+      opHashes: NonEmptyList[TxHash]
+  ) = {
 
     val belongsToOps = allOpHashes(opHashes)
 
@@ -152,7 +157,7 @@ object LamaOperationTestQueries extends DoobieLogHandler {
            WHERE o.account_id = $accountId
              AND $belongsToOps
        """ ++ operationOrder(sort)
-      ).query[(TxHash, Option[OutputView])]
+    ).query[(TxHash, Option[OutputView])]
   }
 
   def countOperations(accountId: AccountUid, blockHeight: Long = 0L): ConnectionIO[Int] =
@@ -169,18 +174,22 @@ object LamaOperationTestQueries extends DoobieLogHandler {
            JOIN "operation" o on t.hash = o.hash and o.account_id = t.account_id
        """
 
-  def hasPreviousPage(accountId: AccountUid, uid: Operation.UID, sort: Sort): ConnectionIO[Boolean] =
+  def hasPreviousPage(
+      accountId: AccountUid,
+      uid: Operation.UID,
+      sort: Sort
+  ): ConnectionIO[Boolean] =
     hasMorePage(accountId, uid, sort, isNext = false)
 
   def hasNextPage(accountId: AccountUid, uid: Operation.UID, sort: Sort): ConnectionIO[Boolean] =
     hasMorePage(accountId, uid, sort, isNext = true)
 
   private def hasMorePage(
-                           accountId: AccountUid,
-                           uid: Operation.UID,
-                           sort: Sort,
-                           isNext: Boolean
-                         ): ConnectionIO[Boolean] = {
+      accountId: AccountUid,
+      uid: Operation.UID,
+      sort: Sort,
+      isNext: Boolean
+  ): ConnectionIO[Boolean] = {
     val baseFragment = fr"SELECT uid FROM operation WHERE account_id = $accountId"
 
     val filtersF =
@@ -198,11 +207,11 @@ object LamaOperationTestQueries extends DoobieLogHandler {
   }
 
   def fetchOperations(
-                       accountId: AccountUid,
-                       limit: Int,
-                       sort: Sort = Sort.Descending,
-                       cursor: Option[PaginationToken[OperationPaginationState]]
-                     ): ConnectionIO[List[OpWithoutDetails]] = {
+      accountId: AccountUid,
+      limit: Int,
+      sort: Sort = Sort.Descending,
+      cursor: Option[PaginationToken[OperationPaginationState]]
+  ): ConnectionIO[List[OpWithoutDetails]] = {
     val accountIdF = fr"WHERE o.account_id = $accountId"
 
     val filtersF = cursor
@@ -242,9 +251,9 @@ object LamaOperationTestQueries extends DoobieLogHandler {
   }
 
   def findOperation(
-                     accountId: AccountUid,
-                     operationId: Operation.UID
-                   ): ConnectionIO[Option[OpWithoutDetails]] = {
+      accountId: AccountUid,
+      operationId: Operation.UID
+  ): ConnectionIO[Option[OpWithoutDetails]] = {
 
     val filter =
       fr"""

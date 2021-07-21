@@ -20,7 +20,7 @@ trait Interpreter {
 
   def removeDataFromCursor(
       accountId: AccountUid,
-      blockHeight: Option[Long]
+      blockHeight: Long
   )(implicit lc: CriaLogContext): IO[Int]
 
   def getLastBlocks(accountId: AccountUid)(implicit lc: CriaLogContext): IO[List[BlockView]]
@@ -32,23 +32,20 @@ trait Interpreter {
 }
 
 class InterpreterImpl(explorer: Coin => ExplorerClient, persistenceFacade: PersistenceFacade)(
-    implicit
-
-    t: Timer[IO]
+    implicit t: Timer[IO]
 ) extends Interpreter
     with ContextLogging {
 
-  private val transactionService = persistenceFacade.transactionService
-  private val operationService   = persistenceFacade.operationService
-  private val flaggingService    = persistenceFacade.flaggingService
-  private val wdService          = persistenceFacade.wdService
+  private val transactionRecordRepository = persistenceFacade.transactionRecordRepository
+  private val operationComputationService = persistenceFacade.operationComputationService
+  private val operationRepository         = persistenceFacade.operationRepository
 
   def saveTransactions(
       accountId: AccountUid
   )(implicit lc: CriaLogContext): Pipe[IO, TransactionView, Unit] = { transactions =>
     transactions
       .map(tx => AccountTxView(accountId, tx))
-      .through(transactionService.saveTransactions)
+      .through(transactionRecordRepository.saveTransactions)
       .void
   }
 
@@ -57,7 +54,7 @@ class InterpreterImpl(explorer: Coin => ExplorerClient, persistenceFacade: Persi
       accountId: AccountUid
   )(implicit lc: CriaLogContext): IO[List[BlockView]] = {
     log.info(s"Getting last known blocks") *>
-      transactionService
+      transactionRecordRepository
         .getLastBlocks(accountId)
         .compile
         .toList
@@ -65,13 +62,12 @@ class InterpreterImpl(explorer: Coin => ExplorerClient, persistenceFacade: Persi
 
   def removeDataFromCursor(
       accountId: AccountUid,
-      blockHeight: Option[Long]
+      blockHeight: Long
   )(implicit lc: CriaLogContext): IO[Int] = {
     for {
-      _ <- log.info(s"""Deleting data with parameters:
+      _     <- log.info(s"""Deleting data with parameters:
                       - blockHeight: $blockHeight""")
-//      txRes <- transactionService.removeFromCursor(accountId, blockHeight.getOrElse(0L))
-      txRes <- wdService.removeFromCursor(accountId, blockHeight)
+      txRes <- transactionRecordRepository.removeFromCursor(accountId, blockHeight)
       _     <- log.info(s"Deleted $txRes operations")
     } yield txRes
   }
@@ -81,7 +77,7 @@ class InterpreterImpl(explorer: Coin => ExplorerClient, persistenceFacade: Persi
   )(implicit lc: CriaLogContext): IO[Int] = {
     for {
       _ <- log.info(s"Flagging belonging inputs and outputs")
-      _ <- flaggingService.flagInputsAndOutputs(account.accountUid, addresses)
+      _ <- operationComputationService.flagInputsAndOutputs(account.accountUid, addresses)
 //      _ <- operationService.deleteUnconfirmedOperations(account.id)
 
       _ <- log.info(s"Computing operations")
@@ -128,7 +124,7 @@ class InterpreterImpl(explorer: Coin => ExplorerClient, persistenceFacade: Persi
       lc: CriaLogContext
   ): Stream[IO, List[WDTxToSave]] = {
     val sort = Sort.Ascending
-    operationService
+    operationComputationService
       .getUncomputedOperations(accountId, sort)
       .chunkN(chunkSize)
       .evalMap(chunk => getWDTxToSave(accountId, sort, chunk.toList))
@@ -144,7 +140,7 @@ class InterpreterImpl(explorer: Coin => ExplorerClient, persistenceFacade: Persi
       txToSaveMap <- NonEmptyList
         .fromList(uncomputedTransactions.map(_.hash))
         .map(hashNel =>
-          transactionService
+          operationComputationService
             .fetchTransactions(
               accountId,
               sort,
@@ -167,7 +163,7 @@ class InterpreterImpl(explorer: Coin => ExplorerClient, persistenceFacade: Persi
   private def saveWDBlocks(
       coin: Coin
   )(actions: List[Action])(implicit lc: CriaLogContext): IO[Int] =
-    wdService.saveBlocks(
+    operationRepository.saveBlocks(
       coin,
       actions.collect { case Save(WDTxToSave(Some(block), _, _)) =>
         block
@@ -182,7 +178,7 @@ class InterpreterImpl(explorer: Coin => ExplorerClient, persistenceFacade: Persi
 
     log.info(s"Saving ${txsToSave.size} WD transactions") *>
       txsToSave.traverse { a =>
-        wdService.saveTransaction(coin, accountUid, a.tx)
+        operationRepository.saveTransaction(coin, accountUid, a.tx)
       }.void
   }
 
@@ -197,8 +193,7 @@ class InterpreterImpl(explorer: Coin => ExplorerClient, persistenceFacade: Persi
 
     log.info(s"Saving ${opsToSave.size} WD Operations") *>
       opsToSave
-        .map { ops => wdService.saveWDOperation(coin, accountUid, walletUid, ops) }
-        .sequence
+        .traverse(ops => operationRepository.saveOperation(coin, accountUid, walletUid, ops))
         .map(_.sum)
   }
 

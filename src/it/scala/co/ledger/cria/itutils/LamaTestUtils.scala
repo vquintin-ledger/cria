@@ -2,9 +2,21 @@ package co.ledger.cria.itutils
 
 import cats.effect.{ContextShift, IO, Resource, Timer}
 import co.ledger.cria.domain.adapters.persistence.lama.LamaDb
-import co.ledger.cria.domain.adapters.persistence.lama.queries.{BalanceQueries, OperationQueries}
-import co.ledger.cria.domain.adapters.persistence.lama.queries.OperationQueries.{OpWithoutDetails, OperationDetails}
-import co.ledger.cria.itutils.models.{GetOperationsResult, GetUtxosResult, OperationPaginationState, PaginationCursor, PaginationToken}
+import co.ledger.cria.domain.adapters.persistence.lama.queries.{
+  LamaBalanceQueries,
+  LamaOperationQueries
+}
+import co.ledger.cria.domain.adapters.persistence.lama.queries.LamaOperationQueries.{
+  OpWithoutDetails,
+  OperationDetails
+}
+import co.ledger.cria.itutils.models.{
+  GetOperationsResult,
+  GetUtxosResult,
+  OperationPaginationState,
+  PaginationCursor,
+  PaginationToken
+}
 import co.ledger.cria.itutils.queries.LamaOperationTestQueries
 import co.ledger.cria.domain.models.account.{AccountUid, WalletUid}
 import co.ledger.cria.domain.models.interpreter.{CurrentBalance, Operation, TransactionView}
@@ -16,16 +28,16 @@ import doobie.util.transactor.Transactor
 import fs2.{Chunk, Pipe, Stream}
 import org.flywaydb.core.Flyway
 
-final class LamaTestUtils private(conf: LamaDb, db: Transactor[IO]) extends TestUtils {
+final class LamaTestUtils private (conf: LamaDb, db: Transactor[IO]) extends TestUtils {
 
   private val numberOfOperationsToBuildByQuery = 5
 
   def getOperations(
-                     accountId: AccountUid,
-                     limit: Int,
-                     sort: Sort,
-                     cursor: Option[PaginationToken[OperationPaginationState]]
-                   ): IO[GetOperationsResult] = {
+      accountId: AccountUid,
+      limit: Int,
+      sort: Sort,
+      cursor: Option[PaginationToken[OperationPaginationState]]
+  ): IO[GetOperationsResult] = {
     for {
       operations <-
         Stream
@@ -111,16 +123,16 @@ final class LamaTestUtils private(conf: LamaDb, db: Transactor[IO]) extends Test
   private lazy val makeOperation: Pipe[
     IO,
     (
-      (TxHash, Chunk[OpWithoutDetails]),
-        OperationQueries.OperationDetails
-      ),
+        (TxHash, Chunk[OpWithoutDetails]),
+        LamaOperationQueries.OperationDetails
+    ),
     Operation
   ] =
     _.flatMap {
       case (
-        (txHash, sentAndReceivedOperations),
-        inputsWithOutputsByTxHash
-        ) =>
+            (txHash, sentAndReceivedOperations),
+            inputsWithOutputsByTxHash
+          ) =>
         Stream
           .chunk(sentAndReceivedOperations)
           .takeWhile(_ => txHash == inputsWithOutputsByTxHash.txHash)
@@ -130,9 +142,9 @@ final class LamaTestUtils private(conf: LamaDb, db: Transactor[IO]) extends Test
     }
 
   private def operation(
-                         emptyOperation: OpWithoutDetails,
-                         inputsWithOutputsByTxHash: OperationDetails
-                       ) =
+      emptyOperation: OpWithoutDetails,
+      inputsWithOutputsByTxHash: OperationDetails
+  ) =
     Operation(
       uid = emptyOperation.op.uid,
       accountId = emptyOperation.op.accountId,
@@ -156,11 +168,11 @@ final class LamaTestUtils private(conf: LamaDb, db: Transactor[IO]) extends Test
     )
 
   def getUtxos(
-                accountId: AccountUid,
-                limit: Int,
-                offset: Int,
-                sort: Sort
-              ): IO[GetUtxosResult] =
+      accountId: AccountUid,
+      limit: Int,
+      offset: Int,
+      sort: Sort
+  ): IO[GetUtxosResult] =
     for {
       utxos <- LamaOperationTestQueries
         .fetchConfirmedUTXOs(accountId, sort, Some(limit + 1), Some(offset))
@@ -177,8 +189,8 @@ final class LamaTestUtils private(conf: LamaDb, db: Transactor[IO]) extends Test
 
   def getBalance(accountId: AccountUid): IO[CurrentBalance] =
     (for {
-      blockchainBalance <- BalanceQueries.getBlockchainBalance(accountId)
-      mempoolBalance    <- BalanceQueries.getUnconfirmedBalance(accountId)
+      blockchainBalance <- LamaBalanceQueries.getBlockchainBalance(accountId)
+      mempoolBalance    <- LamaBalanceQueries.getUnconfirmedBalance(accountId)
     } yield {
       CurrentBalance(
         blockchainBalance.balance,
@@ -204,6 +216,7 @@ final class LamaTestUtils private(conf: LamaDb, db: Transactor[IO]) extends Test
 
 object LamaTestUtils {
   def apply(conf: LamaDb)(implicit cs: ContextShift[IO], t: Timer[IO]): Resource[IO, TestUtils] =
-    ResourceUtils.postgresTransactor(conf.postgres)
+    ResourceUtils
+      .postgresTransactor(conf.postgres)
       .map(transactor => new LamaTestUtils(conf, transactor))
 }

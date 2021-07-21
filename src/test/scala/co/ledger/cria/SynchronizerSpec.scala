@@ -1,7 +1,7 @@
 package co.ledger.cria
 
 import cats.effect.{ContextShift, IO, Timer}
-import co.ledger.cria.domain.mocks.ExplorerClientMock
+import co.ledger.cria.domain.mocks.{ExplorerClientMock, InterpreterClientMock}
 import co.ledger.cria.domain.models.SynchronizationParameters
 import co.ledger.cria.domain.models.interpreter.{
   BlockHash,
@@ -12,13 +12,13 @@ import co.ledger.cria.domain.models.interpreter.{
 }
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
-
 import java.time.Instant
 import java.util.UUID
+
 import co.ledger.cria.domain.models.account.{Account, AccountUid, WalletUid}
 import co.ledger.cria.domain.models.keychain.KeychainId
 import co.ledger.cria.domain.services.{CursorStateService, ExplorerClient, Synchronizer}
-import co.ledger.cria.domain.services.interpreter.{Interpreter, InterpreterClientMock}
+import co.ledger.cria.domain.services.interpreter.Interpreter
 import co.ledger.cria.utils.{HexUtils, IOAssertion}
 
 import scala.concurrent.ExecutionContext

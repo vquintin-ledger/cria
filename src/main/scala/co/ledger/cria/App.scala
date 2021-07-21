@@ -110,8 +110,8 @@ object App extends IOApp with DefaultContextLogging {
 
   def makePersistenceFacade(config: PersistenceConfig): Resource[IO, PersistenceFacade] =
     PersistenceConfig.foldM[Resource[IO, *], PersistenceFacade](
-      wd.PersistenceFacadeImpl.apply,
-      lama.PersistenceFacadeImpl.apply,
+      wd.WDPersistenceFacade.apply,
+      lama.LamaPersistenceFacade.apply,
       (f1, f2, conf) =>
         Resource.pure[IO, PersistenceFacade](tee.PersistenceFacadeTee(f1, f2, conf, log))
     )(config)

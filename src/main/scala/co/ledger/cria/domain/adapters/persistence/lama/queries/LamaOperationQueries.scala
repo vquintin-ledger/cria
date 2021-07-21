@@ -1,8 +1,9 @@
-package co.ledger.cria.domain.adapters.persistence.wd.queries
+package co.ledger.cria.domain.adapters.persistence.lama.queries
 
+import java.time.Instant
 import cats.data.NonEmptyList
 import cats.implicits._
-import co.ledger.cria.domain.adapters.persistence.wd.models.WDOperationToSave
+import co.ledger.cria.domain.adapters.persistence.lama.models.OperationToSave
 import co.ledger.cria.logging.DoobieLogHandler
 import co.ledger.cria.domain.models.{Sort, TxHash}
 import co.ledger.cria.domain.models.account.AccountUid
@@ -14,9 +15,7 @@ import doobie.implicits._
 import doobie.postgres.implicits._
 import fs2.Stream
 
-import java.time.Instant
-
-object OperationQueries extends DoobieLogHandler {
+object LamaOperationQueries extends DoobieLogHandler {
 
   case class Tx(
       id: String,
@@ -50,10 +49,8 @@ object OperationQueries extends DoobieLogHandler {
   def fetchUncomputedTransactionAmounts(
       accountId: AccountUid,
       sort: Sort
-  ): Stream[ConnectionIO, TransactionAmounts] = {
-    (
-      //TODO: FIX THIS
-      sql"""SELECT tx.account_uid,
+  ): Stream[ConnectionIO, TransactionAmounts] =
+    (sql"""SELECT tx.account_id,
                  tx.hash,
                  tx.block_hash,
                  tx.block_height,
@@ -63,21 +60,24 @@ object OperationQueries extends DoobieLogHandler {
                  COALESCE(tx.output_amount, 0),
                  COALESCE(tx.change_amount, 0)
           FROM transaction_amount tx
-          WHERE tx.account_uid = $accountId""" ++ Fragment
-        .const(s"ORDER BY tx.block_time $sort, tx.hash $sort")
-    )
+            LEFT JOIN operation op
+              ON op.hash = tx.hash
+              AND op.account_id = tx.account_id
+          WHERE op.hash IS null
+          AND tx.account_id = $accountId
+       """ ++ Fragment
+      .const(s"ORDER BY tx.block_time $sort, tx.hash $sort"))
       .query[TransactionAmounts]
       .stream
-  }
 
-  def saveOperations(operation: List[WDOperationToSave]): ConnectionIO[Int] = {
+  def saveOperations(operation: List[OperationToSave]): ConnectionIO[Int] = {
     val query =
       """INSERT INTO operation (
          uid, account_id, hash, operation_type, amount, fees, time, block_hash, block_height
        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
        ON CONFLICT ON CONSTRAINT operation_pkey DO NOTHING
     """
-    Update[WDOperationToSave](query).updateMany(operation)
+    Update[OperationToSave](query).updateMany(operation)
   }
 
   def deleteUnconfirmedOperations(accountId: AccountUid): doobie.ConnectionIO[Int] = {
@@ -94,7 +94,7 @@ object OperationQueries extends DoobieLogHandler {
     val queries = addresses.map { addr =>
       sql"""UPDATE input
             SET derivation = ${addr.derivation.toList}
-            WHERE account_uid = $accountId
+            WHERE account_id = $accountId
             AND address = ${addr.accountAddress}
          """
     }
@@ -111,7 +111,7 @@ object OperationQueries extends DoobieLogHandler {
       sql"""UPDATE output
             SET change_type = $changeType,
                 derivation = ${addr.derivation.toList}
-            WHERE account_uid = $accountId
+            WHERE account_id = $accountId
             AND address = ${addr.accountAddress}
          """
     }

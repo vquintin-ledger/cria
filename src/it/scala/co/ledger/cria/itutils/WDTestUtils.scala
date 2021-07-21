@@ -2,7 +2,7 @@ package co.ledger.cria.itutils
 
 import cats.effect.{ContextShift, IO, Resource, Timer}
 import co.ledger.cria.domain.adapters.persistence.wd.WalletDaemonDb
-import co.ledger.cria.domain.adapters.persistence.wd.queries.BalanceQueries
+import co.ledger.cria.domain.adapters.persistence.wd.queries.WDBalanceQueries
 import co.ledger.cria.itutils.models.GetUtxosResult
 import co.ledger.cria.itutils.queries.{AccountTestQueries, WDOperationTestQueries}
 import co.ledger.cria.domain.models.account.{AccountUid, WalletUid}
@@ -19,17 +19,17 @@ final class WDTestUtils private (conf: WalletDaemonDb, db: Transactor[IO]) exten
     AccountTestQueries.addAccount(accountUid, walletUid).transact(db)
 
   override def getOperationCount(
-                                  accountId: AccountUid
-                                ): IO[Int] = {
+      accountId: AccountUid
+  ): IO[Int] = {
     WDOperationTestQueries.countOperations(accountId).transact(db)
   }
 
   override def getUtxos(
-                         accountId: AccountUid,
-                         limit: Int,
-                         offset: Int,
-                         sort: Sort
-                       ): IO[GetUtxosResult] =
+      accountId: AccountUid,
+      limit: Int,
+      offset: Int,
+      sort: Sort
+  ): IO[GetUtxosResult] =
     for {
       utxos <- WDOperationTestQueries
         .fetchConfirmedUTXOs(accountId, sort, Some(limit + 1), Some(offset))
@@ -46,8 +46,8 @@ final class WDTestUtils private (conf: WalletDaemonDb, db: Transactor[IO]) exten
 
   override def getBalance(accountId: AccountUid): IO[CurrentBalance] =
     (for {
-      blockchainBalance <- BalanceQueries.getBlockchainBalance(accountId)
-      mempoolBalance    <- BalanceQueries.getUnconfirmedBalance(accountId)
+      blockchainBalance <- WDBalanceQueries.getBlockchainBalance(accountId)
+      mempoolBalance    <- WDBalanceQueries.getUnconfirmedBalance(accountId)
     } yield {
       CurrentBalance(
         blockchainBalance.balance,
@@ -66,6 +66,10 @@ final class WDTestUtils private (conf: WalletDaemonDb, db: Transactor[IO]) exten
 }
 
 object WDTestUtils {
-  def apply(conf: WalletDaemonDb)(implicit cs: ContextShift[IO], t: Timer[IO]): Resource[IO, TestUtils] =
-    ResourceUtils.postgresTransactor(conf.postgres).map(transactor => new WDTestUtils(conf, transactor))
+  def apply(
+      conf: WalletDaemonDb
+  )(implicit cs: ContextShift[IO], t: Timer[IO]): Resource[IO, TestUtils] =
+    ResourceUtils
+      .postgresTransactor(conf.postgres)
+      .map(transactor => new WDTestUtils(conf, transactor))
 }

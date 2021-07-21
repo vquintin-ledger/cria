@@ -2,12 +2,11 @@ package co.ledger.cria.domain.adapters.persistence.tee
 
 import cats.effect.{ContextShift, IO}
 import co.ledger.cria.domain.services.interpreter.{
-  FlaggingService,
-  OperationService,
+  OperationComputationService,
   PersistenceFacade,
   PostSyncCheckService,
-  TransactionService,
-  WDService
+  TransactionRecordRepository,
+  OperationRepository
 }
 import co.ledger.cria.logging.{IOLogger, LogContext}
 
@@ -16,11 +15,19 @@ final class PersistenceFacadeTee private (
     secondary: PersistenceFacade,
     combiner: Combiner
 ) extends PersistenceFacade {
-  override val transactionService: TransactionService =
-    new TransactionServiceTee(primary.transactionService, secondary.transactionService, combiner)
+  override val transactionRecordRepository: TransactionRecordRepository =
+    new TransactionRecordRepositoryTee(
+      primary.transactionRecordRepository,
+      secondary.transactionRecordRepository,
+      combiner
+    )
 
-  override val operationService: OperationService =
-    new OperationServiceTee(primary.operationService, secondary.operationService, combiner)
+  override val operationComputationService: OperationComputationService =
+    new OperationComputationServiceTee(
+      primary.operationComputationService,
+      secondary.operationComputationService,
+      combiner
+    )
 
   override val postSyncCheckService: PostSyncCheckService =
     new PostSyncCheckServiceTee(
@@ -29,11 +36,8 @@ final class PersistenceFacadeTee private (
       combiner
     )
 
-  override val flaggingService: FlaggingService =
-    new FlaggingServiceTee(primary.flaggingService, secondary.flaggingService, combiner)
-
-  override val wdService: WDService =
-    new WDServiceTee(primary.wdService, secondary.wdService, combiner)
+  override val operationRepository: OperationRepository =
+    new OperationRepositoryTee(primary.operationRepository, secondary.operationRepository, combiner)
 }
 
 object PersistenceFacadeTee {

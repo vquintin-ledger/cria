@@ -1,25 +1,17 @@
-package co.ledger.cria.domain.adapters.persistence.lama.queries
+package co.ledger.cria.domain.adapters.persistence.wd.queries
 
 import cats.data.NonEmptyList
 import co.ledger.cria.logging.DoobieLogHandler
 import co.ledger.cria.domain.models.account.AccountUid
-import co.ledger.cria.domain.models.interpreter.{
-  BlockHash,
-  BlockView,
-  InputView,
-  OutputView,
-  TransactionView
-}
+import co.ledger.cria.domain.models.interpreter.{BlockView, InputView, OutputView, TransactionView}
 import co.ledger.cria.domain.models.{Sort, TxHash}
+import co.ledger.cria.domain.models.implicits._
 import doobie._
 import doobie.implicits._
 import doobie.postgres.implicits._
-import co.ledger.cria.domain.models.implicits._
 import fs2._
 
-import java.time.Instant
-
-object TransactionQueries extends DoobieLogHandler {
+object WDTransactionQueries extends DoobieLogHandler {
 
   case class TransactionDetails(
       txHash: TxHash,
@@ -27,35 +19,14 @@ object TransactionQueries extends DoobieLogHandler {
       outputs: List[OutputView]
   )
 
-  case class TransactionRow(
-      accountId: String,
-      id: String,
-      hash: TxHash,
-      blockHash: Option[BlockHash],
-      blockHeight: Option[Long],
-      blockTime: Option[Instant],
-      receivedAt: Instant,
-      lockTime: Long,
-      fees: BigInt,
-      confirmations: Int
-  )
-
   def fetchMostRecentBlocks(accountId: AccountUid): Stream[ConnectionIO, BlockView] = {
     sql"""SELECT DISTINCT block_hash, block_height, block_time
           FROM transaction
-          WHERE account_id = $accountId
+          WHERE account_uid = $accountId
           ORDER BY block_height DESC
           LIMIT 200 -- the biggest reorg that happened on bitcoin was 53 blocks long
        """.query[BlockView].stream
   }
-
-  def fetchTransactions(accountUid: AccountUid, sort: Sort): Stream[ConnectionIO, TransactionRow] =
-    (sql"""SELECT account_id, id, hash, block_hash, block_height, block_time, received_at, lock_time, fees, confirmations
-          FROM transaction
-          WHERE account_id = $accountUid
-       """ ++ Fragment.const(s"ORDER BY block_time $sort, hash $sort"))
-      .query[TransactionRow]
-      .stream
 
   def saveTransaction(accountId: AccountUid, tx: TransactionView): ConnectionIO[Int] =
     for {
@@ -72,17 +43,17 @@ object TransactionQueries extends DoobieLogHandler {
 
   def deleteUnconfirmedTransactions(accountId: AccountUid): doobie.ConnectionIO[Int] = {
     sql"""DELETE FROM transaction
-         WHERE account_id = $accountId
+         WHERE account_uid = $accountId
          AND block_hash IS NULL
        """.update.run
   }
 
-  def deleteUnconfirmedTransaction(
+  def deleteRejectedTransaction(
       accountId: AccountUid,
       hash: TxHash
   ): doobie.ConnectionIO[String] = {
     sql"""DELETE FROM transaction
-         WHERE account_id = $accountId
+         WHERE account_uid = $accountId
          AND block_hash IS NULL
          AND hash = $hash
          RETURNING hash
@@ -104,8 +75,9 @@ object TransactionQueries extends DoobieLogHandler {
 
     val noUpdate = fr"""DO NOTHING"""
 
-    val query = sql"""INSERT INTO transaction (
-            account_id, id, hash, block_hash, block_height, block_time, received_at, lock_time, fees, confirmations
+    val query =
+      sql"""INSERT INTO transaction (
+            account_uid, id, hash, block_hash, block_height, block_time, received_at, lock_time, fees, confirmations
           ) VALUES (
             $accountId,
             ${tx.id},
@@ -118,7 +90,7 @@ object TransactionQueries extends DoobieLogHandler {
             ${tx.fees},
             ${tx.confirmations}
           ) ON CONFLICT ON CONSTRAINT transaction_pkey """ ++
-      tx.block.map(_ => update).getOrElse(noUpdate)
+        tx.block.map(_ => update).getOrElse(noUpdate)
 
     query.update.run
   }
@@ -130,7 +102,7 @@ object TransactionQueries extends DoobieLogHandler {
   ): doobie.ConnectionIO[Int] = {
     val query =
       s"""INSERT INTO input (
-            account_id, hash, output_hash, output_index, input_index, value, address, script_signature, txinwitness, sequence, derivation
+            account_uid, hash, output_hash, output_index, input_index, value, address, script_signature, txinwitness, sequence, derivation
           ) VALUES (
             '${accountId.value}', '${txHash.asString}', ?, ?, ?, ?, ?, ?, ?, ?, ?
           )
@@ -144,8 +116,9 @@ object TransactionQueries extends DoobieLogHandler {
       txHash: TxHash,
       outputs: List[OutputView]
   ) = {
-    val query = s"""INSERT INTO output (
-            account_id, hash, output_index, value, address, script_hex, change_type, derivation
+    val query =
+      s"""INSERT INTO output (
+            account_uid, hash, output_index, value, address, script_hex, change_type, derivation
           ) VALUES (
             '${accountId.value}', '${txHash.asString}', ?, ?, ?, ?, ?, ?
           ) ON CONFLICT ON CONSTRAINT output_pkey DO NOTHING
@@ -155,9 +128,39 @@ object TransactionQueries extends DoobieLogHandler {
 
   def removeFromCursor(accountId: AccountUid, blockHeight: Long): ConnectionIO[Int] =
     sql"""DELETE from transaction
-          WHERE account_id = $accountId
+          WHERE account_uid = $accountId
           AND block_height >= $blockHeight
        """.update.run
+
+  def fetchTransaction(
+      accountId: AccountUid,
+      sort: Sort,
+      txHashes: NonEmptyList[TxHash]
+  ): Stream[doobie.ConnectionIO, TransactionView] = {
+    log.logger.debug(
+      s"Fetching transactions for accountId $accountId and hashes in $txHashes"
+    )
+
+    val belongsToTxs = withTxHashIn(txHashes)
+
+    (sql"""
+          SELECT
+            id,
+            hash,
+            block_hash,
+            block_height,
+            block_time,
+            received_at,
+            lock_time,
+            fees,
+            confirmations
+          FROM transaction t
+         WHERE t.account_uid = $accountId
+           AND $belongsToTxs
+       """ ++ transactionOrder(sort))
+      .query[TransactionView]
+      .stream
+  }
 
   def fetchTransactionDetails(
       accountId: AccountUid,
@@ -190,7 +193,7 @@ object TransactionQueries extends DoobieLogHandler {
   private def transactionOrder(sort: Sort) =
     Fragment.const(s"ORDER BY t.block_time $sort, t.hash $sort")
 
-  private def allTxHashes(hashes: NonEmptyList[TxHash]) =
+  private def withTxHashIn(hashes: NonEmptyList[TxHash]) =
     Fragments.in(fr"t.hash", hashes.map(_.asString))
 
   private def fetchInputs(
@@ -199,13 +202,13 @@ object TransactionQueries extends DoobieLogHandler {
       txHashes: NonEmptyList[TxHash]
   ) = {
 
-    val belongsToTxs = allTxHashes(txHashes)
+    val belongsToTxs = withTxHashIn(txHashes)
 
     (sql"""
           SELECT t.hash, i.output_hash, i.output_index, i.input_index, i.value, i.address, i.script_signature, i.txinwitness, i.sequence, i.derivation
             FROM transaction t
-            LEFT JOIN input i on i.account_id = t.account_id and i.hash = t.hash
-           WHERE t.account_id = $accountId
+            LEFT JOIN input i on i.account_uid = t.account_uid and i.hash = t.hash
+           WHERE t.account_uid = $accountId
              AND $belongsToTxs
        """ ++ transactionOrder(sort))
       .query[(TxHash, Option[InputView])]
@@ -217,14 +220,14 @@ object TransactionQueries extends DoobieLogHandler {
       txHashes: NonEmptyList[TxHash]
   ) = {
 
-    val belongsToTxs = allTxHashes(txHashes)
+    val belongsToTxs = withTxHashIn(txHashes)
 
     (
       sql"""
           SELECT t.hash, output.output_index, output.value, output.address, output.script_hex, output.change_type, output.derivation
             FROM transaction t
-            LEFT JOIN output on output.account_id = t.account_id and output.hash = t.hash
-           WHERE t.account_id = $accountId
+            LEFT JOIN output on output.account_uid = t.account_uid and output.hash = t.hash
+           WHERE t.account_uid = $accountId
              AND $belongsToTxs
        """ ++ transactionOrder(sort)
     ).query[(TxHash, Option[OutputView])]

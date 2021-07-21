@@ -8,6 +8,7 @@ import co.ledger.cria.clients.explorer.ExplorerHttpClient
 import co.ledger.cria.clients.protocol.http.Clients
 import co.ledger.cria.config.Config
 import co.ledger.cria.domain.adapters.explorer.ExplorerClientAdapter
+import co.ledger.cria.domain.mocks.InterpreterClientMock
 import co.ledger.cria.domain.models.TxHash
 import co.ledger.cria.logging.DefaultContextLogging
 import co.ledger.cria.domain.models.account.{Account, AccountUid}
@@ -19,7 +20,6 @@ import co.ledger.cria.domain.models.interpreter.{
   TransactionView
 }
 import co.ledger.cria.domain.models.keychain.KeychainId
-import co.ledger.cria.domain.services.interpreter.InterpreterClientMock
 import co.ledger.cria.utils.IOAssertion
 import fs2._
 import org.http4s.client.Client

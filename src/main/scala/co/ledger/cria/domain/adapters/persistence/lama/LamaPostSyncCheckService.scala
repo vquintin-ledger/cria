@@ -1,7 +1,7 @@
 package co.ledger.cria.domain.adapters.persistence.lama
 
 import cats.effect.IO
-import co.ledger.cria.domain.adapters.persistence.lama.queries.BalanceQueries
+import co.ledger.cria.domain.adapters.persistence.lama.queries.LamaBalanceQueries
 import co.ledger.cria.logging.{ContextLogging, CriaLogContext}
 import co.ledger.cria.domain.models.account.AccountUid
 import co.ledger.cria.domain.models.interpreter.CurrentBalance
@@ -9,7 +9,7 @@ import co.ledger.cria.domain.services.interpreter.PostSyncCheckService
 import doobie._
 import doobie.implicits._
 
-class PostSyncCheckServiceImpl(db: Transactor[IO])
+class LamaPostSyncCheckService(db: Transactor[IO])
     extends PostSyncCheckService
     with ContextLogging {
 
@@ -25,8 +25,8 @@ class PostSyncCheckServiceImpl(db: Transactor[IO])
 
   private def getCurrentBalance(accountId: AccountUid): IO[CurrentBalance] =
     for {
-      blockchainBalance  <- BalanceQueries.getBlockchainBalance(accountId).transact(db)
-      unconfirmedBalance <- BalanceQueries.getUnconfirmedBalance(accountId).transact(db)
+      blockchainBalance  <- LamaBalanceQueries.getBlockchainBalance(accountId).transact(db)
+      unconfirmedBalance <- LamaBalanceQueries.getUnconfirmedBalance(accountId).transact(db)
     } yield CurrentBalance(
       balance = blockchainBalance.balance,
       utxos = blockchainBalance.utxos,

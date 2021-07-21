@@ -37,7 +37,7 @@ class Keychain(client: KeychainClient) extends ContextLogging {
     Stream.eval(for {
       knownAddresses <- client.getKnownAndNewAddresses(id, change)
       _ <- log.info(
-        s"Number of known ${change.map(_.name + " ").getOrElse("")}addresses found : ${knownAddresses.size - 21}"
+        s"Number of known ${change.map(_.name + " ").getOrElse("")}addresses found : ${knownAddresses.size - 20}"
       )
     } yield knownAddresses)
 

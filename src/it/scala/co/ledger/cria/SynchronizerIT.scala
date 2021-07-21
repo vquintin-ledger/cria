@@ -5,13 +5,14 @@ import co.ledger.cria.config.Config
 import org.scalatest.flatspec.AnyFlatSpecLike
 import org.scalatest.matchers.should.Matchers
 import pureconfig.ConfigSource
-
 import java.time.Instant
 import java.util.UUID
+
 import co.ledger.cria.clients.explorer.ExplorerHttpClient
 import co.ledger.cria.clients.protocol.http.Clients
 import co.ledger.cria.domain.adapters.explorer.ExplorerClientAdapter
 import co.ledger.cria.domain.adapters.keychain.KeychainClientMock
+import co.ledger.cria.domain.mocks.InterpreterClientMock
 import co.ledger.cria.domain.models.SynchronizationParameters
 import co.ledger.cria.domain.models.SynchronizationResult.SynchronizationSuccess
 import co.ledger.cria.domain.models.account.{Account, AccountUid, WalletUid}
@@ -19,7 +20,6 @@ import co.ledger.cria.domain.models.interpreter.{Coin, SyncId}
 import co.ledger.cria.domain.models.keychain.KeychainId
 import co.ledger.cria.domain.services
 import co.ledger.cria.domain.services.{CursorStateService, Synchronizer}
-import co.ledger.cria.domain.services.interpreter.InterpreterClientMock
 import co.ledger.cria.utils.IOAssertion
 
 import scala.concurrent.ExecutionContext

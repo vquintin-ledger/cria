@@ -1,12 +1,13 @@
 package co.ledger.cria
 
 import java.time.Instant
+
 import cats.effect.{ContextShift, IO, Timer}
-import co.ledger.cria.domain.mocks.ExplorerClientMock
+import co.ledger.cria.domain.mocks.{ExplorerClientMock, InterpreterClientMock}
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
-
 import java.util.UUID
+
 import co.ledger.cria.logging.DefaultContextLogging
 import co.ledger.cria.domain.models.account.AccountUid
 import co.ledger.cria.domain.models.interpreter.Coin.Btc
@@ -18,7 +19,6 @@ import co.ledger.cria.domain.models.interpreter.{
   TransactionView
 }
 import co.ledger.cria.domain.models.keychain.{AccountAddress, ChangeType, KeychainId}
-import co.ledger.cria.domain.services.interpreter.InterpreterClientMock
 import co.ledger.cria.domain.services.{Bookkeeper, ExplorerClient, Keychain}
 import co.ledger.cria.utils.IOAssertion
 import fs2.Stream

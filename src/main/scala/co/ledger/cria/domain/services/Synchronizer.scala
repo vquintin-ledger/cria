@@ -152,7 +152,7 @@ class Synchronizer(
           // remove all transactions and operations up until last valid block
           log.info(
             s"${lastKnownBlock.hash} is different than ${lvb.hash}, reorg is happening"
-          ) *> interpreterClient.removeDataFromCursor(account.accountUid, Some(lvb.height))
+          ) *> interpreterClient.removeDataFromCursor(account.accountUid, lvb.height)
         }
     } yield lvb
 
