@@ -9,7 +9,7 @@ CREATE TYPE change_type as ENUM(
 );
 
 CREATE TABLE transaction (
-    account_id UUID NOT NULL,
+    account_id VARCHAR NOT NULL,
     id VARCHAR NOT NULL,
     hash VARCHAR NOT NULL,
     block_hash VARCHAR NOT NULL,
@@ -24,7 +24,7 @@ CREATE TABLE transaction (
 );
 
 CREATE TABLE input (
-    account_id UUID NOT NULL,
+    account_id VARCHAR NOT NULL,
     hash VARCHAR NOT NULL,
     output_hash VARCHAR NOT NULL,
     output_index INTEGER NOT NULL,
@@ -43,7 +43,7 @@ CREATE TABLE input (
 CREATE INDEX on input(address);
 
 CREATE TABLE output (
-    account_id UUID NOT NULL,
+    account_id VARCHAR NOT NULL,
     hash VARCHAR NOT NULL,
     output_index INTEGER NOT NULL,
     value NUMERIC(30, 0) NOT NULL,
@@ -59,7 +59,7 @@ CREATE TABLE output (
 CREATE INDEX on output(address);
 
 CREATE TABLE operation (
-    account_id UUID NOT NULL,
+    account_id VARCHAR NOT NULL,
     hash VARCHAR NOT NULL,
     operation_type operation_type NOT NULL,
     value NUMERIC(30, 0) NOT NULL,
@@ -74,7 +74,7 @@ CREATE TABLE operation (
 
 CREATE TABLE balance_history (
     id SERIAL PRIMARY KEY,
-    account_id UUID NOT NULL,
+    account_id VARCHAR NOT NULL,
     balance NUMERIC(30, 0) NOT NULL,
     utxos INTEGER NOT NULL,
     received NUMERIC(30, 0) NOT NULL,

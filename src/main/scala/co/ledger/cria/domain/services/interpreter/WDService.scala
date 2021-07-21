@@ -1,43 +1,26 @@
 package co.ledger.cria.domain.services.interpreter
 
 import cats.effect.IO
-import co.ledger.cria.domain.adapters.wd.models.{WDBlock, WDOperation, WDTransaction}
-import co.ledger.cria.logging.{CriaLogContext, DefaultContextLogging}
-import doobie.Transactor
-import doobie.implicits._
+import co.ledger.cria.domain.models.account.{AccountUid, WalletUid}
+import co.ledger.cria.domain.models.interpreter.{BlockView, Coin, Operation, TransactionView}
+import co.ledger.cria.logging.CriaLogContext
 
-class WDService(
-    db: Transactor[IO]
-) extends DefaultContextLogging {
+trait WDService {
 
-  def saveWDOperation(op: WDOperation): IO[Int] =
-    WDQueries
-      .saveWDOperation(op)
-      .transact(db)
+  def saveWDOperation(
+      coin: Coin,
+      accountUid: AccountUid,
+      walletUid: WalletUid,
+      op: Operation
+  ): IO[Int]
 
-  def saveTransaction(tx: WDTransaction): IO[Int] = {
-    for {
-      txStatement <- WDQueries.saveTransaction(tx)
-      _           <- WDQueries.saveInputs(tx, tx.inputs)
-      _           <- WDQueries.saveOutputs(tx.outputs, tx.uid, tx.hash)
-    } yield txStatement
-  }
-    .transact(db)
+  def saveTransaction(
+      coin: Coin,
+      accountUid: AccountUid,
+      transactionView: TransactionView
+  ): IO[Unit]
 
-  def saveBlocks(blocks: List[WDBlock])(implicit lc: CriaLogContext): IO[Int] = {
-    log.info(s"Saving ${blocks.size} WD Blocks") *>
-      WDQueries
-        .saveBlocks(blocks)
-        .transact(db)
-  }
+  def saveBlocks(coin: Coin, blocks: List[BlockView])(implicit lc: CriaLogContext): IO[Int]
 
-  def deleteRejectedTransaction(hash: String): IO[Int] = ???
-
-  def removeFromCursor(blockHeight: Option[Long]): IO[Int] = {
-    // remove block & operations & transactions
-    WDQueries
-      .deleteBlocksFrom(blockHeight)
-      .transact(db)
-  }
-
+  def removeFromCursor(accountUid: AccountUid, blockHeight: Option[Long]): IO[Int]
 }

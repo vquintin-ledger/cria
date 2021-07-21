@@ -6,9 +6,8 @@ import java.util.UUID
 
 import cats.data.NonEmptyList
 import cats.effect.IO
-import co.ledger.cria.App.ClientResources
 import co.ledger.cria.domain.mocks.ExplorerClientMock
-import co.ledger.cria.itutils.{ContainerFlatSpec, TestUtils}
+import co.ledger.cria.itutils.ContainerFlatSpec
 import co.ledger.cria.utils.IOAssertion
 import co.ledger.cria.logging.CriaLogContext
 import co.ledger.cria.domain.models.{TxHash, keychain}
@@ -201,11 +200,11 @@ class InterpreterIT extends ContainerFlatSpec with Matchers {
 
   "an unconfirmed transaction" should "have a full lifecycle" in IOAssertion {
     setup *>
-      appResources.use { case ClientResources(_, _, db) =>
+      testResources.use { tr =>
         val interpreter =
-          new InterpreterImpl(_ => explorer, db, 1)
+          new InterpreterImpl(_ => explorer, tr.clients.persistenceFacade)
 
-        val utils = new TestUtils(db)
+        val utils = tr.testUtils
 
         val uTx = TransactionView(
           "txId",
@@ -253,11 +252,11 @@ class InterpreterIT extends ContainerFlatSpec with Matchers {
 
   "an unconfirmed transaction" should "be updated if it's been mined" in IOAssertion {
     setup *>
-      appResources.use { case ClientResources(_, _, db) =>
+      testResources.use { tr =>
         val interpreter =
-          new InterpreterImpl(_ => explorer, db, 1)
+          new InterpreterImpl(_ => explorer, tr.clients.persistenceFacade)
 
-        val utils = new TestUtils(db)
+        val utils = tr.testUtils
 
         val uTx = TransactionView(
           "txId",
@@ -305,11 +304,11 @@ class InterpreterIT extends ContainerFlatSpec with Matchers {
 
   "an account" should "go through multiple cycles" in IOAssertion {
     setup *>
-      appResources.use { case ClientResources(_, _, db) =>
+      testResources.use { tr =>
         val interpreter =
-          new InterpreterImpl(_ => explorer, db, 1)
+          new InterpreterImpl(_ => explorer, tr.clients.persistenceFacade)
 
-        val utils = new TestUtils(db)
+        val utils = tr.testUtils
 
         val uTx1 = TransactionView(
           "tx1",

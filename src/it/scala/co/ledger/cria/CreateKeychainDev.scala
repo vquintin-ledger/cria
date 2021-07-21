@@ -12,6 +12,7 @@ import co.ledger.cria.itutils.TestUtils
 import co.ledger.cria.itutils.models.keychain.AccountKey.Xpub
 import co.ledger.cria.itutils.models.keychain.{KeychainInfo, Scheme}
 import co.ledger.cria.itutils.models.keychain.CoinImplicits._
+import co.ledger.cria.logging.DefaultContextLogging
 import co.ledger.cria.utils.IOAssertion
 import co.ledger.protobuf.bitcoin.keychain
 import co.ledger.protobuf.bitcoin.keychain.KeychainServiceFs2Grpc
@@ -21,7 +22,7 @@ import pureconfig.ConfigSource
 
 import scala.concurrent.ExecutionContext
 
-class CreateKeychainDev extends AnyFlatSpec {
+class CreateKeychainDev extends AnyFlatSpec with DefaultContextLogging {
 
   val conf: Config                  = ConfigSource.default.loadOrThrow[Config]
   implicit val cs: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
@@ -64,20 +65,22 @@ class CreateKeychainDev extends AnyFlatSpec {
   def appResources: Resource[IO, ClientResources] =
     App.makeClientResources(conf)
 
-  def testResources: Resource[IO, TestResources] =
-    appResources.map { resources =>
-      val keychainClient = new KeychainGrpcClient(resources.keychainGrpcChannel)
-      TestResources(
-        resources,
-        keychainClient,
-        GrpcClient.resolveClient(
-          keychain.KeychainServiceFs2Grpc.stub[IO],
-          resources.keychainGrpcChannel,
-          "keychainClient"
-        ),
-        new TestUtils(resources.transactor)
-      )
-    }
+  def testResources: Resource[IO, TestResources] = {
+    for {
+      resources <- appResources
+      testUtils <- TestUtils.fromConfig(conf.db, log)
+      keychainClient = new KeychainGrpcClient(resources.keychainGrpcChannel)
+    } yield       TestResources(
+      resources,
+      keychainClient,
+      GrpcClient.resolveClient(
+        keychain.KeychainServiceFs2Grpc.stub[IO],
+        resources.keychainGrpcChannel,
+        "keychainClient"
+      ),
+      testUtils,
+    )
+  }
 
   def makeKeychainId(request: RegisterRequest): IO[KeychainId] =
     testResources.use { tr =>

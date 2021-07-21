@@ -1,27 +1,24 @@
 package co.ledger.cria.itutils
 
 import cats.effect.{ContextShift, IO, Resource, Timer}
+import cats.implicits.catsSyntaxFlatMapOps
 import co.ledger.cria.App
 import co.ledger.cria.App.ClientResources
 import co.ledger.cria.clients.explorer.ExplorerHttpClient
 import co.ledger.cria.clients.protocol.grpc.GrpcClient
-import co.ledger.cria.config.{Config, GrpcClientConfig}
+import co.ledger.cria.config.{Config, GrpcClientConfig, PersistenceConfig}
 import co.ledger.cria.domain.adapters.explorer.ExplorerClientAdapter
 import co.ledger.cria.domain.adapters.keychain.KeychainGrpcClient
+import co.ledger.cria.domain.adapters.persistence.lama.LamaDb
+import co.ledger.cria.domain.adapters.persistence.tee.TeeConfig
+import co.ledger.cria.domain.adapters.persistence.wd.WalletDaemonDb
 import co.ledger.cria.domain.services.KeychainClient
 import co.ledger.cria.domain.services.interpreter.{Interpreter, InterpreterImpl}
 import co.ledger.cria.logging.DefaultContextLogging
-import co.ledger.cria.utils.DbUtils
 import co.ledger.protobuf.bitcoin.keychain
 import co.ledger.protobuf.bitcoin.keychain.KeychainServiceFs2Grpc
-import com.dimafeng.testcontainers.{
-  DockerComposeContainer,
-  ExposedService,
-  ForAllTestContainer,
-  ServiceLogConsumer
-}
+import com.dimafeng.testcontainers.{DockerComposeContainer, ExposedService, ForAllTestContainer, ServiceLogConsumer}
 import io.grpc.Metadata
-import org.flywaydb.core.Flyway
 import org.scalatest.flatspec.AnyFlatSpec
 import pureconfig.ConfigSource
 
@@ -55,10 +52,11 @@ trait ContainerFlatSpec extends AnyFlatSpec with ForAllTestContainer with Defaul
       )
     )
 
-  def setup: IO[Unit] = {
-    lazy val flyway: Flyway = DbUtils.flyway(conf.db.postgres)
-    IO(flyway.clean()) *> IO(flyway.migrate())
-  }
+  def setup: IO[Unit] =
+    testResources.use{r =>
+      val utils = r.testUtils
+      utils.clean >> utils.migrate
+    }
 
   def appResources: Resource[IO, ClientResources] =
     App.makeClientResources(conf)
@@ -67,17 +65,21 @@ trait ContainerFlatSpec extends AnyFlatSpec with ForAllTestContainer with Defaul
    * Uses the dockerized keychain and production explorer
    */
   def testResources: Resource[IO, TestResources] =
-    appResources.map { resources =>
-      val explorerClient =
+    for {
+      resources <- appResources
+      testUtils <- TestUtils.fromConfig(conf.db, log)
+      explorerClient = {
         ExplorerClientAdapter.explorerForCoin(
           new ExplorerHttpClient(resources.httpClient, conf.explorer, _)
         ) _
-      val interpreterClient = new InterpreterImpl(
+      }
+      interpreterClient = new InterpreterImpl(
         explorerClient,
-        resources.transactor,
-        conf.maxConcurrent
+        resources.persistenceFacade
       )
-      val keychainClient = new KeychainGrpcClient(resources.keychainGrpcChannel)
+      keychainClient = new KeychainGrpcClient(resources.keychainGrpcChannel)
+    } yield
+
       TestResources(
         resources,
         interpreterClient,
@@ -87,32 +89,49 @@ trait ContainerFlatSpec extends AnyFlatSpec with ForAllTestContainer with Defaul
           resources.keychainGrpcChannel,
           "keychainClient"
         ),
-        new TestUtils(resources.transactor)
+        testUtils,
       )
-    }
 
   case class TestResources(
-      clients: ClientResources,
-      interpreter: Interpreter,
-      keychainClient: KeychainClient,
-      rawKeychainClient: KeychainServiceFs2Grpc[IO, Metadata],
-      testUtils: TestUtils
+                            clients: ClientResources,
+                            interpreter: Interpreter,
+                            keychainClient: KeychainClient,
+                            rawKeychainClient: KeychainServiceFs2Grpc[IO, Metadata],
+                            testUtils: TestUtils,
   )
 
   lazy val conf: Config = {
     val defaultConf        = ConfigSource.default.loadOrThrow[Config]
-    val mappedPostgresHost = container.getServiceHost("postgres_1", postgresPort)
-    val mappedPostgresPort = container.getServicePort("postgres_1", postgresPort)
     defaultConf.copy(
       keychain = new GrpcClientConfig(
         container.getServiceHost("bitcoin-keychain_1", keychainPort),
         container.getServicePort("bitcoin-keychain_1", keychainPort),
         false
       ),
-      db = defaultConf.db.copy(postgres =
-        defaultConf.db.postgres
-          .copy(url = s"jdbc:postgresql://$mappedPostgresHost:$mappedPostgresPort/test_lama_btc")
-      )
+      db = adaptedPersistenceConfig(defaultConf.db)
     )
+  }
+
+  private def adaptedPersistenceConfig(conf: PersistenceConfig): PersistenceConfig = {
+    def wd(db: WalletDaemonDb): PersistenceConfig.WalletDaemon = {
+      val mappedPostgresHost = container.getServiceHost("postgres_1", postgresPort)
+      val mappedPostgresPort = container.getServicePort("postgres_1", postgresPort)
+      PersistenceConfig.WalletDaemon(
+        db.copy(postgres = db.postgres.copy(url = s"jdbc:postgresql://$mappedPostgresHost:$mappedPostgresPort/wd_local_pool"))
+      )
+    }
+
+    def lama(db: LamaDb): PersistenceConfig.Lama = {
+      val mappedPostgresHost = container.getServiceHost("postgres_1", postgresPort)
+      val mappedPostgresPort = container.getServicePort("postgres_1", postgresPort)
+      PersistenceConfig.Lama(
+        db.copy(postgres = db.postgres.copy(url = s"jdbc:postgresql://$mappedPostgresHost:$mappedPostgresPort/test_lama_btc"))
+      )
+    }
+
+    def both(left: PersistenceConfig, right: PersistenceConfig, tee: TeeConfig) =
+      PersistenceConfig.Both(left, right, tee)
+
+    PersistenceConfig.fold(wd, lama, both)(conf)
   }
 }
