@@ -2,7 +2,8 @@ package co.ledger.cria.domain.adapters.persistence.lama
 
 import cats.effect.IO
 import co.ledger.cria.domain.adapters.persistence.lama.models.OperationToSave
-import co.ledger.cria.domain.adapters.persistence.lama.queries.OperationQueries
+import co.ledger.cria.domain.adapters.persistence.lama.queries.
+  OperationQueries
 import co.ledger.cria.domain.models.account.{AccountUid, WalletUid}
 import co.ledger.cria.domain.models.interpreter.{BlockView, Coin, Operation, TransactionView}
 import co.ledger.cria.domain.services.interpreter.{TransactionService, WDService}

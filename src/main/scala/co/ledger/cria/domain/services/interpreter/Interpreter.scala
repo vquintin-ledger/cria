@@ -1,7 +1,7 @@
 package co.ledger.cria.domain.services.interpreter
 
 import cats.data.NonEmptyList
-import cats.effect.{ContextShift, IO, Timer}
+import cats.effect.{IO, Timer}
 import cats.implicits._
 import co.ledger.cria.domain.models.{Sort, TxHash, interpreter}
 import co.ledger.cria.domain.models.interpreter.{Action, BlockView, TransactionView}
@@ -33,7 +33,7 @@ trait Interpreter {
 
 class InterpreterImpl(explorer: Coin => ExplorerClient, persistenceFacade: PersistenceFacade)(
     implicit
-    cs: ContextShift[IO],
+
     t: Timer[IO]
 ) extends Interpreter
     with ContextLogging {

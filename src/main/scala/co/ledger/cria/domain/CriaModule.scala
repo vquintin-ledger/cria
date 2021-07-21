@@ -1,6 +1,6 @@
 package co.ledger.cria.domain
 
-import cats.effect.{ContextShift, IO, Timer}
+import cats.effect.{IO, Timer}
 import co.ledger.cria.domain.models.interpreter.Coin
 import co.ledger.cria.domain.services.{
   CursorStateService,
@@ -14,11 +14,11 @@ final class CriaModule(
     persistence: PersistenceFacade,
     keychainClient: KeychainClient,
     getExplorerClient: Coin => ExplorerClient
-)(implicit timer: Timer[IO], cs: ContextShift[IO]) {
+)(implicit timer: Timer[IO]) {
 
   private val interpreter = new InterpreterImpl(getExplorerClient, persistence)
 
-  val cursorStateService: Coin => CursorStateService[IO] =
+  private val cursorStateService: Coin => CursorStateService[IO] =
     c => CursorStateService(getExplorerClient(c), interpreter).getLastValidState(_, _, _)
 
   val synchronizer: Synchronizer =

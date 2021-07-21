@@ -1,7 +1,7 @@
 package co.ledger.cria.domain.services.interpreter
 
 import cats.data.NonEmptyList
-import cats.effect.{ContextShift, IO}
+import cats.effect.IO
 import co.ledger.cria.domain.models.{Sort, TxHash}
 import co.ledger.cria.domain.models.account.AccountUid
 import co.ledger.cria.domain.models.interpreter.{AccountTxView, BlockView, TransactionView}
@@ -11,7 +11,7 @@ import fs2.Pipe
 trait TransactionService {
 
   def saveTransactions(implicit
-      cs: ContextShift[IO],
+
       lc: CriaLogContext
   ): Pipe[IO, AccountTxView, Int]
 

@@ -10,12 +10,13 @@ import co.ledger.cria.domain.services.interpreter.FlaggingService
 import doobie._
 import doobie.implicits._
 
-class FlaggingServiceImpl(db: Transactor[IO]) extends FlaggingService {
+class FlaggingServiceImpl(db: Transactor[IO])(implicit cs: ContextShift[IO])
+    extends FlaggingService {
 
   override def flagInputsAndOutputs(
       accountId: AccountUid,
       accountAddresses: List[AccountAddress]
-  )(implicit cs: ContextShift[IO]): IO[Unit] = {
+  ): IO[Unit] = {
     val (internalAddresses, externalAddresses) =
       accountAddresses
         .partition(_.changeType == ChangeType.Internal)

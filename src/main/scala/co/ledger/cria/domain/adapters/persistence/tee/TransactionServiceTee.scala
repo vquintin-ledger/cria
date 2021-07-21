@@ -1,7 +1,7 @@
 package co.ledger.cria.domain.adapters.persistence.tee
 
 import cats.data.NonEmptyList
-import cats.effect.{ContextShift, IO}
+import cats.effect.IO
 import co.ledger.cria.domain.models.{Sort, TxHash}
 import co.ledger.cria.domain.models.account.AccountUid
 import co.ledger.cria.domain.models.interpreter.{AccountTxView, BlockView, TransactionView}
@@ -15,7 +15,7 @@ class TransactionServiceTee(
     combiner: Combiner
 ) extends TransactionService {
   override def saveTransactions(implicit
-      cs: ContextShift[IO],
+
       lc: CriaLogContext
   ): Pipe[IO, AccountTxView, Int] =
     combiner.combinePipe(primary.saveTransactions, secondary.saveTransactions)

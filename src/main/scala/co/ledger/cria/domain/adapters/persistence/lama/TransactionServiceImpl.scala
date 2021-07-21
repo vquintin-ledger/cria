@@ -14,11 +14,13 @@ import fs2._
 import cats.implicits._
 
 final class TransactionServiceImpl(db: Transactor[IO], maxConcurrent: Int)
-    extends TransactionService
+   (implicit
+    cs: ContextShift[IO]
+) extends TransactionService
     with ContextLogging {
 
   def saveTransactions(implicit
-      cs: ContextShift[IO],
+
       lc: CriaLogContext
   ): Pipe[IO, AccountTxView, Int] =
     _.chunkN(100)

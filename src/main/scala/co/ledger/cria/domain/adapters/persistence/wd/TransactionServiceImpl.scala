@@ -13,11 +13,11 @@ import doobie.implicits._
 import fs2._
 
 class TransactionServiceImpl(db: Transactor[IO], maxConcurrent: Int)
-    extends ContextLogging
+   (implicit cs: ContextShift[IO]) extends ContextLogging
     with TransactionService {
 
   override def saveTransactions(implicit
-      cs: ContextShift[IO],
+
       lc: CriaLogContext
   ): Pipe[IO, AccountTxView, Int] =
     _.chunkN(100)

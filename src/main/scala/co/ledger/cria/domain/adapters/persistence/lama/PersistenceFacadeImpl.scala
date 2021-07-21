@@ -13,7 +13,9 @@ import co.ledger.cria.utils.{DbUtils, ResourceUtils}
 import doobie.Transactor
 
 final class PersistenceFacadeImpl private (transactor: Transactor[IO], maxConcurrent: Int)
-    extends PersistenceFacade {
+   (implicit
+    cs: ContextShift[IO]
+) extends PersistenceFacade {
   override val transactionService: TransactionService =
     new TransactionServiceImpl(transactor, maxConcurrent)
 
