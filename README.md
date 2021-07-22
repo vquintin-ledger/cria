@@ -1,123 +1,60 @@
-[![release](https://img.shields.io/github/v/release/ledgerhq/lama?color=0366d6&include_prereleases)](https://github.com/LedgerHQ/lama/releases)
-[![build](https://github.com/LedgerHQ/lama/workflows/build/badge.svg?branch=master)](https://github.com/LedgerHQ/lama/actions?query=workflow%3Abuild+branch%3Amaster)
-[![publish](https://github.com/LedgerHQ/lama/workflows/publish/badge.svg?branch=master)](https://github.com/LedgerHQ/lama/actions?query=workflow%3Apublish+branch%3Amaster)
+[![release](https://img.shields.io/github/v/release/ledgerhq/cria?color=0366d6&include_prereleases)](https://github.com/LedgerHQ/cria/releases)
+[![build](https://github.com/LedgerHQ/cria/workflows/build/badge.svg?branch=master)](https://github.com/LedgerHQ/cria/actions?query=workflow%3Abuild+branch%3Amaster)
+[![publish](https://github.com/LedgerHQ/cria/workflows/publish/badge.svg?branch=master)](https://github.com/LedgerHQ/cria/actions?query=workflow%3Apublish+branch%3Amaster)
 
-# Lama
+# Cria
 
 ![](./lama.jpg)
 
-Synchronization and management of account states (transactions, balance, ...) across Blockchain protocols.
+Synchronization of account states (transactions, balance, ...) across bitcoin-like protocols.
 
-Main features of Lama are:
+Main features of Cria are:
 - Scalable and stateless components
-- Event-driven architecture
-- Account manager component for handling account metadata and sending sync event messages
-- Easy support of new coin integration by having coin specific components:
-  * Worker: fetching data from blockchain
-  * Interpreter: computing and inserting data (operations, balance, ...)
-  * Api: exposing http endpoints to get synced transactions, estimate fees, create and broadcast transactions
+- λ architecture
 
-## How Lama works?
+## Getting started
 
-![](./excalidraw/lama-overview.png)
-
-## Run lama components through docker
+### Run cria dependencies through docker
 
 `docker-compose up`
 
 Please have a look on `docker-compose.yml` file for more details on the configuration.
 
-## Account manager
+### Run from sbt
 
-The account manager handles account registration and unregistration and emits events to the dedicated coin worker.
-Please refer to the [account manager README][account-manager] for more details on how it works.
+```
+sbt run cria --keychainId <uuid> --coin <string> --syncId <uuid> [--blockHash <string>] --accountUid <string> --walletUid <string>
+```
 
-### Run through docker (recommended)
+### Run from docker
 
-Install [docker][docker] then run `docker-compose up account-manager`.
+```
+sbt cria/docker:publishLocal
+docker run docker.pkg.github.com/ledgerhq/cria/cria --keychainId <uuid> --coin <string> --syncId <uuid> [--blockHash <string>] --accountUid <string> --walletUid <string>
+```
 
-This will create a PostgreSql, a RabbitMQ, a Redis and the latest published image of the lama account manager.
+### Command line options
+From the help message:
+```
+Usage: cria --keychainId <uuid> --coin <string> --syncId <uuid> [--blockHash <string>] --accountUid <string> --walletUid <string>
 
-Please have a look on `docker-compose.yml` file for more details on the configuration.
+The cria synchronization worker for BTC-like coins
 
-#### Build and publish image in local
-
-`sbt accountManager/docker:publishLocal`
-
-### Run manually
-
-Please refer to the [getting started][account-manager-getting-started] section of the account manager README.
-
-## Coin integration
-
-### Bitcoin REST API
-
-#### Run through docker (recommended)
-
-Run `docker-compose up bitcoin-api`.
-
-Please have a look on `docker-compose.yml` file for more details on the configuration.
-
-##### Build and publish image in local
-
-`sbt bitcoinApi/docker:publishLocal`
-
-#### Run manually
-
-Please refer to the [getting started][bitcoin-api-getting-started] section of the bitcoin api README.
-
-### Bitcoin Worker
-
-#### Run through docker (recommended)
-
-Run `docker-compose up bitcoin-worker`.
-
-Please have a look on `docker-compose.yml` file for more details on the configuration.
-
-##### Build and publish image in local
-
-`sbt bitcoinWorker/docker:publishLocal`
-
-#### Run manually
-
-Please refer to the [getting started][bitcoin-worker-getting-started] section of the bitcoin worker README.
-
-### Bitcoin Interpreter
-
-#### Run through docker (recommended)
-
-Run `docker-compose up bitcoin-interpreter`.
-
-Please have a look on `docker-compose.yml` file for more details on the configuration.
-
-##### Build and publish image in local
-
-`sbt bitcoinInterpreter/docker:publishLocal`
-
-#### Run manually
-
-Please refer to the [getting started][bitcoin-interpreter-getting-started] section of the bitcoin interpreter README.
-
-### Bitcoin transactor
-
-#### Run through docker (recommended)
-
-Run `docker-compose up bitcoin-transactor`.
-
-Please have a look on `docker-compose.yml` file for more details on the configuration.
-
-##### Build and publish image in local
-
-`sbt bitcoinTransactor/docker:publishLocal`
-
-#### Run manually
-
-Please refer to the [getting started][bitcoin-transactor-getting-started] section of the bitcoin transactor README.
+Options and flags:
+    --help
+        Display this help text.
+    --keychainId <uuid>
+        The keychain id
+    --coin <string>
+        The coin to synchronize
+    --syncId <uuid>
+        The synchronization id
+    --blockHash <string>
+        The current hash of the blockchain
+    --accountUid <string>
+        The id of the account the xpub belongs to
+    --walletUid <string>
+        The id of the wallet the xpub belongs to
+```
 
 [docker]: https://docs.docker.com/get-docker/
-[account-manager]: https://github.com/LedgerHQ/lama/tree/master/account-manager
-[account-manager-getting-started]: account-manager/README.md#getting-started
-[bitcoin-api-getting-started]: coins/bitcoin/api//README.md#getting-started
-[bitcoin-interpreter-getting-started]: coins/bitcoin/interpreter/README.md#getting-started
-[bitcoin-worker-getting-started]: coins/bitcoin/worker/README.md#getting-started
-[bitcoin-transactor-getting-started]: coins/bitcoin/transactor/README.md#getting-started
