@@ -9,7 +9,7 @@ import doobie.implicits._
 
 object WDBalanceQueries extends DoobieLogHandler {
 
-  //TODO: rework on WD tables instead of temp lama tables...
+  //FIXME: rework on WD tables instead of temp lama tables...
   def getBlockchainBalance(
       accountId: AccountUid
   ): ConnectionIO[BlockchainBalance] = {

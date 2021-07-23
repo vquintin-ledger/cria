@@ -2,25 +2,19 @@ package co.ledger.cria.itutils
 
 import cats.effect.{ContextShift, IO, Resource, Timer}
 import co.ledger.cria.domain.adapters.persistence.lama.LamaDb
-import co.ledger.cria.domain.adapters.persistence.lama.queries.{
-  LamaBalanceQueries,
-  LamaOperationQueries
-}
 import co.ledger.cria.domain.adapters.persistence.lama.queries.LamaOperationQueries.{
   OpWithoutDetails,
   OperationDetails
 }
-import co.ledger.cria.itutils.models.{
-  GetOperationsResult,
-  GetUtxosResult,
-  OperationPaginationState,
-  PaginationCursor,
-  PaginationToken
+import co.ledger.cria.domain.adapters.persistence.lama.queries.{
+  LamaBalanceQueries,
+  LamaOperationQueries
 }
-import co.ledger.cria.itutils.queries.LamaOperationTestQueries
 import co.ledger.cria.domain.models.account.{AccountUid, WalletUid}
 import co.ledger.cria.domain.models.interpreter.{CurrentBalance, Operation, TransactionView}
 import co.ledger.cria.domain.models.{Sort, TxHash}
+import co.ledger.cria.itutils.models._
+import co.ledger.cria.itutils.queries.LamaOperationTestQueries
 import co.ledger.cria.utils.{DbUtils, ResourceUtils}
 import doobie.ConnectionIO
 import doobie.implicits._

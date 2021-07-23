@@ -63,7 +63,7 @@ object LamaOperationQueries extends DoobieLogHandler {
             LEFT JOIN operation op
               ON op.hash = tx.hash
               AND op.account_id = tx.account_id
-          WHERE op.hash IS null
+          WHERE op.block_hash IS null --either the operation doesn't exist or it's mempool
           AND tx.account_id = $accountId
        """ ++ Fragment
       .const(s"ORDER BY tx.block_time $sort, tx.hash $sort"))

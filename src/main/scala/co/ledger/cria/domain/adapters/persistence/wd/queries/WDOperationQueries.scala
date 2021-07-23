@@ -47,24 +47,39 @@ object WDOperationQueries extends DoobieLogHandler {
       outputs: List[OutputView]
   )
 
+  // Should go fetch new transactions just synced, and ignore txs already transformed into operations
+  // Should also fetch Txs not pending that have pending ops (meaning they were mined)
   def fetchUncomputedTransactionAmounts(
       accountId: AccountUid,
       sort: Sort
   ): Stream[ConnectionIO, TransactionAmounts] = {
     (
-      //TODO: FIX THIS
-      sql"""SELECT tx.account_uid,
-                 tx.hash,
-                 tx.block_hash,
-                 tx.block_height,
-                 tx.block_time,
-                 tx.fees,
-                 COALESCE(tx.input_amount, 0),
-                 COALESCE(tx.output_amount, 0),
-                 COALESCE(tx.change_amount, 0)
+      sql"""WITH ops AS (
+              SELECT bo.transaction_hash AS hash, 
+                     op.account_uid,
+                     op.block_uid
+              FROM bitcoin_operations bo
+                INNER JOIN operations op 
+                  ON bo.uid = op.uid 
+              WHERE op.account_uid = $accountId
+            )
+            
+            SELECT tx.account_uid,
+                   tx.hash,
+                   tx.block_hash,
+                   tx.block_height,
+                   tx.block_time,
+                   tx.fees,
+                   COALESCE(tx.input_amount, 0),
+                   COALESCE(tx.output_amount, 0),
+                   COALESCE(tx.change_amount, 0)
           FROM transaction_amount tx
-          WHERE tx.account_uid = $accountId""" ++ Fragment
-        .const(s"ORDER BY tx.block_time $sort, tx.hash $sort")
+            LEFT JOIN ops 
+              ON tx.hash = ops.hash 
+              AND tx.account_uid = ops.account_uid
+          WHERE tx.account_uid = $accountId
+            AND ops.block_uid IS NULL""" ++ Fragment
+        .const(s" ORDER BY tx.block_time $sort, tx.hash $sort")
     )
       .query[TransactionAmounts]
       .stream

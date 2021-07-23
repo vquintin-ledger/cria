@@ -49,7 +49,7 @@ class InterpreterImpl(explorer: Coin => ExplorerClient, persistenceFacade: Persi
       .void
   }
 
-  //TODO: Fix to work with WD db
+  //FIXME: Fix to work with WD db
   def getLastBlocks(
       accountId: AccountUid
   )(implicit lc: CriaLogContext): IO[List[BlockView]] = {

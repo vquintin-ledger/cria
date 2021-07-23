@@ -19,6 +19,7 @@ object WDTransactionQueries extends DoobieLogHandler {
       outputs: List[OutputView]
   )
 
+  //FIXME: fetch from WD table
   def fetchMostRecentBlocks(accountId: AccountUid): Stream[ConnectionIO, BlockView] = {
     sql"""SELECT DISTINCT block_hash, block_height, block_time
           FROM transaction

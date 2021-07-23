@@ -13,15 +13,15 @@ trait TestUtils {
   def setupAccount(accountUid: AccountUid, walletUid: WalletUid): IO[Int]
 
   def getOperationCount(
-                         accountId: AccountUid
-                       ): IO[Int]
+      accountId: AccountUid
+  ): IO[Int]
 
   def getUtxos(
-                accountId: AccountUid,
-                limit: Int,
-                offset: Int,
-                sort: Sort
-              ): IO[GetUtxosResult]
+      accountId: AccountUid,
+      limit: Int,
+      offset: Int,
+      sort: Sort
+  ): IO[GetUtxosResult]
 
   def getBalance(accountId: AccountUid): IO[CurrentBalance]
 
@@ -31,7 +31,11 @@ trait TestUtils {
 }
 
 object TestUtils {
-  def fromConfig(c: PersistenceConfig, log: IOLogger)(implicit cs: ContextShift[IO], t: Timer[IO], lc: LogContext): Resource[IO, TestUtils] =
+  def fromConfig(c: PersistenceConfig, log: IOLogger)(implicit
+      cs: ContextShift[IO],
+      t: Timer[IO],
+      lc: LogContext
+  ): Resource[IO, TestUtils] =
     PersistenceConfig.foldM[Resource[IO, *], TestUtils](
       WDTestUtils.apply,
       LamaTestUtils.apply,
