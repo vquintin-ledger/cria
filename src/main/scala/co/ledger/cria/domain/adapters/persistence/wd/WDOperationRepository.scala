@@ -43,12 +43,13 @@ class WDOperationRepository(
 
   override def saveBlocks(coin: Coin, blocks: List[BlockView])(implicit
       lc: CriaLogContext
-  ): IO[Int] = {
+  ): IO[Unit] = {
     val wdBlocks = blocks.map(WDBlock.fromBlock(_, coin))
     log.info(s"Saving ${blocks.size} WD Blocks") *>
       WDQueries
         .saveBlocks(wdBlocks)
         .transact(db)
+        .void
   }
 
   //TODO: not doing what it should, FIX plz

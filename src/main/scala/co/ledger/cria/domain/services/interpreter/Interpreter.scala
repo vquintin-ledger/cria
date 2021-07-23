@@ -162,7 +162,7 @@ class InterpreterImpl(explorer: Coin => ExplorerClient, persistenceFacade: Persi
 
   private def saveWDBlocks(
       coin: Coin
-  )(actions: List[Action])(implicit lc: CriaLogContext): IO[Int] =
+  )(actions: List[Action])(implicit lc: CriaLogContext): IO[Unit] =
     operationRepository.saveBlocks(
       coin,
       actions.collect { case Save(WDTxToSave(Some(block), _, _)) =>

@@ -109,7 +109,7 @@ class OperationComputationServiceIT
   )
 
   "getUncomputedOperations" should "not returned computed operations" in IOAssertion {
-    setup *>
+    setupDB *>
       testResources.use { tr =>
         val transactionRepository = tr.clients.persistenceFacade.transactionRecordRepository
         val computationService    = tr.clients.persistenceFacade.operationComputationService

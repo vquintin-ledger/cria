@@ -4,7 +4,6 @@ import cats.effect.{ContextShift, IO, Resource, Timer}
 import co.ledger.cria.App.ClientResources
 import co.ledger.cria.clients.protocol.grpc.GrpcClient
 import co.ledger.cria.config.Config
-import co.ledger.cria.domain.adapters.keychain.KeychainGrpcClient
 import co.ledger.cria.domain.models.interpreter.Coin
 import co.ledger.cria.domain.models.keychain.KeychainId
 import co.ledger.cria.domain.services.KeychainClient
@@ -14,6 +13,7 @@ import co.ledger.cria.itutils.models.keychain.{KeychainInfo, Scheme}
 import co.ledger.cria.itutils.models.keychain.CoinImplicits._
 import co.ledger.cria.logging.DefaultContextLogging
 import co.ledger.cria.utils.IOAssertion
+import co.ledger.cria.utils.ResourceUtils.grpcManagedChannel
 import co.ledger.protobuf.bitcoin.keychain
 import co.ledger.protobuf.bitcoin.keychain.KeychainServiceFs2Grpc
 import io.grpc.Metadata
@@ -67,18 +67,18 @@ class CreateKeychainDev extends AnyFlatSpec with DefaultContextLogging {
 
   def testResources: Resource[IO, TestResources] = {
     for {
-      resources <- appResources
-      testUtils <- TestUtils.fromConfig(conf.db, log)
-      keychainClient = new KeychainGrpcClient(resources.keychainGrpcChannel)
-    } yield       TestResources(
+      resources           <- appResources
+      testUtils           <- TestUtils.fromConfig(conf.db, log)
+      keychainGrpcChannel <- grpcManagedChannel(conf.keychain)
+    } yield TestResources(
       resources,
-      keychainClient,
+      resources.keychainClient,
       GrpcClient.resolveClient(
         keychain.KeychainServiceFs2Grpc.stub[IO],
-        resources.keychainGrpcChannel,
+        keychainGrpcChannel,
         "keychainClient"
       ),
-      testUtils,
+      testUtils
     )
   }
 

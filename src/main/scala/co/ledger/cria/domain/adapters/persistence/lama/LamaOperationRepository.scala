@@ -26,8 +26,7 @@ final class LamaOperationRepository(
 
   override def saveBlocks(coin: Coin, blocks: List[BlockView])(implicit
       lc: CriaLogContext
-  ): IO[Int] =
-    IO.pure(blocks.size)
+  ): IO[Unit] = IO.unit
 
   override def saveOperation(
       coin: Coin,

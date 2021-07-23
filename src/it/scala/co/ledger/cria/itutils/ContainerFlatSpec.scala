@@ -4,17 +4,17 @@ import cats.effect.{ContextShift, IO, Resource, Timer}
 import cats.implicits.catsSyntaxFlatMapOps
 import co.ledger.cria.App
 import co.ledger.cria.App.ClientResources
-import co.ledger.cria.clients.explorer.ExplorerHttpClient
 import co.ledger.cria.clients.protocol.grpc.GrpcClient
 import co.ledger.cria.config.{Config, GrpcClientConfig, PersistenceConfig}
-import co.ledger.cria.domain.adapters.explorer.ExplorerClientAdapter
-import co.ledger.cria.domain.adapters.keychain.KeychainGrpcClient
 import co.ledger.cria.domain.adapters.persistence.lama.LamaDb
 import co.ledger.cria.domain.adapters.persistence.tee.TeeConfig
 import co.ledger.cria.domain.adapters.persistence.wd.WalletDaemonDb
+import co.ledger.cria.domain.models.account.{AccountUid, WalletUid}
 import co.ledger.cria.domain.services.KeychainClient
 import co.ledger.cria.domain.services.interpreter.{Interpreter, InterpreterImpl}
+import co.ledger.cria.e2e.RegisterRequest
 import co.ledger.cria.logging.DefaultContextLogging
+import co.ledger.cria.utils.ResourceUtils.grpcManagedChannel
 import co.ledger.protobuf.bitcoin.keychain
 import co.ledger.protobuf.bitcoin.keychain.KeychainServiceFs2Grpc
 import com.dimafeng.testcontainers.{DockerComposeContainer, ExposedService, ForAllTestContainer, ServiceLogConsumer}
@@ -52,11 +52,18 @@ trait ContainerFlatSpec extends AnyFlatSpec with ForAllTestContainer with Defaul
       )
     )
 
-  def setup: IO[Unit] =
+  def setupDB: IO[Unit] =
     testResources.use{r =>
       val utils = r.testUtils
       utils.clean >> utils.migrate
     }
+
+  def setupAccount(request: RegisterRequest): IO[Int] = {
+    testResources.use { tr =>
+      val utils = tr.testUtils
+      utils.setupAccount(AccountUid(request.accountUid), WalletUid(request.walletUid))
+    }
+  }
 
   def appResources: Resource[IO, ClientResources] =
     App.makeClientResources(conf)
@@ -68,25 +75,20 @@ trait ContainerFlatSpec extends AnyFlatSpec with ForAllTestContainer with Defaul
     for {
       resources <- appResources
       testUtils <- TestUtils.fromConfig(conf.db, log)
-      explorerClient = {
-        ExplorerClientAdapter.explorerForCoin(
-          new ExplorerHttpClient(resources.httpClient, conf.explorer, _)
-        ) _
-      }
       interpreterClient = new InterpreterImpl(
-        explorerClient,
+        resources.explorerClient,
         resources.persistenceFacade
       )
-      keychainClient = new KeychainGrpcClient(resources.keychainGrpcChannel)
+      keychainGrpcChannel <- grpcManagedChannel(conf.keychain)
     } yield
 
       TestResources(
         resources,
         interpreterClient,
-        keychainClient,
+        resources.keychainClient,
         GrpcClient.resolveClient(
           keychain.KeychainServiceFs2Grpc.stub[IO],
-          resources.keychainGrpcChannel,
+          keychainGrpcChannel,
           "keychainClient"
         ),
         testUtils,

@@ -49,11 +49,17 @@ object LamaTransactionQueries extends DoobieLogHandler {
        """.query[BlockView].stream
   }
 
-  def fetchTransactions(accountUid: AccountUid, sort: Sort): Stream[ConnectionIO, TransactionRow] =
+  def fetchTransactions(
+      accountUid: AccountUid,
+      sort: Sort,
+      hashes: NonEmptyList[TxHash]
+  ): Stream[ConnectionIO, TransactionRow] =
     (sql"""SELECT account_id, id, hash, block_hash, block_height, block_time, received_at, lock_time, fees, confirmations
           FROM transaction
           WHERE account_id = $accountUid
-       """ ++ Fragment.const(s"ORDER BY block_time $sort, hash $sort"))
+            AND
+       """ ++ Fragments.in(fr"hash", hashes)
+      ++ Fragment.const(s"ORDER BY block_time $sort, hash $sort"))
       .query[TransactionRow]
       .stream
 

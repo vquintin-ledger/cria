@@ -34,7 +34,7 @@ class LamaOperationComputationService(
       hashes: NonEmptyList[TxHash]
   ): Stream[IO, TransactionView] =
     LamaTransactionQueries
-      .fetchTransactions(accountId, sort)
+      .fetchTransactions(accountId, sort, hashes)
       .flatMap(row =>
         LamaTransactionQueries
           .fetchTransactionDetails(accountId, sort, NonEmptyList.one(row.hash))

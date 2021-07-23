@@ -199,7 +199,7 @@ class InterpreterIT extends ContainerFlatSpec with Matchers {
 //  }
 
   "an unconfirmed transaction" should "have a full lifecycle" in IOAssertion {
-    setup *>
+    setupDB *>
       testResources.use { tr =>
         val interpreter =
           new InterpreterImpl(_ => explorer, tr.clients.persistenceFacade)
@@ -251,7 +251,7 @@ class InterpreterIT extends ContainerFlatSpec with Matchers {
   }
 
   "an unconfirmed transaction" should "be updated if it's been mined" in IOAssertion {
-    setup *>
+    setupDB *>
       testResources.use { tr =>
         val interpreter =
           new InterpreterImpl(_ => explorer, tr.clients.persistenceFacade)
@@ -303,7 +303,7 @@ class InterpreterIT extends ContainerFlatSpec with Matchers {
   }
 
   "an account" should "go through multiple cycles" in IOAssertion {
-    setup *>
+    setupDB *>
       testResources.use { tr =>
         val interpreter =
           new InterpreterImpl(_ => explorer, tr.clients.persistenceFacade)

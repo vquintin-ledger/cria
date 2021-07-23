@@ -36,7 +36,7 @@ final class OperationRepositoryTee(
 
   override def saveBlocks(coin: Coin, blocks: List[BlockView])(implicit
       lc: CriaLogContext
-  ): IO[Int] =
+  ): IO[Unit] =
     combiner.combineAction(
       primary.saveBlocks(coin, blocks),
       secondary.saveBlocks(coin, blocks)

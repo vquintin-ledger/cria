@@ -3,13 +3,13 @@ package co.ledger.cria
 import cats.effect.{ExitCode, IO, IOApp, Resource}
 import co.ledger.cria.logging.DefaultContextLogging
 import co.ledger.cria.utils.ResourceUtils.grpcManagedChannel
-import io.grpc.{ManagedChannel, Server}
-import org.http4s.client.Client
+import io.grpc.Server
 import pureconfig.ConfigSource
 import cats.implicits._
 import co.ledger.cria.cli.CommandLineOptions
-import co.ledger.cria.config.{Config, PersistenceConfig}
+import co.ledger.cria.config.{Config, GrpcClientConfig, PersistenceConfig}
 import co.ledger.cria.clients.explorer.ExplorerHttpClient
+import co.ledger.cria.clients.explorer.models.ExplorerConfig
 import co.ledger.cria.clients.protocol.http.Clients
 import co.ledger.cria.domain.CriaModule
 import co.ledger.cria.domain.adapters.explorer.ExplorerClientAdapter
@@ -17,16 +17,17 @@ import co.ledger.cria.domain.adapters.keychain.KeychainGrpcClient
 import co.ledger.cria.domain.adapters.persistence.lama
 import co.ledger.cria.domain.adapters.persistence.wd
 import co.ledger.cria.domain.adapters.persistence.tee
+import co.ledger.cria.domain.models.interpreter.Coin
 import co.ledger.cria.domain.models.{SynchronizationParameters, SynchronizationResult}
-import co.ledger.cria.domain.services.HealthService
+import co.ledger.cria.domain.services.{ExplorerClient, HealthService, KeychainClient}
 import co.ledger.cria.domain.services.interpreter.PersistenceFacade
 import co.ledger.cria.utils.ResourceUtils
 
 object App extends IOApp with DefaultContextLogging {
 
   case class ClientResources(
-      httpClient: Client[IO],
-      keychainGrpcChannel: ManagedChannel,
+      explorerClient: Coin => ExplorerClient,
+      keychainClient: KeychainClient,
       persistenceFacade: PersistenceFacade
   )
 
@@ -55,12 +56,6 @@ object App extends IOApp with DefaultContextLogging {
     resources
       .use { resources =>
         val clientResources = resources.clients
-        val keychainClient  = new KeychainGrpcClient(clientResources.keychainGrpcChannel)
-        val explorerClient =
-          ExplorerClientAdapter
-            .explorerForCoin(
-              new ExplorerHttpClient(clientResources.httpClient, conf.explorer, _)
-            ) _
 
         val cliOptions = resources.args
 
@@ -74,7 +69,11 @@ object App extends IOApp with DefaultContextLogging {
         )
 
         val criaModule =
-          new CriaModule(clientResources.persistenceFacade, keychainClient, explorerClient)
+          new CriaModule(
+            clientResources.persistenceFacade,
+            clientResources.keychainClient,
+            clientResources.explorerClient
+          )
 
         for {
           _          <- IO(resources.server.start()) *> log.info("Worker started")
@@ -103,10 +102,21 @@ object App extends IOApp with DefaultContextLogging {
 
   def makeClientResources(conf: Config): Resource[IO, ClientResources] =
     for {
-      httpClient          <- Clients.htt4s
-      keychainGrpcChannel <- grpcManagedChannel(conf.keychain)
-      persistenceFacade   <- makePersistenceFacade(conf.db)
-    } yield ClientResources(httpClient, keychainGrpcChannel, persistenceFacade)
+      explorerClient    <- makeExplorerClient(conf.explorer)
+      keychainClient    <- makeKeychainClient(conf.keychain)
+      persistenceFacade <- makePersistenceFacade(conf.db)
+    } yield ClientResources(explorerClient, keychainClient, persistenceFacade)
+
+  def makeExplorerClient(conf: ExplorerConfig): Resource[IO, Coin => ExplorerClient] =
+    Clients.htt4s.map(c =>
+      ExplorerClientAdapter
+        .explorerForCoin(
+          new ExplorerHttpClient(c, conf, _)
+        ) _
+    )
+
+  def makeKeychainClient(config: GrpcClientConfig): Resource[IO, KeychainClient] =
+    grpcManagedChannel(config).map(new KeychainGrpcClient(_))
 
   def makePersistenceFacade(config: PersistenceConfig): Resource[IO, PersistenceFacade] =
     PersistenceConfig.foldM[Resource[IO, *], PersistenceFacade](
