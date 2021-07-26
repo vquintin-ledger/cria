@@ -1,4 +1,4 @@
-package co.ledger.cria.e2e
+package co.ledger.cria.e2e.recovery
 
 import cats.effect.{ContextShift, IO, Timer}
 import cats.implicits.catsSyntaxFlatMapOps

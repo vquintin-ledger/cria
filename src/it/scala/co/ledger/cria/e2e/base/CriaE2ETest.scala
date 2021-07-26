@@ -1,13 +1,20 @@
-package co.ledger.cria.e2e
+package co.ledger.cria.e2e.base
 
 import cats.effect.ExitCode
 import co.ledger.cria.App
-import co.ledger.cria.itutils.ContainerFlatSpec
 import co.ledger.cria.domain.models.keychain.KeychainId
+import co.ledger.cria.e2e.{E2EHelper, KeychainHelper, RegisterRequest, TestCase}
+import co.ledger.cria.itutils.ContainerSpec
 import co.ledger.cria.utils.IOAssertion
+import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
-class CriaE2ETest extends ContainerFlatSpec with KeychainHelper with E2EHelper with Matchers {
+class CriaE2ETest
+    extends AnyFlatSpec
+    with ContainerSpec
+    with KeychainHelper
+    with E2EHelper
+    with Matchers {
 
   readTestCases().foreach { tc =>
     val request = tc.registerRequest

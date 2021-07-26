@@ -1,17 +1,21 @@
-package co.ledger.cria.e2e
+package co.ledger.cria.e2e.recovery
 
-import cats.effect.{IO, Resource}
 import cats.effect.concurrent.Ref
-import co.ledger.cria.domain.CriaModule
-import co.ledger.cria.domain.models.{SynchronizationParameters, SynchronizationResult}
-import co.ledger.cria.domain.models.account.{AccountUid, WalletUid}
-import co.ledger.cria.domain.models.interpreter.{Coin, SyncId}
-import co.ledger.cria.itutils.ContainerFlatSpec
-import co.ledger.cria.utils.IOAssertion
+import cats.effect.{IO, Resource}
 import cats.implicits._
-import co.ledger.cria.domain.models.SynchronizationResult.{SynchronizationFailure, SynchronizationSuccess}
+import co.ledger.cria.domain.CriaModule
+import co.ledger.cria.domain.models.interpreter.Coin
+import co.ledger.cria.domain.models.SynchronizationParameters
+import co.ledger.cria.e2e.{E2EHelper, KeychainHelper, SyncResult, TestCase}
+import co.ledger.cria.itutils.ContainerSpec
+import co.ledger.cria.utils.IOAssertion
+import org.scalatest.flatspec.AnyFlatSpec
 
-final class RecoveryE2ETest extends ContainerFlatSpec with KeychainHelper with E2EHelper {
+final class RecoveryE2ETest
+    extends AnyFlatSpec
+    with ContainerSpec
+    with KeychainHelper
+    with E2EHelper {
 
   private val testCase: TestCase = TestCase.readJson("test-accounts-btc.json").head
 
@@ -22,7 +26,7 @@ final class RecoveryE2ETest extends ContainerFlatSpec with KeychainHelper with E
         for {
           _          <- setupDB
           _          <- setupAccount(testCase.registerRequest)
-          syncParams <- makeSyncParameters
+          syncParams <- makeSyncParameters(testCase.registerRequest)
           failure    <- runCriaWithFailure(syncParams, failureIndex).attempt
           actual     <- runCriaSuccessfully(syncParams)
         } yield {
@@ -61,26 +65,6 @@ final class RecoveryE2ETest extends ContainerFlatSpec with KeychainHelper with E
       } yield syncResult
     }
 
-  private def adaptCriaResult(r: SynchronizationResult): IO[Unit] =
-    r match {
-      case SynchronizationSuccess(_, _) => IO.unit
-      case SynchronizationFailure(_, throwable) => IO.raiseError(throwable)
-    }
-
-  private def makeSyncParameters: IO[SynchronizationParameters] = {
-    val rr = testCase.registerRequest
-    makeKeychainId(rr).map { keychainId =>
-      SynchronizationParameters(
-        keychainId = keychainId,
-        coin = rr.coin,
-        syncId = SyncId(rr.syncId),
-        blockHash = None,
-        accountUid = AccountUid(rr.accountUid),
-        walletUid = WalletUid(rr.walletUid)
-      )
-    }
-  }
-
   private def getNumberOfIO: IO[Int] = {
     def count(counter: Ref[IO, Int]): IO[Unit] = {
       val increment = counter.update(_ + 1)
@@ -88,7 +72,7 @@ final class RecoveryE2ETest extends ContainerFlatSpec with KeychainHelper with E
         for {
           _              <- setupDB
           _              <- setupAccount(testCase.registerRequest)
-          syncParameters <- makeSyncParameters
+          syncParameters <- makeSyncParameters(testCase.registerRequest)
           _              <- module.synchronizer.run(syncParameters)
         } yield ()
       }

@@ -3,11 +3,10 @@ package co.ledger.cria.domain.services.interpreter
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import java.util.UUID
-
 import cats.data.NonEmptyList
 import cats.effect.IO
 import co.ledger.cria.domain.mocks.ExplorerClientMock
-import co.ledger.cria.itutils.ContainerFlatSpec
+import co.ledger.cria.itutils.ContainerSpec
 import co.ledger.cria.utils.IOAssertion
 import co.ledger.cria.logging.CriaLogContext
 import co.ledger.cria.domain.models.{TxHash, keychain}
@@ -23,8 +22,9 @@ import co.ledger.cria.domain.models.interpreter.{
 import co.ledger.cria.domain.models.keychain.{AccountAddress, ChangeType, KeychainId}
 import org.scalatest.matchers.should.Matchers
 import fs2.Stream
+import org.scalatest.flatspec.AnyFlatSpec
 
-class InterpreterIT extends ContainerFlatSpec with Matchers {
+class InterpreterIT extends AnyFlatSpec with ContainerSpec with Matchers {
 
   val explorer = new ExplorerClientMock()
 
