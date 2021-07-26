@@ -5,10 +5,14 @@ import co.ledger.cria.domain.models.interpreter.Coin
 import co.ledger.cria.itutils.models.keychain.AccountKey.Xpub
 import co.ledger.cria.itutils.models.keychain.Scheme
 import co.ledger.cria.clients.explorer.models.circeImplicits._
-import co.ledger.cria.domain.models.Sort
+import co.ledger.cria.domain.models.{Sort, SynchronizationResult}
+import co.ledger.cria.domain.models.SynchronizationResult.{
+  SynchronizationFailure,
+  SynchronizationSuccess
+}
 import co.ledger.cria.domain.models.account.{Account, AccountUid}
 import co.ledger.cria.domain.models.keychain.KeychainId
-import co.ledger.cria.itutils.ContainerFlatSpec
+import co.ledger.cria.itutils.ContainerSpec
 import io.circe.Decoder
 import io.circe.generic.extras.semiauto.deriveConfiguredDecoder
 import io.circe.parser.decode
@@ -16,7 +20,7 @@ import io.circe.parser.decode
 import java.util.UUID
 import scala.io.Source
 
-trait E2EHelper { cfs: ContainerFlatSpec =>
+trait E2EHelper { cfs: ContainerSpec =>
 
   def getSyncResult(accountUid: String, keychainId: KeychainId, coin: Coin): IO[SyncResult] =
     testResources.use { res =>
@@ -32,6 +36,12 @@ trait E2EHelper { cfs: ContainerFlatSpec =>
         balance.received.longValue,
         balance.sent.longValue
       )
+    }
+
+  def adaptCriaResult(r: SynchronizationResult): IO[Unit] =
+    r match {
+      case SynchronizationSuccess(_, _)         => IO.unit
+      case SynchronizationFailure(_, throwable) => IO.raiseError(throwable)
     }
 }
 
@@ -62,7 +72,8 @@ case class RegisterRequest(
 object RegisterRequest {
   implicit val decoderXpub: Decoder[Xpub] = deriveConfiguredDecoder[Xpub]
 
-  implicit val decoderRegisterRequest: Decoder[RegisterRequest] = deriveConfiguredDecoder[RegisterRequest]
+  implicit val decoderRegisterRequest: Decoder[RegisterRequest] =
+    deriveConfiguredDecoder[RegisterRequest]
 }
 
 case class SyncResult(

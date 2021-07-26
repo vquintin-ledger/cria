@@ -17,15 +17,20 @@ import co.ledger.cria.logging.DefaultContextLogging
 import co.ledger.cria.utils.ResourceUtils.grpcManagedChannel
 import co.ledger.protobuf.bitcoin.keychain
 import co.ledger.protobuf.bitcoin.keychain.KeychainServiceFs2Grpc
-import com.dimafeng.testcontainers.{DockerComposeContainer, ExposedService, ForAllTestContainer, ServiceLogConsumer}
+import com.dimafeng.testcontainers.{
+  DockerComposeContainer,
+  ExposedService,
+  ForAllTestContainer,
+  ServiceLogConsumer
+}
 import io.grpc.Metadata
-import org.scalatest.flatspec.AnyFlatSpec
+import org.scalatest.Suite
 import pureconfig.ConfigSource
 
 import java.io.File
 import scala.concurrent.ExecutionContext
 
-trait ContainerFlatSpec extends AnyFlatSpec with ForAllTestContainer with DefaultContextLogging {
+trait ContainerSpec extends ForAllTestContainer with DefaultContextLogging { s: Suite =>
 
   implicit val cs: ContextShift[IO] = IO.contextShift(ExecutionContext.global)
   implicit val t: Timer[IO]         = IO.timer(ExecutionContext.global)
@@ -53,7 +58,7 @@ trait ContainerFlatSpec extends AnyFlatSpec with ForAllTestContainer with Defaul
     )
 
   def setupDB: IO[Unit] =
-    testResources.use{r =>
+    testResources.use { r =>
       val utils = r.testUtils
       utils.clean >> utils.migrate
     }
@@ -80,30 +85,28 @@ trait ContainerFlatSpec extends AnyFlatSpec with ForAllTestContainer with Defaul
         resources.persistenceFacade
       )
       keychainGrpcChannel <- grpcManagedChannel(conf.keychain)
-    } yield
-
-      TestResources(
-        resources,
-        interpreterClient,
-        resources.keychainClient,
-        GrpcClient.resolveClient(
-          keychain.KeychainServiceFs2Grpc.stub[IO],
-          keychainGrpcChannel,
-          "keychainClient"
-        ),
-        testUtils,
-      )
+    } yield TestResources(
+      resources,
+      interpreterClient,
+      resources.keychainClient,
+      GrpcClient.resolveClient(
+        keychain.KeychainServiceFs2Grpc.stub[IO],
+        keychainGrpcChannel,
+        "keychainClient"
+      ),
+      testUtils
+    )
 
   case class TestResources(
-                            clients: ClientResources,
-                            interpreter: Interpreter,
-                            keychainClient: KeychainClient,
-                            rawKeychainClient: KeychainServiceFs2Grpc[IO, Metadata],
-                            testUtils: TestUtils,
+      clients: ClientResources,
+      interpreter: Interpreter,
+      keychainClient: KeychainClient,
+      rawKeychainClient: KeychainServiceFs2Grpc[IO, Metadata],
+      testUtils: TestUtils
   )
 
   lazy val conf: Config = {
-    val defaultConf        = ConfigSource.default.loadOrThrow[Config]
+    val defaultConf = ConfigSource.default.loadOrThrow[Config]
     defaultConf.copy(
       keychain = new GrpcClientConfig(
         container.getServiceHost("bitcoin-keychain_1", keychainPort),
@@ -119,7 +122,11 @@ trait ContainerFlatSpec extends AnyFlatSpec with ForAllTestContainer with Defaul
       val mappedPostgresHost = container.getServiceHost("postgres_1", postgresPort)
       val mappedPostgresPort = container.getServicePort("postgres_1", postgresPort)
       PersistenceConfig.WalletDaemon(
-        db.copy(postgres = db.postgres.copy(url = s"jdbc:postgresql://$mappedPostgresHost:$mappedPostgresPort/wd_local_pool"))
+        db.copy(postgres =
+          db.postgres.copy(url =
+            s"jdbc:postgresql://$mappedPostgresHost:$mappedPostgresPort/wd_local_pool"
+          )
+        )
       )
     }
 
@@ -127,7 +134,11 @@ trait ContainerFlatSpec extends AnyFlatSpec with ForAllTestContainer with Defaul
       val mappedPostgresHost = container.getServiceHost("postgres_1", postgresPort)
       val mappedPostgresPort = container.getServicePort("postgres_1", postgresPort)
       PersistenceConfig.Lama(
-        db.copy(postgres = db.postgres.copy(url = s"jdbc:postgresql://$mappedPostgresHost:$mappedPostgresPort/test_lama_btc"))
+        db.copy(postgres =
+          db.postgres.copy(url =
+            s"jdbc:postgresql://$mappedPostgresHost:$mappedPostgresPort/test_lama_btc"
+          )
+        )
       )
     }
 

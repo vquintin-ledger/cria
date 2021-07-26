@@ -1,17 +1,18 @@
-package co.ledger.cria.e2e
+package co.ledger.cria.e2e.recovery
 
 import cats.data.NonEmptyList
 import cats.effect.IO
 import cats.implicits._
-import co.ledger.cria.domain.models.{Sort, TxHash}
 import co.ledger.cria.domain.models.account.{AccountUid, WalletUid}
-import co.ledger.cria.domain.models.interpreter.{AccountTxView, BlockView, Coin, Operation, TransactionAmounts, TransactionView}
+import co.ledger.cria.domain.models.interpreter._
 import co.ledger.cria.domain.models.keychain.AccountAddress
-import co.ledger.cria.domain.services.interpreter.{OperationComputationService, OperationRepository, PersistenceFacade, PostSyncCheckService, TransactionRecordRepository}
+import co.ledger.cria.domain.models.{Sort, TxHash}
+import co.ledger.cria.domain.services.interpreter._
 import co.ledger.cria.logging.CriaLogContext
 import fs2.Pipe
 
-final class PersistenceFacadeAccessRunBefore(persistenceFacade: PersistenceFacade, action: IO[Unit]) extends PersistenceFacade {
+final class PersistenceFacadeAccessRunBefore(persistenceFacade: PersistenceFacade, action: IO[Unit])
+    extends PersistenceFacade {
   override def transactionRecordRepository: TransactionRecordRepository =
     new TransactionRecordRepository {
       val delegate = persistenceFacade.transactionRecordRepository
@@ -30,13 +31,23 @@ final class PersistenceFacadeAccessRunBefore(persistenceFacade: PersistenceFacad
     new OperationComputationService {
       val delegate = persistenceFacade.operationComputationService
 
-      override def flagInputsAndOutputs(accountId: AccountUid, accountAddresses: List[AccountAddress]): IO[Unit] =
+      override def flagInputsAndOutputs(
+          accountId: AccountUid,
+          accountAddresses: List[AccountAddress]
+      ): IO[Unit] =
         doBeforeAction(delegate.flagInputsAndOutputs(accountId, accountAddresses))
 
-      override def getUncomputedOperations(accountId: AccountUid, sort: Sort): fs2.Stream[IO, TransactionAmounts] =
+      override def getUncomputedOperations(
+          accountId: AccountUid,
+          sort: Sort
+      ): fs2.Stream[IO, TransactionAmounts] =
         doBeforeStream(delegate.getUncomputedOperations(accountId, sort))
 
-      override def fetchTransactions(accountId: AccountUid, sort: Sort, hashes: NonEmptyList[TxHash]): fs2.Stream[IO, TransactionView] =
+      override def fetchTransactions(
+          accountId: AccountUid,
+          sort: Sort,
+          hashes: NonEmptyList[TxHash]
+      ): fs2.Stream[IO, TransactionView] =
         doBeforeStream(delegate.fetchTransactions(accountId, sort, hashes))
     }
 
@@ -50,13 +61,24 @@ final class PersistenceFacadeAccessRunBefore(persistenceFacade: PersistenceFacad
     new OperationRepository {
       val delegate = persistenceFacade.operationRepository
 
-      override def saveOperation(coin: Coin, accountUid: AccountUid, walletUid: WalletUid, op: Operation): IO[Int] =
+      override def saveOperation(
+          coin: Coin,
+          accountUid: AccountUid,
+          walletUid: WalletUid,
+          op: Operation
+      ): IO[Int] =
         doBeforeAction(delegate.saveOperation(coin, accountUid, walletUid, op))
 
-      override def saveTransaction(coin: Coin, accountUid: AccountUid, transactionView: TransactionView): IO[Unit] =
+      override def saveTransaction(
+          coin: Coin,
+          accountUid: AccountUid,
+          transactionView: TransactionView
+      ): IO[Unit] =
         doBeforeAction(delegate.saveTransaction(coin, accountUid, transactionView))
 
-      override def saveBlocks(coin: Coin, blocks: List[BlockView])(implicit lc: CriaLogContext): IO[Unit] =
+      override def saveBlocks(coin: Coin, blocks: List[BlockView])(implicit
+          lc: CriaLogContext
+      ): IO[Unit] =
         doBeforeAction(delegate.saveBlocks(coin, blocks))
 
       override def deleteRejectedTransaction(accountId: AccountUid, hash: TxHash): IO[String] =

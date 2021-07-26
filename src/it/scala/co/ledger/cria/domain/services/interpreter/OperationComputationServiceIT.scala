@@ -1,7 +1,6 @@
 package co.ledger.cria.domain.services.interpreter
 
 import java.time.Instant
-
 import fs2.Stream
 import cats.data.NonEmptyList
 import co.ledger.cria.domain.models.account.{AccountUid, WalletUid}
@@ -18,13 +17,15 @@ import co.ledger.cria.domain.models.interpreter.{
 }
 import co.ledger.cria.domain.models.{Sort, TxHash, keychain}
 import co.ledger.cria.domain.models.keychain.{AccountAddress, ChangeType}
-import co.ledger.cria.itutils.ContainerFlatSpec
+import co.ledger.cria.itutils.ContainerSpec
 import co.ledger.cria.logging.DefaultContextLogging
 import co.ledger.cria.utils.IOAssertion
+import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
 class OperationComputationServiceIT
-    extends ContainerFlatSpec
+    extends AnyFlatSpec
+    with ContainerSpec
     with Matchers
     with DefaultContextLogging {
 
