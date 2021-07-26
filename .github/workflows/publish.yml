@@ -31,14 +31,26 @@ jobs:
             lama-docker-cache-${{github.ref}}-${{ hashFiles('build.sbt') }}
             lama-docker-cache-${{github.ref}}
             lama-docker-cache-
-      - name: Login to GitHub Container Registry
-        uses: docker/login-action@v1
+      - name: Create docker image
+        run: sbt "${{ matrix.component }}/docker:stage"
+      - name: Build and Publish docker
+        uses: docker/build-push-action@v1
         with:
-          registry: docker.pkg.github.com
+          repository: cria
+          registry: docker.pkg.github.com/ledgerhq/cria
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Create docker image
-        run: sbt "${{ matrix.component }}/docker:publish"
+          tag_with_ref: true
+          path: target/docker/stage
+      - name: Build and Publish docker
+        uses: docker/build-push-action@v1
+        with:
+          repository: ledgerhq/cria
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+          tag_with_ref: true
+          path: target/docker/stage
     env:
       LOG_APPENDER: STDOUT
 

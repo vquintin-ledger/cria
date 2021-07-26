@@ -45,7 +45,8 @@ lazy val buildInfoSettings = Seq(
 
 lazy val dockerSettings = Seq(
   dockerBaseImage := "openjdk:14.0.2",
-  dockerRepository := Some("docker.pkg.github.com/ledgerhq/cria"),
+  dockerRepository := Some("ghcr.io"),
+  dockerUsername := Some("ledgerhq"),
   dockerUpdateLatest := true, //should always update latest
   javaAgents += "com.datadoghq" % "dd-java-agent" % "0.78.3"
 )
