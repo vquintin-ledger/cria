@@ -26,9 +26,10 @@ object Dependencies extends DependencyBuilders with LibraryManagementSyntax {
     "eu.timepit" %% "refined-cats" % refinedVersion
   )
 
-  val H2Version     = "1.4.200"
-  val flywayVersion = "7.8.1"
-  val doobieVersion = "0.13.1"
+  val H2Version       = "1.4.200"
+  val flywayVersion   = "7.8.1"
+  val doobieVersion   = "0.13.1"
+  val postgresVersion = "42.2.22"
   val postgres: Seq[ModuleID] = Seq(
     "com.h2database" % "h2"              % H2Version,
     "org.flywaydb"   % "flyway-core"     % flywayVersion,
@@ -36,7 +37,8 @@ object Dependencies extends DependencyBuilders with LibraryManagementSyntax {
     "org.tpolecat"  %% "doobie-postgres" % doobieVersion,
     "org.tpolecat"  %% "doobie-hikari"   % doobieVersion,
     "org.tpolecat"  %% "doobie-h2"       % doobieVersion,
-    "org.tpolecat"  %% "doobie-refined"  % doobieVersion
+    "org.tpolecat"  %% "doobie-refined"  % doobieVersion,
+    "org.postgresql" % "postgresql"      % postgresVersion
   )
 
   val pureconfigVersion   = "0.15.0"

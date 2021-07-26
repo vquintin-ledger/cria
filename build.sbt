@@ -30,6 +30,7 @@ addCompilerPlugin("org.typelevel" %% "kind-projector" % "0.10.3")
 lazy val End2EndTest = config("e2e") extend Test
 scalaSource in End2EndTest := baseDirectory.value / "src/it/scala"
 unmanagedResourceDirectories in End2EndTest += baseDirectory.value / "src" / "it" / "e2e-resources"
+parallelExecution in End2EndTest := false
 
 // Assign the proper tests to each test conf
 def e2eFilter(name: String): Boolean = name endsWith "E2ETest"
