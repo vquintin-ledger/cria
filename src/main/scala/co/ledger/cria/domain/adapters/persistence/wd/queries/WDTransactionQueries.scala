@@ -19,12 +19,13 @@ object WDTransactionQueries extends DoobieLogHandler {
       outputs: List[OutputView]
   )
 
-  //FIXME: fetch from WD table
   def fetchMostRecentBlocks(accountId: AccountUid): Stream[ConnectionIO, BlockView] = {
-    sql"""SELECT DISTINCT block_hash, block_height, block_time
-          FROM transaction
-          WHERE account_uid = $accountId
-          ORDER BY block_height DESC
+    sql"""SELECT DISTINCT b.hash, b.height, b."time"::timestamp
+          FROM blocks b
+          INNER JOIN operations op
+            ON b.uid = op.block_uid
+          WHERE op.account_uid = $accountId
+          ORDER BY b.height DESC
           LIMIT 200 -- the biggest reorg that happened on bitcoin was 53 blocks long
        """.query[BlockView].stream
   }

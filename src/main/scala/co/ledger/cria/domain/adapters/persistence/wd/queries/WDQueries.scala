@@ -177,10 +177,31 @@ object WDQueries extends DoobieLogHandler {
     WHERE hash = $hash""".update.run
   }
 
-  def deleteBlocksFrom(blockHeight: Long): doobie.ConnectionIO[Int] =
-    sql"""DELETE
+  def removeFromCursor(blockHeight: Long): doobie.ConnectionIO[Int] = {
+    // search inputs attached to blocks to remove
+    sql"""SELECT ti.input_uid
+          FROM bitcoin_transaction_inputs ti
+          INNER JOIN bitcoin_transactions tx
+            ON ti.transaction_uid = tx.transaction_uid
+          INNER JOIN blocks b
+            ON b.uid = tx.block_uid
+          WHERE b.height >= $blockHeight
+       """
+      .query[String]
+      .nel //TODO: what if there's no input ?
+      .flatMap { in =>
+        // delete inputs
+        sql"""DELETE FROM bitcoin_inputs
+          WHERE ${Fragments.in(fr"uid", in)}
+         """.update.run
+      }
+      .flatMap { _ =>
+        // delete blocks
+        sql"""DELETE
           FROM blocks
           WHERE height >= $blockHeight
        """.update.run
+      }
+  }
 
 }

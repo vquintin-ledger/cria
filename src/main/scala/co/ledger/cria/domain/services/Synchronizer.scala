@@ -70,6 +70,7 @@ class Synchronizer(
     // sync the whole account per streamed batch
     for {
 
+      //TODO: Move memool sync after reorg
       addressesUsedByMempool <- (bookkeeper
         .record[Confirmation.Unconfirmed](
           account.coin,
@@ -91,11 +92,14 @@ class Synchronizer(
       addressesUsed <- Stream
         .emit(previousBlockState)
         .filter {
-          case Some(previous) => previous < lastMinedBlock.block
-          case None           => true
+          case Some(previousBlock) => previousBlock < lastMinedBlock.block
+          case None                => true
         }
         .evalTap(b => log.info(s"Syncing blockchain transactions from cursor state: $b"))
-        .evalMap(b => b.map(rewindToLastValidBlock(account, _, syncParams.syncId)).sequence)
+        .evalMap(b =>
+          b.map(previousBlock => rewindToLastValidBlock(account, previousBlock, syncParams.syncId))
+            .sequence
+        )
         .evalMap { lastValidBlock =>
           (bookkeeper
             .record[Confirmation.Confirmed](

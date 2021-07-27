@@ -34,9 +34,9 @@ class CreateKeychainDev extends AnyFlatSpec with DefaultContextLogging {
       keychain <- makeKeychainId(
         RegisterRequest(
           Xpub(
-            "xpub6C3hkmDKqMgVR5JXnmj7g3Zm5fDdyfAqciXaTK6nubYHuwPZVyfq6mVPqRfe4kisVqZibNWgz7euv5EucEgHJCt7DjnoeVUrKoaqdoNQBsc"
+            "xpub6DEHKg8fgKcb9at2u9Xhjtx4tXGyWqUPQAx2zNCzr41gQRyCqpCn7onSoJU4VS96GXyCtAhhFxErnG2pGVvVexaqF7DEfqGGnGk7Havn7C2"
           ),
-          Scheme.Bip44,
+          Scheme.Bip84,
           20,
           Coin.Btc
         )

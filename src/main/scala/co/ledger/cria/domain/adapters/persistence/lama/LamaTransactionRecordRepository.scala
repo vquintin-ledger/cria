@@ -36,10 +36,6 @@ final class LamaTransactionRecordRepository(db: Transactor[IO], maxConcurrent: I
   override def removeFromCursor(accountId: AccountUid, blockHeight: Long): IO[Int] =
     LamaTransactionQueries
       .removeFromCursor(accountId, blockHeight)
-      .flatMap(_ =>
-        LamaTransactionQueries
-          .deleteUnconfirmedTransactions(accountId)
-      )
       .transact(db)
 
   override def getLastBlocks(accountId: AccountUid): Stream[IO, BlockView] =

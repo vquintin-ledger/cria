@@ -31,10 +31,9 @@ final class WDTransactionRecordRepository(db: Transactor[IO], maxConcurrent: Int
       }
 
   override def removeFromCursor(accountUid: AccountUid, blockHeight: Long): IO[Int] = {
-    // TODO: remove inputs...
-    // remove block & operations & transactions
+    // remove block & operations & transactions & inputs
     WDQueries
-      .deleteBlocksFrom(blockHeight)
+      .removeFromCursor(blockHeight)
       .transact(db)
   }
 

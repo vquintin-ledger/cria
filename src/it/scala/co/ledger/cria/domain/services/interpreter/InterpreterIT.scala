@@ -9,7 +9,7 @@ import co.ledger.cria.domain.mocks.ExplorerClientMock
 import co.ledger.cria.itutils.ContainerSpec
 import co.ledger.cria.utils.IOAssertion
 import co.ledger.cria.logging.CriaLogContext
-import co.ledger.cria.domain.models.{TxHash, keychain}
+import co.ledger.cria.domain.models.{Sort, TxHash, keychain}
 import co.ledger.cria.domain.models.account.{Account, AccountUid, WalletUid}
 import co.ledger.cria.domain.models.interpreter.{
   BlockHash,
@@ -20,6 +20,7 @@ import co.ledger.cria.domain.models.interpreter.{
   TransactionView
 }
 import co.ledger.cria.domain.models.keychain.{AccountAddress, ChangeType, KeychainId}
+import co.ledger.cria.itutils.models.GetUtxosResult
 import org.scalatest.matchers.should.Matchers
 import fs2.Stream
 import org.scalatest.flatspec.AnyFlatSpec
@@ -56,7 +57,7 @@ class InterpreterIT extends AnyFlatSpec with ContainerSpec with Matchers {
 
   private val time: Instant = Instant.parse("2019-04-04T10:03:22Z")
 
-  val block0: BlockView = BlockView(
+  val block: BlockView = BlockView(
     BlockHash.fromStringUnsafe("00000000000000000008c76a28e115319fb747eb29a7e0794526d0fe47608379"),
     570153,
     time
@@ -89,7 +90,7 @@ class InterpreterIT extends AnyFlatSpec with ContainerSpec with Matchers {
       0,
       Nil,
       List(OutputView(0, 80000, inputAddress.accountAddress, "script", None, None)),
-      Some(block0),
+      Some(block),
       1
     )
 
@@ -102,7 +103,7 @@ class InterpreterIT extends AnyFlatSpec with ContainerSpec with Matchers {
       20566,
       inputs,
       outputs,
-      Some(block0),
+      Some(block),
       1
     )
 
@@ -113,90 +114,87 @@ class InterpreterIT extends AnyFlatSpec with ContainerSpec with Matchers {
       .compile
       .drain
 
-//  "a transaction" should "have a full lifecycle" in IOAssertion {
-//    setup *>
-//      appResources.use { case ClientResources(_, _, db) =>
-//        val interpreter =
-//          new InterpreterImpl(_ => explorer, db, 1)
-//
-//        val utils = new TestUtils(db)
-//
-//        val block1 = BlockView(
-//          BlockHash.fromStringUnsafe(
-//            "0000000000000000000cc9cc204cf3b314d106e69afbea68f2ae7f9e5047ba74"
-//          ),
-//          block0.height + 1,
-//          time
-//        )
-//
-//        // intentionally disordered
-//        val blocksToSave = List(block1, block0)
-//
-//        explorer.addToBC(coinbaseTx)
-//        explorer.addToBC(insertTx)
-//
-//        for {
-//          _ <- utils.setupAccount(accountUid, walletUid)
-//          _ <- saveTxs(
-//            interpreter,
-//            List(
-//              coinbaseTx,
-//              insertTx.copy(
-//                hash = TxHash.fromStringUnsafe(
-//                  "1c66772c25c49d2baf9b2ca04aa72eea9cb998dc7dc66c0a704948d20a197349"
-//                ),
-//                block = Some(block1)
-//              )
-//            )
-//          )
-//
-//          blocks <- interpreter.getLastBlocks(accountUid)
-//
-//          _ <- interpreter.compute(account, walletUid)(
-//            List(inputAddress, outputAddress2)
-//          )
-//
-//          opsBeforeDeletionTotal <- utils.getOperationCount(accountUid)
-//
-//          resUtxoBeforeDeletion <- utils.getUtxos(
-//            accountUid,
-//            20,
-//            0,
-//            Sort.Ascending
-//          )
-//
-//          GetUtxosResult(utxosBeforeDeletion, utxosBeforeDeletionTotal, utxosBeforeDeletionTrunc) =
-//            resUtxoBeforeDeletion
-//
-//          _ <- interpreter.removeDataFromCursor(
-//            accountUid,
-//            Some(block0.height)
-//          )
-//
-//          opsAfterDeletionTotal <- utils.getOperationCount(accountUid)
-//
-//          blocksAfterDelete <- interpreter.getLastBlocks(accountUid)
-//        } yield {
-//          withClue(s"${blocksToSave.size} blocks should be saved") {
-//            blocks should be(blocksToSave.sortBy(_.height)(Ordering[Long].reverse))
-//          }
-//          withClue(s"There should be 2 ops before delete") {
-//            opsBeforeDeletionTotal shouldBe 2
-//          }
-//          withClue(s"There should be 1 utxo before delete") {
-//            utxosBeforeDeletion should have size 1
-//            utxosBeforeDeletionTotal shouldBe 1
-//            utxosBeforeDeletionTrunc shouldBe false
-//          }
-//          withClue(s"There should be no ops after delete") {
-//            opsAfterDeletionTotal shouldBe 0
-//          }
-//          withClue(s"There should be no block after delete") {
-//            blocksAfterDelete shouldBe empty
-//          }
-//        }
-//      }
-//  }
+  "a transaction" should "have a full lifecycle" in IOAssertion {
+    setupDB *>
+      testResources.use { tr =>
+        val interpreter =
+          new InterpreterImpl(_ => explorer, tr.clients.persistenceFacade)
+
+        val utils = tr.testUtils
+
+        val block1 = BlockView(
+          BlockHash.fromStringUnsafe(
+            "0000000000000000000cc9cc204cf3b314d106e69afbea68f2ae7f9e5047ba74"
+          ),
+          block.height + 1,
+          time
+        )
+
+        // intentionally disordered
+        val blocksToSave = List(block1, block)
+
+        explorer.addToBC(coinbaseTx)
+        explorer.addToBC(insertTx)
+
+        for {
+          _ <- utils.setupAccount(accountUid, walletUid)
+          _ <- saveTxs(
+            interpreter,
+            List(
+              coinbaseTx,
+              insertTx.copy(
+                hash = TxHash.fromStringUnsafe(
+                  "1c66772c25c49d2baf9b2ca04aa72eea9cb998dc7dc66c0a704948d20a197349"
+                ),
+                block = Some(block1)
+              )
+            )
+          )
+
+          _ <- interpreter.compute(account, walletUid)(
+            List(inputAddress, outputAddress2)
+          )
+
+          blocks                 <- interpreter.getLastBlocks(accountUid)
+          opsBeforeDeletionTotal <- utils.getOperationCount(accountUid)
+          resUtxoBeforeDeletion <- utils.getUtxos(
+            accountUid,
+            20,
+            0,
+            Sort.Ascending
+          )
+          GetUtxosResult(utxosBeforeDeletion, utxosBeforeDeletionTotal, utxosBeforeDeletionTrunc) =
+            resUtxoBeforeDeletion
+
+          _ <- interpreter.removeDataFromCursor(
+            accountUid,
+            block.height
+          )
+
+          opsAfterDeletionTotal <- utils.getOperationCount(accountUid)
+
+          blocksAfterDelete <- interpreter.getLastBlocks(accountUid)
+        } yield {
+          withClue(s"${blocksToSave.size} blocks should be saved, found: ${blocks.size}") {
+            blocks should be(blocksToSave.sortBy(_.height)(Ordering[Long].reverse))
+          }
+          withClue(s"There should be 2 ops before delete") {
+            opsBeforeDeletionTotal shouldBe 2
+          }
+          withClue(s"There should be 1 utxo before delete") {
+            utxosBeforeDeletion should have size 1
+            utxosBeforeDeletionTotal shouldBe 1
+            utxosBeforeDeletionTrunc shouldBe false
+          }
+          withClue(s"There should be no ops after delete") {
+            opsAfterDeletionTotal shouldBe 0
+          }
+          withClue(s"There should be no block after delete") {
+            blocksAfterDelete shouldBe empty
+          }
+        }
+      }
+  }
 
   "an unconfirmed transaction" should "have a full lifecycle" in IOAssertion {
     setupDB *>
@@ -283,7 +281,7 @@ class InterpreterIT extends AnyFlatSpec with ContainerSpec with Matchers {
           20566,
           inputs,
           outputs,
-          Some(block0),
+          Some(block),
           1
         )
 
