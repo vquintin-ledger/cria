@@ -86,13 +86,12 @@ object LamaTransactionQueries extends DoobieLogHandler {
   def deleteRejectedTransaction(
       accountId: AccountUid,
       hash: TxHash
-  ): doobie.ConnectionIO[String] = {
+  ): doobie.ConnectionIO[Int] = {
     sql"""DELETE FROM transaction
          WHERE account_id = $accountId
          AND block_hash IS NULL
          AND hash = $hash
-         RETURNING hash
-       """.query[String].unique
+       """.query[Int].unique
   }
 
   private def insertTx(
@@ -100,6 +99,7 @@ object LamaTransactionQueries extends DoobieLogHandler {
       tx: TransactionView
   ): doobie.ConnectionIO[Int] = {
 
+    //TODO: check if we should remove the "WHERE" clause to allow transctions to fall back in mempool (after reorg)
     val update =
       fr"""DO UPDATE SET
               block_hash   = ${tx.block.map(_.hash)},

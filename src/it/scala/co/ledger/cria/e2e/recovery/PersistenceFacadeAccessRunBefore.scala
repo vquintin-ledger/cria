@@ -81,7 +81,7 @@ final class PersistenceFacadeAccessRunBefore(persistenceFacade: PersistenceFacad
       ): IO[Unit] =
         doBeforeAction(delegate.saveBlocks(coin, blocks))
 
-      override def deleteRejectedTransaction(accountId: AccountUid, hash: TxHash): IO[String] =
+      override def deleteRejectedTransaction(accountId: AccountUid, hash: TxHash): IO[Int] =
         doBeforeAction(delegate.deleteRejectedTransaction(accountId, hash))
     }
 

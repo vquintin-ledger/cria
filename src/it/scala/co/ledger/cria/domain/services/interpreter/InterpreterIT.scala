@@ -3,6 +3,7 @@ package co.ledger.cria.domain.services.interpreter
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import java.util.UUID
+
 import cats.data.NonEmptyList
 import cats.effect.IO
 import co.ledger.cria.domain.mocks.ExplorerClientMock
@@ -12,6 +13,7 @@ import co.ledger.cria.logging.CriaLogContext
 import co.ledger.cria.domain.models.{Sort, TxHash, keychain}
 import co.ledger.cria.domain.models.account.{Account, AccountUid, WalletUid}
 import co.ledger.cria.domain.models.interpreter.{
+  AccountTxView,
   BlockHash,
   BlockView,
   Coin,
@@ -429,65 +431,78 @@ class InterpreterIT extends AnyFlatSpec with ContainerSpec with Matchers {
 
   }
 
-//  "A transaction rejected by the network" should "not stay in db" in IOAssertion {
-//    setup *>
-//      appResources.use { case ClientResources(_, _, db) =>
-//        val interpreter =
-//          new InterpreterImpl(_ => explorer, db, 1)
-//
-//        val utils = new TestUtils(db)
-//
-//        val uTx1 = AccountTxView(
-//          accountUid,
-//          TransactionView(
-//            "utx1",
-//            TxHash.fromStringUnsafe(
-//              "a99c7e333b287e7ecb017b33b7faf028a7eba69ae716114401e398f568f6ad9b"
-//            ),
-//            time,
-//            0,
-//            1000,
-//            List(
-//              InputView(".", 0, 0, 101000, inputAddress.accountAddress, "script", List(), 0L, None)
-//            ),
-//            List(
-//              OutputView(0, 100000, outputAddress1.accountAddress, "script", None, None)
-//            ),
-//            None,
-//            1
-//          )
-//        )
-//
-//        // We add the transaction to the explorer
-//        explorer.addToBC(uTx1.tx)
-//
-//        for {
-//          _ <- utils.setupAccount(accountUid, walletUid)
-//          _ <- Stream
-//            .emit(uTx1.tx)
-//            .through(interpreter.saveTransactions(uTx1.accountId))
-//            .compile
-//            .drain
-//          _     <- interpreter.compute(account, walletUid)(List(outputAddress1))
-//          first <- utils.getOperationCount(accountUid)
-//          _ <- Stream
-//            .emit(uTx1.tx)
-//            .through(interpreter.saveTransactions(uTx1.accountId))
-//            .compile
-//            .drain
-//          _      <- interpreter.compute(account, walletUid)(List(outputAddress1))
-//          second <- utils.getOperationCount(accountUid)
-//          // The third time the transaction is not saved again, meaning that it disapeared from the network without being mined.
-//          // We now remove the transaction from the explorer
-//          _ = explorer.removeFromBC(uTx1.tx.hash)
-//          _     <- interpreter.compute(account, walletUid)(List(outputAddress1))
-//          third <- utils.getOperationCount(accountUid)
-//        } yield {
-//          first shouldBe 1
-//          second shouldBe 1
-//          third shouldBe 0
-//        }
-//
-//      }
-//  }
+  "A transaction rejected by the network" should "not stay in db" in IOAssertion {
+    setupDB *>
+      testResources.use { tr =>
+        val interpreter =
+          new InterpreterImpl(_ => explorer, tr.clients.persistenceFacade)
+
+        val utils = tr.testUtils
+
+        val uTx1 = AccountTxView(
+          accountUid,
+          TransactionView(
+            "utx1",
+            TxHash.fromStringUnsafe(
+              "a99c7e333b287e7ecb017b33b7faf028a7eba69ae716114401e398f568f6ad9b"
+            ),
+            time,
+            0,
+            1000,
+            List(
+              InputView(".", 0, 0, 101000, inputAddress.accountAddress, "script", List(), 0L, None)
+            ),
+            List(
+              OutputView(0, 100000, outputAddress1.accountAddress, "script", None, None)
+            ),
+            None,
+            1
+          )
+        )
+
+        // We add the transaction to the explorer
+        explorer.addToBC(uTx1.tx)
+
+        for {
+          _ <- utils.setupAccount(accountUid, walletUid)
+          _ <- Stream
+            .emit(uTx1.tx)
+            .through(interpreter.saveTransactions(uTx1.accountId))
+            .compile
+            .drain
+          _     <- interpreter.compute(account, walletUid)(List(outputAddress1))
+          first <- utils.getOperationCount(accountUid)
+          _ <- Stream
+            .emit(uTx1.tx)
+            .through(interpreter.saveTransactions(uTx1.accountId))
+            .compile
+            .drain
+          _      <- interpreter.compute(account, walletUid)(List(outputAddress1))
+          second <- utils.getOperationCount(accountUid)
+          // The third time the transaction is not saved again, meaning that it disapeared from the network without being mined.
+          // We now remove the transaction from the explorer
+          _ <- Stream
+            .emit(
+              uTx1.tx.copy(receivedAt = Instant.now.minus(24, ChronoUnit.HOURS))
+            )
+            .through(interpreter.saveTransactions(uTx1.accountId))
+            .compile
+            .drain
+          _ = explorer.removeFromBC(uTx1.tx.hash)
+          _     <- interpreter.compute(account, walletUid)(List(outputAddress1))
+          third <- utils.getOperationCount(accountUid)
+        } yield {
+          withClue("On first sync, tx should be present") {
+            first shouldBe 1
+          }
+          withClue("On second sync, tx should still be present") {
+            second shouldBe 1
+          }
+          withClue("On third sync, tx should have disappeared") {
+            third shouldBe 0
+          }
+        }
+
+      }
+  }
 }

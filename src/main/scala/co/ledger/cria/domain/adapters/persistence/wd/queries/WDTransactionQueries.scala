@@ -50,23 +50,12 @@ object WDTransactionQueries extends DoobieLogHandler {
        """.update.run
   }
 
-  def deleteRejectedTransaction(
-      accountId: AccountUid,
-      hash: TxHash
-  ): doobie.ConnectionIO[String] = {
-    sql"""DELETE FROM transaction
-         WHERE account_uid = $accountId
-         AND block_hash IS NULL
-         AND hash = $hash
-         RETURNING hash
-       """.query[String].unique
-  }
-
   private def insertTx(
       accountId: AccountUid,
       tx: TransactionView
   ): doobie.ConnectionIO[Int] = {
 
+    //TODO: check if we should remove the "WHERE" clause to allow transctions to fall back in mempool (after reorg)
     val update =
       fr"""DO UPDATE SET
               block_hash   = ${tx.block.map(_.hash)},

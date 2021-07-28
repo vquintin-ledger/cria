@@ -1,12 +1,15 @@
 package co.ledger.cria.domain.adapters.persistence.wd
 
+import cats.data.NonEmptyList
+import cats.implicits._
 import cats.effect.{ContextShift, IO}
-import co.ledger.cria.domain.adapters.persistence.wd.queries.{WDTransactionQueries, WDQueries}
+import co.ledger.cria.domain.adapters.persistence.wd.queries.{WDQueries, WDTransactionQueries}
 import co.ledger.cria.domain.models.account.AccountUid
 import co.ledger.cria.domain.models.interpreter.{AccountTxView, BlockView}
 import co.ledger.cria.domain.services.interpreter.TransactionRecordRepository
 import co.ledger.cria.logging.{ContextLogging, CriaLogContext}
 import doobie.Transactor
+import doobie.free.connection
 import doobie.implicits._
 import fs2._
 
@@ -32,9 +35,15 @@ final class WDTransactionRecordRepository(db: Transactor[IO], maxConcurrent: Int
 
   override def removeFromCursor(accountUid: AccountUid, blockHeight: Long): IO[Int] = {
     // remove block & operations & transactions & inputs
-    WDQueries
-      .removeFromCursor(blockHeight)
-      .transact(db)
+    // search inputs attached to blocks to remove
+    (for {
+      inUids <- WDQueries.getInputUidsFromBlockHeight(blockHeight)
+      _ <- inUids match {
+        case Nil          => connection.pure[Int](0)
+        case head :: tail => WDQueries.deleteInputs(NonEmptyList(head, tail))
+      }
+      blocks <- WDQueries.deleteBlock(blockHeight)
+    } yield blocks).transact(db)
   }
 
   override def getLastBlocks(accountId: AccountUid): Stream[IO, BlockView] =

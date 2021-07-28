@@ -1,13 +1,9 @@
 package co.ledger.cria.domain.adapters.persistence.wd.queries
 
+import cats.data.NonEmptyList
 import cats.implicits._
-import co.ledger.cria.domain.adapters.persistence.wd.models.{
-  WDBlock,
-  WDInput,
-  WDOperation,
-  WDOutput,
-  WDTransaction
-}
+import co.ledger.cria.domain.adapters.persistence.wd.models._
+import co.ledger.cria.domain.models.TxHash
 import co.ledger.cria.domain.models.implicits._
 import co.ledger.cria.logging.DoobieLogHandler
 import doobie._
@@ -155,30 +151,13 @@ object WDQueries extends DoobieLogHandler {
     Update[WDBlock](blocksQuery).updateMany(blocks)
   }
 
-  def deleteTransaction(hash: String): doobie.ConnectionIO[Int] = {
-    sql"""DELETE FROM operations WHERE txHash = $hash AND date >= :date""".update.run *>
-      sql"""DELETE FROM bitcoin_inputs WHERE uid IN (
-      SELECT input_uid FROM bitcoin_transaction_inputs
-      WHERE transaction_uid = $hash
-      )
-    """.update.run *>
-      sql"""DELETE FROM bitcoin_transactions
-    WHERE hash = $hash""".update.run
-  }
+  def deleteBlock(blockHeight: Long) =
+    sql"""DELETE
+          FROM blocks
+          WHERE height >= $blockHeight
+       """.update.run
 
-  def deleteOperation(hash: String): doobie.ConnectionIO[Int] = {
-    sql"""DELETE FROM operations WHERE txHash = $hash AND date >= :date""".update.run *>
-      sql"""DELETE FROM bitcoin_inputs WHERE uid IN (
-      SELECT input_uid FROM bitcoin_transaction_inputs
-      WHERE transaction_uid = $hash
-      )
-    """.update.run *>
-      sql"""DELETE FROM bitcoin_transactions
-    WHERE hash = $hash""".update.run
-  }
-
-  def removeFromCursor(blockHeight: Long): doobie.ConnectionIO[Int] = {
-    // search inputs attached to blocks to remove
+  def getInputUidsFromBlockHeight(blockHeight: Long): doobie.ConnectionIO[List[String]] =
     sql"""SELECT ti.input_uid
           FROM bitcoin_transaction_inputs ti
           INNER JOIN bitcoin_transactions tx
@@ -188,20 +167,37 @@ object WDQueries extends DoobieLogHandler {
           WHERE b.height >= $blockHeight
        """
       .query[String]
-      .nel //TODO: what if there's no input ?
-      .flatMap { in =>
-        // delete inputs
-        sql"""DELETE FROM bitcoin_inputs
-          WHERE ${Fragments.in(fr"uid", in)}
-         """.update.run
-      }
-      .flatMap { _ =>
-        // delete blocks
-        sql"""DELETE
-          FROM blocks
-          WHERE height >= $blockHeight
-       """.update.run
-      }
-  }
+      .to[List]
 
+  def deleteInputs(inNel: NonEmptyList[String]) =
+    sql"""DELETE FROM bitcoin_inputs
+          WHERE ${Fragments.in(fr"uid", inNel)}
+         """.update.run
+
+  def getInputUidsByTxHash(hash: TxHash) =
+    sql"""SELECT input_uid
+          FROM bitcoin_transaction_inputs
+          WHERE transaction_hash = $hash
+       """
+      .query[String]
+      .to[List]
+
+  def getOperationsByTxHash(hash: TxHash) =
+    // We remove all operations related to the transaction hash
+    // because we need to remove the transaction and we don't want orphans
+    sql"""SELECT o.uid
+          FROM bitcoin_operations bo
+          INNER JOIN operations o
+            ON o.uid = bo.uid
+          WHERE transaction_hash = $hash
+       """.query[String].to[List]
+
+  def deleteOperation(operationUid: String): doobie.ConnectionIO[Int] =
+    sql"""DELETE FROM operations WHERE uid = $operationUid""".update.run
+
+  def deleteTransaction(hash: TxHash): doobie.ConnectionIO[Int] =
+    sql"""DELETE 
+          FROM bitcoin_transactions
+          WHERE hash = $hash
+       """.update.run
 }

@@ -1,14 +1,17 @@
 package co.ledger.cria.domain.adapters.persistence.wd
 
+import cats.data.NonEmptyList
+import cats.implicits._
 import cats.effect.IO
 import co.ledger.cria.domain.adapters.persistence.wd.models.{WDBlock, WDOperation, WDTransaction}
-import co.ledger.cria.domain.adapters.persistence.wd.queries.{WDTransactionQueries, WDQueries}
+import co.ledger.cria.domain.adapters.persistence.wd.queries.WDQueries
 import co.ledger.cria.domain.models.TxHash
 import co.ledger.cria.domain.models.account.{AccountUid, WalletUid}
 import co.ledger.cria.domain.models.interpreter.{BlockView, Coin, Operation, TransactionView}
 import co.ledger.cria.domain.services.interpreter.OperationRepository
 import co.ledger.cria.logging.{CriaLogContext, DefaultContextLogging}
 import doobie.Transactor
+import doobie.free.connection
 import doobie.implicits._
 
 class WDOperationRepository(
@@ -52,9 +55,17 @@ class WDOperationRepository(
         .void
   }
 
-  //TODO: not doing what it should, FIX plz
-  override def deleteRejectedTransaction(accountId: AccountUid, hash: TxHash): IO[String] =
-    WDTransactionQueries
-      .deleteRejectedTransaction(accountId, hash)
+  override def deleteRejectedTransaction(accountId: AccountUid, hash: TxHash): IO[Int] =
+    (for {
+      opUids <- WDQueries.getOperationsByTxHash(hash)
+      _      <- opUids.traverse(WDQueries.deleteOperation)
+      inUids <- WDQueries.getInputUidsByTxHash(hash)
+      _ <- inUids match {
+        case Nil          => connection.pure[Int](0)
+        case head :: tail => WDQueries.deleteInputs(NonEmptyList(head, tail))
+      }
+      deletedTxs <- WDQueries.deleteTransaction(hash)
+
+    } yield deletedTxs)
       .transact(db)
 }

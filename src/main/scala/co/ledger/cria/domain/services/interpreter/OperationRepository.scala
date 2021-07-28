@@ -23,6 +23,6 @@ trait OperationRepository {
 
   def saveBlocks(coin: Coin, blocks: List[BlockView])(implicit lc: CriaLogContext): IO[Unit]
 
-  def deleteRejectedTransaction(accountId: AccountUid, hash: TxHash): IO[String]
+  def deleteRejectedTransaction(accountId: AccountUid, hash: TxHash): IO[Int]
 
 }

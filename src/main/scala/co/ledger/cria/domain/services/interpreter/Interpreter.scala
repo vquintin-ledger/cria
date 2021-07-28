@@ -1,5 +1,7 @@
 package co.ledger.cria.domain.services.interpreter
 
+import java.time.Instant
+
 import cats.data.NonEmptyList
 import cats.effect.{IO, Timer}
 import cats.implicits._
@@ -12,6 +14,8 @@ import co.ledger.cria.domain.models.keychain.AccountAddress
 import co.ledger.cria.domain.services.ExplorerClient
 import co.ledger.cria.utils.IOUtils
 import fs2._
+
+import scala.concurrent.duration.Duration
 
 trait Interpreter {
   def saveTransactions(accountId: AccountUid)(implicit
@@ -39,6 +43,8 @@ class InterpreterImpl(explorer: Coin => ExplorerClient, persistenceFacade: Persi
   private val transactionRecordRepository = persistenceFacade.transactionRecordRepository
   private val operationComputationService = persistenceFacade.operationComputationService
   private val operationRepository         = persistenceFacade.operationRepository
+
+  private val UTXO_LOCKING_TIME = Duration("12 hours")
 
   def saveTransactions(
       accountId: AccountUid
@@ -78,8 +84,6 @@ class InterpreterImpl(explorer: Coin => ExplorerClient, persistenceFacade: Persi
     for {
       _ <- log.info(s"Flagging belonging inputs and outputs")
       _ <- operationComputationService.flagInputsAndOutputs(account.accountUid, addresses)
-//      _ <- operationService.deleteUnconfirmedOperations(account.id)
-
       _ <- log.info(s"Computing operations")
 
       nbSavedOps <- IOUtils.withTimer("Computing finished")(
@@ -99,7 +103,7 @@ class InterpreterImpl(explorer: Coin => ExplorerClient, persistenceFacade: Persi
       .evalMap(
         _.traverse(getAction(coin, _))
       )
-//      .evalTap(deleteRejectedTransaction)
+      .evalTap(deleteRejectedTransaction(accountId))
       .evalTap(saveWDBlocks(coin))
       .evalTap(saveWDTransactions(coin, accountId))
       .evalMap(saveWDOperations(coin, accountId, walletUid))
@@ -111,10 +115,15 @@ class InterpreterImpl(explorer: Coin => ExplorerClient, persistenceFacade: Persi
   )(implicit lc: CriaLogContext): IO[Action] =
     op.transaction.block match {
       case Some(_) => IO.pure(Save(op))
+      // don't check if a tx is still in the mempool if it's less than x hours old.
+      case None if op.time.isAfter(Instant.now.minusSeconds(UTXO_LOCKING_TIME.toSeconds)) =>
+        IO.pure(Save(op))
       case None =>
         explorer(coin).getTransaction(op.transaction.hash).map {
+          // The transaction is till in the blockchain, we keep it
           case Some(_) => Save(op)
-          case None    => Delete(op)
+          // The transaction has been rejected by the network
+          case None => Delete(op)
         }
     }
 
@@ -190,16 +199,17 @@ class InterpreterImpl(explorer: Coin => ExplorerClient, persistenceFacade: Persi
         .map(_.sum)
   }
 
-//  private def deleteRejectedTransaction(actions: List[Action])(implicit
-//      lc: CriaLogContext
-//  ): IO[Int] =
-//    actions
-//      .collect { case Delete(tx) =>
-//        // TODO: remove from WD instead
-//        log.info(s"Deleting unconfirmed transaction from db : ${tx.tx.hash} (not in explorer)") *>
-//          wdService.deleteRejectedTransaction(tx.tx.hash)
-//      }
-//      .sequence
-//      .map(_.sum)
+  private def deleteRejectedTransaction(accountUid: AccountUid)(
+      actions: List[Action]
+  )(implicit lc: CriaLogContext): IO[Int] =
+    actions
+      .collect { case Delete(op) =>
+        log.info(
+          s"Deleting unconfirmed transaction from db : ${op.transaction.hash} (not in explorer)"
+        ) *>
+          operationRepository.deleteRejectedTransaction(accountUid, op.transaction.hash)
+      }
+      .sequence
+      .map(_.sum)
 
 }

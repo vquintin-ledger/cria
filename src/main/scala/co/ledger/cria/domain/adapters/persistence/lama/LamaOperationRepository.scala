@@ -40,7 +40,7 @@ final class LamaOperationRepository(
       .transact(db)
   }
 
-  override def deleteRejectedTransaction(accountId: AccountUid, hash: TxHash): IO[String] =
+  override def deleteRejectedTransaction(accountId: AccountUid, hash: TxHash): IO[Int] =
     LamaTransactionQueries
       .deleteRejectedTransaction(accountId, hash)
       .transact(db)

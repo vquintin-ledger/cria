@@ -42,7 +42,7 @@ final class OperationRepositoryTee(
       secondary.saveBlocks(coin, blocks)
     )
 
-  override def deleteRejectedTransaction(accountId: AccountUid, hash: TxHash): IO[String] =
+  override def deleteRejectedTransaction(accountId: AccountUid, hash: TxHash): IO[Int] =
     combiner.combineAction(
       primary.deleteRejectedTransaction(accountId, hash),
       secondary.deleteRejectedTransaction(accountId, hash)

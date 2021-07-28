@@ -56,7 +56,7 @@ case class TransactionAmounts(
       transaction = transaction,
       operationType = operationType,
       amount = amount,
-      time = blockTime.getOrElse(Instant.now()),
+      time = transaction.receivedAt,
       blockHeight = blockHeight,
       fees = fees
     )
