@@ -9,7 +9,6 @@ import java.time.Instant
 import java.util.UUID
 
 import co.ledger.cria.clients.explorer.ExplorerHttpClient
-import co.ledger.cria.clients.protocol.http.Clients
 import co.ledger.cria.domain.adapters.explorer.ExplorerClientAdapter
 import co.ledger.cria.domain.adapters.keychain.KeychainClientMock
 import co.ledger.cria.domain.mocks.InterpreterClientMock
@@ -32,15 +31,13 @@ class SynchronizerIT extends AnyFlatSpecLike with Matchers {
   val conf: Config = ConfigSource.default.loadOrThrow[Config]
 
   IOAssertion {
-    Clients.htt4s
-      .use { httpClient =>
+    ExplorerHttpClient(conf.explorer)
+      .use { explorerHttpClient =>
         val keychainId = KeychainId(UUID.randomUUID())
 
         val keychainClient = new KeychainClientMock
 
-        val explorerClient = ExplorerClientAdapter.explorerForCoin(
-          new ExplorerHttpClient(httpClient, conf.explorer, _)
-        ) _
+        val explorerClient = ExplorerClientAdapter.explorerForCoin(explorerHttpClient) _
 
         val interpreterClient = new InterpreterClientMock
 

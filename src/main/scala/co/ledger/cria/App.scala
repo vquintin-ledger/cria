@@ -10,7 +10,6 @@ import co.ledger.cria.cli.CommandLineOptions
 import co.ledger.cria.config.{Config, GrpcClientConfig, PersistenceConfig}
 import co.ledger.cria.clients.explorer.ExplorerHttpClient
 import co.ledger.cria.clients.explorer.models.ExplorerConfig
-import co.ledger.cria.clients.protocol.http.Clients
 import co.ledger.cria.domain.CriaModule
 import co.ledger.cria.domain.adapters.explorer.ExplorerClientAdapter
 import co.ledger.cria.domain.adapters.keychain.KeychainGrpcClient
@@ -108,12 +107,7 @@ object App extends IOApp with DefaultContextLogging {
     } yield ClientResources(explorerClient, keychainClient, persistenceFacade)
 
   def makeExplorerClient(conf: ExplorerConfig): Resource[IO, Coin => ExplorerClient] =
-    Clients.htt4s.map(c =>
-      ExplorerClientAdapter
-        .explorerForCoin(
-          new ExplorerHttpClient(c, conf, _)
-        ) _
-    )
+    ExplorerHttpClient(conf).map(ExplorerClientAdapter.explorerForCoin)
 
   def makeKeychainClient(config: GrpcClientConfig): Resource[IO, KeychainClient] =
     grpcManagedChannel(config).map(new KeychainGrpcClient(_))
