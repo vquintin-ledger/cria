@@ -1,14 +1,4 @@
-CREATE TYPE operation_type as ENUM(
-    'send',
-    'receive'
-);
-
-CREATE TYPE change_type as ENUM(
-    'internal',
-    'external'
-);
-
-CREATE TABLE transaction (
+CREATE TABLE 'transaction' (
     account_uid VARCHAR NOT NULL,
     id VARCHAR NOT NULL,
     hash VARCHAR NOT NULL,
@@ -34,13 +24,13 @@ CREATE TABLE input (
     script_signature VARCHAR,
     txinwitness VARCHAR[],
     sequence BIGINT NOT NULL,
-    derivation INTEGER[],
+    derivation VARCHAR,
 
     PRIMARY KEY (account_uid, hash, output_hash, output_index),
-    FOREIGN KEY (account_uid, hash) REFERENCES transaction (account_uid, hash) ON DELETE CASCADE
+    FOREIGN KEY (account_uid, hash) REFERENCES 'transaction' (account_uid, hash) ON DELETE CASCADE
 );
 
-CREATE INDEX on input(address);
+CREATE INDEX input_address_idx on input(address);
 
 CREATE TABLE output (
     account_uid VARCHAR NOT NULL,
@@ -49,17 +39,17 @@ CREATE TABLE output (
     value NUMERIC(30, 0) NOT NULL,
     address VARCHAR NOT NULL,
     script_hex VARCHAR,
-    derivation INTEGER[],
+    derivation VARCHAR,
     change_type CHANGE_TYPE,
 
     PRIMARY KEY (account_uid, hash, output_index),
-    FOREIGN KEY (account_uid, hash) REFERENCES transaction (account_uid, hash) ON DELETE CASCADE
+    FOREIGN KEY (account_uid, hash) REFERENCES 'transaction' (account_uid, hash) ON DELETE CASCADE
 );
 
-CREATE INDEX on output(address);
+CREATE INDEX output_address_idx on output(address);
 
 
-CREATE VIEW transaction_amount AS
+CREATE VIEW 'transaction_amount' AS
 WITH inputs AS (
     SELECT account_uid, hash, SUM(value) AS input_amount
     FROM input
@@ -86,6 +76,6 @@ SELECT t.account_uid,
        i.input_amount,
        o.output_amount,
        o.change_amount
-FROM transaction as t
+FROM 'transaction' as t
          LEFT JOIN inputs  AS i ON t.account_uid = i.account_uid AND t.hash = i.hash
          LEFT JOIN outputs AS o ON t.account_uid = o.account_uid AND t.hash = o.hash;

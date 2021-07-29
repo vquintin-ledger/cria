@@ -44,31 +44,24 @@ object WDTransactionQueries extends DoobieLogHandler {
       _ <- insertOutputs(accountId, tx.hash, tx.outputs.toList)
     } yield txStatement
 
-  def deleteUnconfirmedTransactions(accountId: AccountUid): doobie.ConnectionIO[Int] = {
-    sql"""DELETE FROM transaction
-         WHERE account_uid = $accountId
-         AND block_hash IS NULL
-       """.update.run
-  }
-
   private def insertTx(
       accountId: AccountUid,
       tx: TransactionView
   ): doobie.ConnectionIO[Int] = {
 
     //TODO: check if we should remove the "WHERE" clause to allow transctions to fall back in mempool (after reorg)
-    val update =
+    /*    val update =
       fr"""DO UPDATE SET
               block_hash   = ${tx.block.map(_.hash)},
               block_height = ${tx.block.map(_.height)},
               block_time   = ${tx.block.map(_.time)}
-            WHERE transaction.block_hash IS NULL
+            WHERE 'transaction.block_hash' IS NULL
        """
 
     val noUpdate = fr"""DO NOTHING"""
-
+     */
     val query =
-      sql"""INSERT INTO transaction (
+      sql"""INSERT INTO 'transaction' (
             account_uid, id, hash, block_hash, block_height, block_time, received_at, lock_time, fees, confirmations
           ) VALUES (
             $accountId,
@@ -81,8 +74,8 @@ object WDTransactionQueries extends DoobieLogHandler {
             ${tx.lockTime},
             ${tx.fees},
             ${tx.confirmations}
-          ) ON CONFLICT ON CONSTRAINT transaction_pkey """ ++
-        tx.block.map(_ => update).getOrElse(noUpdate)
+          )""" /* ON CONFLICT """ ++
+        tx.block.map(_ => update).getOrElse(noUpdate)*/
 
     query.update.run
   }
@@ -98,7 +91,6 @@ object WDTransactionQueries extends DoobieLogHandler {
           ) VALUES (
             '${accountId.value}', '${txHash.asString}', ?, ?, ?, ?, ?, ?, ?, ?, ?
           )
-          ON CONFLICT ON CONSTRAINT input_pkey DO NOTHING
        """
     Update[InputView](query).updateMany(inputs)
   }
@@ -113,16 +105,10 @@ object WDTransactionQueries extends DoobieLogHandler {
             account_uid, hash, output_index, value, address, script_hex, change_type, derivation
           ) VALUES (
             '${accountId.value}', '${txHash.asString}', ?, ?, ?, ?, ?, ?
-          ) ON CONFLICT ON CONSTRAINT output_pkey DO NOTHING
+          )
         """
     Update[OutputView](query).updateMany(outputs)
   }
-
-  def removeFromCursor(accountId: AccountUid, blockHeight: Long): ConnectionIO[Int] =
-    sql"""DELETE from transaction
-          WHERE account_uid = $accountId
-          AND block_height >= $blockHeight
-       """.update.run
 
   def fetchTransaction(
       accountId: AccountUid,
@@ -146,7 +132,7 @@ object WDTransactionQueries extends DoobieLogHandler {
             lock_time,
             fees,
             confirmations
-          FROM transaction t
+          FROM 'transaction' t
          WHERE t.account_uid = $accountId
            AND $belongsToTxs
        """ ++ transactionOrder(sort))

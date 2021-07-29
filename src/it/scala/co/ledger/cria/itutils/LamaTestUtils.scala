@@ -211,6 +211,6 @@ final class LamaTestUtils private (conf: LamaDb, db: Transactor[IO]) extends Tes
 object LamaTestUtils {
   def apply(conf: LamaDb)(implicit cs: ContextShift[IO], t: Timer[IO]): Resource[IO, TestUtils] =
     ResourceUtils
-      .postgresTransactor(conf.postgres)
+      .databaseTransactor(conf.postgres)
       .map(transactor => new LamaTestUtils(conf, transactor))
 }

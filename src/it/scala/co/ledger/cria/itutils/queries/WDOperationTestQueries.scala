@@ -20,7 +20,7 @@ object WDOperationTestQueries extends DoobieLogHandler {
               AND o.address = i.address
               AND o.output_index = i.output_index
               AND o.hash = i.output_hash
-            INNER JOIN transaction tx
+            INNER JOIN 'transaction' tx
               ON o.account_uid = tx.account_uid
               AND o.hash = tx.hash
           WHERE o.account_uid = $accountId
@@ -49,7 +49,7 @@ object WDOperationTestQueries extends DoobieLogHandler {
                 AND o.address = i.address
                 AND o.output_index = i.output_index
 			          AND o.hash = i.output_hash
-              INNER JOIN transaction tx
+              INNER JOIN 'transaction' tx
                 ON o.account_uid = tx.account_uid
                 AND o.hash = tx.hash
                 AND tx.block_hash IS NOT NULL
@@ -70,7 +70,7 @@ object WDOperationTestQueries extends DoobieLogHandler {
                 AND o.address = i.address
                 AND o.output_index = i.output_index
 			          AND o.hash = i.output_hash
-              INNER JOIN transaction tx
+              INNER JOIN 'transaction' tx
                 ON o.account_uid = tx.account_uid
                 AND o.hash = tx.hash
                 AND tx.block_hash IS NULL

@@ -1,7 +1,7 @@
 package co.ledger.cria.utils
 
 import fs2.Stream
-import co.ledger.cria.config.{GrpcClientConfig, GrpcServerConfig, PostgresConfig}
+import co.ledger.cria.config.{DatabaseConfig, GrpcClientConfig, GrpcServerConfig}
 import co.ledger.cria.logging.DefaultContextLogging
 import com.zaxxer.hikari.HikariConfig
 import cats.effect.{Async, Blocker, ContextShift, IO, Resource, Timer}
@@ -35,8 +35,8 @@ object ResourceUtils extends DefaultContextLogging {
       .resource
       .lastOrError
 
-  def postgresTransactor(
-      conf: PostgresConfig
+  def databaseTransactor(
+      conf: DatabaseConfig
   )(implicit contextShift: ContextShift[IO], timer: Timer[IO]): Resource[IO, HikariTransactor[IO]] =
     for {
       ce <- ExecutionContexts.fixedThreadPool[IO](conf.poolSize)
@@ -47,11 +47,11 @@ object ResourceUtils extends DefaultContextLogging {
 
       hikariConf = {
         val hc = new HikariConfig()
-        hc.setDriverClassName(conf.driver) // driver classname
-        hc.setJdbcUrl(conf.url)            // connect URL
-        hc.setUsername(conf.user)          // username
-        hc.setPassword(conf.password)      // password
-        hc.setAutoCommit(false)            // doobie uses `.transact(db)` for commit
+        hc.setDriverClassName(conf.driver)       // driver classname
+        hc.setJdbcUrl(conf.url)                  // connect URL
+        conf.userOpt.foreach(hc.setUsername)     // username
+        conf.passwordOpt.foreach(hc.setPassword) // password
+        hc.setAutoCommit(false)                  // doobie uses `.transact(db)` for commit
         hc
       }
 

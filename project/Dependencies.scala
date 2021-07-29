@@ -30,7 +30,8 @@ object Dependencies extends DependencyBuilders with LibraryManagementSyntax {
   val flywayVersion   = "7.8.1"
   val doobieVersion   = "0.13.1"
   val postgresVersion = "42.2.22"
-  val postgres: Seq[ModuleID] = Seq(
+  val sqliteVersion   = "3.36.0.1"
+  val database: Seq[ModuleID] = Seq(
     "com.h2database" % "h2"              % H2Version,
     "org.flywaydb"   % "flyway-core"     % flywayVersion,
     "org.tpolecat"  %% "doobie-core"     % doobieVersion,
@@ -38,7 +39,8 @@ object Dependencies extends DependencyBuilders with LibraryManagementSyntax {
     "org.tpolecat"  %% "doobie-hikari"   % doobieVersion,
     "org.tpolecat"  %% "doobie-h2"       % doobieVersion,
     "org.tpolecat"  %% "doobie-refined"  % doobieVersion,
-    "org.postgresql" % "postgresql"      % postgresVersion
+    "org.postgresql" % "postgresql"      % postgresVersion,
+    "org.xerial"     % "sqlite-jdbc"     % sqliteVersion
   )
 
   val pureconfigVersion   = "0.15.0"
@@ -86,5 +88,5 @@ object Dependencies extends DependencyBuilders with LibraryManagementSyntax {
     "com.google.protobuf"   % "protobuf-java"     % protobufJava
   )
 
-  val cria: Seq[ModuleID] = circe ++ utilities ++ postgres ++ http4s ++ cli ++ refined
+  val cria: Seq[ModuleID] = circe ++ utilities ++ database ++ http4s ++ cli ++ refined
 }

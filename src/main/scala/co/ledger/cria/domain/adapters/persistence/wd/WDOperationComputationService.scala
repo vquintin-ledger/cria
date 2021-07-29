@@ -3,10 +3,7 @@ package co.ledger.cria.domain.adapters.persistence.wd
 import cats.implicits._
 import cats.data.NonEmptyList
 import cats.effect.{ContextShift, IO}
-import co.ledger.cria.domain.adapters.persistence.wd.queries.{
-  WDOperationQueries,
-  WDTransactionQueries
-}
+import co.ledger.cria.domain.adapters.persistence.wd.queries.{WDOperationQueries, WDTransactionQueries}
 import co.ledger.cria.domain.models.{Sort, TxHash}
 import co.ledger.cria.domain.models.account.AccountUid
 import co.ledger.cria.domain.models.interpreter.{TransactionAmounts, TransactionView}
@@ -16,9 +13,10 @@ import co.ledger.cria.logging.ContextLogging
 import doobie._
 import doobie.implicits._
 import fs2.Stream
+import shapeless.tag.@@
 
 class WDOperationComputationService(
-    db: Transactor[IO]
+    temporary: Transactor[IO] @@ DBType.Temporary
 )(implicit cs: ContextShift[IO])
     extends ContextLogging
     with OperationComputationService {
@@ -29,16 +27,17 @@ class WDOperationComputationService(
   ): fs2.Stream[IO, TransactionAmounts] =
     WDOperationQueries
       .fetchUncomputedTransactionAmounts(accountId, sort)
-      .transact(db)
+      .transact(temporary)
 
   override def fetchTransactions(
       accountId: AccountUid,
       sort: Sort,
       hashes: NonEmptyList[TxHash]
   ): Stream[IO, TransactionView] = {
-    val txStream = WDTransactionQueries.fetchTransaction(accountId, sort, hashes).transact(db)
+    val txStream =
+      WDTransactionQueries.fetchTransaction(accountId, sort, hashes).transact(temporary)
     val txDetailsStream =
-      WDTransactionQueries.fetchTransactionDetails(accountId, sort, hashes).transact(db)
+      WDTransactionQueries.fetchTransactionDetails(accountId, sort, hashes).transact(temporary)
 
     txStream
       .zip(txDetailsStream)
@@ -66,7 +65,7 @@ class WDOperationComputationService(
               accountId,
               addresses
             )
-            .transact(db)
+            .transact(temporary)
         }
         .getOrElse(IO.pure(0))
 
@@ -81,7 +80,7 @@ class WDOperationComputationService(
               addresses,
               ChangeType.Internal
             )
-            .transact(db)
+            .transact(temporary)
         }
         .getOrElse(IO.pure(0))
 
@@ -95,7 +94,7 @@ class WDOperationComputationService(
               addresses,
               ChangeType.External
             )
-            .transact(db)
+            .transact(temporary)
         }
         .getOrElse(IO.pure(0))
 

@@ -12,8 +12,13 @@ import doobie.Transactor
 import doobie.free.connection
 import doobie.implicits._
 import fs2._
+import shapeless.tag.@@
 
-final class WDTransactionRecordRepository(db: Transactor[IO], maxConcurrent: Int)(implicit
+final class WDTransactionRecordRepository(
+    db: Transactor[IO] @@ DBType.WD,
+    temporary: Transactor[IO] @@ DBType.Temporary,
+    maxConcurrent: Int
+)(implicit
     cs: ContextShift[IO]
 ) extends ContextLogging
     with TransactionRecordRepository {
@@ -24,7 +29,7 @@ final class WDTransactionRecordRepository(db: Transactor[IO], maxConcurrent: Int
         Stream
           .chunk(chunk)
           .evalMap(a => WDTransactionQueries.saveTransaction(a.accountId, a.tx))
-          .transact(db)
+          .transact(temporary)
           .compile
           .foldMonoid
           .flatMap { nbSaved =>

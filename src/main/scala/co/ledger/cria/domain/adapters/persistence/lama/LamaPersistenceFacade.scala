@@ -34,7 +34,7 @@ object LamaPersistenceFacade {
   )(implicit cs: ContextShift[IO], t: Timer[IO]): Resource[IO, PersistenceFacade] =
     for {
       _  <- migratedDatabase(config)
-      db <- ResourceUtils.postgresTransactor(config.postgres)
+      db <- ResourceUtils.databaseTransactor(config.postgres)
     } yield new LamaPersistenceFacade(db, config.batchConcurrency.value)
 
   private def migratedDatabase(config: LamaDb): Resource[IO, Unit] =

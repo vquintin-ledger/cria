@@ -1,7 +1,7 @@
 package co.ledger.cria.itutils
 
 import cats.effect.{ContextShift, IO, Resource, Timer}
-import co.ledger.cria.domain.adapters.persistence.wd.WalletDaemonDb
+import co.ledger.cria.domain.adapters.persistence.wd.{DBType, WalletDaemonDb}
 import co.ledger.cria.domain.adapters.persistence.wd.queries.WDBalanceQueries
 import co.ledger.cria.domain.models.Sort
 import co.ledger.cria.domain.models.account.{AccountUid, WalletUid}
@@ -12,8 +12,14 @@ import co.ledger.cria.utils.{DbUtils, ResourceUtils}
 import doobie.implicits._
 import doobie.util.transactor.Transactor
 import org.flywaydb.core.Flyway
+import shapeless.tag
+import shapeless.tag.@@
 
-final class WDTestUtils private (conf: WalletDaemonDb, db: Transactor[IO]) extends TestUtils {
+final class WDTestUtils private (
+    conf: WalletDaemonDb,
+    db: Transactor[IO] @@ DBType.WD,
+    temporary: Transactor[IO] @@ DBType.Temporary
+) extends TestUtils {
 
   override def setupAccount(accountUid: AccountUid, walletUid: WalletUid): IO[Int] =
     AccountTestQueries.addAccount(accountUid, walletUid).transact(db)
@@ -33,11 +39,11 @@ final class WDTestUtils private (conf: WalletDaemonDb, db: Transactor[IO]) exten
     for {
       utxos <- WDOperationTestQueries
         .fetchConfirmedUTXOs(accountId, sort, Some(limit + 1), Some(offset))
-        .transact(db)
+        .transact(temporary)
         .compile
         .toList
 
-      total <- WDOperationTestQueries.countUTXOs(accountId).transact(db)
+      total <- WDOperationTestQueries.countUTXOs(accountId).transact(temporary)
 
     } yield {
       // We get 1 more than necessary to know if there's more, then we return the correct number
@@ -58,7 +64,7 @@ final class WDTestUtils private (conf: WalletDaemonDb, db: Transactor[IO]) exten
       )
     }).transact(db)
 
-  private lazy val flyway: Flyway = DbUtils.flyway(conf.postgres)
+  private lazy val flyway: Flyway = DbUtils.flyway(conf.postgres, "classpath:/db/wd_dump/")
 
   override def migrate: IO[Unit] = IO(flyway.migrate())
 
@@ -69,7 +75,12 @@ object WDTestUtils {
   def apply(
       conf: WalletDaemonDb
   )(implicit cs: ContextShift[IO], t: Timer[IO]): Resource[IO, TestUtils] =
-    ResourceUtils
-      .postgresTransactor(conf.postgres)
-      .map(transactor => new WDTestUtils(conf, transactor))
+    for {
+      walletDaemonTransactor <- ResourceUtils.databaseTransactor(conf.postgres)
+      temporaryTransactor    <- ResourceUtils.databaseTransactor(conf.postgres)
+    } yield new WDTestUtils(
+      conf,
+      tag[DBType.WD](walletDaemonTransactor),
+      tag[DBType.Temporary](temporaryTransactor)
+    )
 }

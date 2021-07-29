@@ -55,17 +55,7 @@ object WDOperationQueries extends DoobieLogHandler {
       sort: Sort
   ): Stream[ConnectionIO, TransactionAmounts] = {
     (
-      sql"""WITH ops AS (
-              SELECT bo.transaction_hash AS hash,
-                     op.account_uid,
-                     op.block_uid
-              FROM bitcoin_operations bo
-                INNER JOIN operations op
-                  ON bo.uid = op.uid
-              WHERE op.account_uid = $accountId
-            )
-
-            SELECT tx.account_uid,
+      sql"""SELECT tx.account_uid,
                    tx.hash,
                    tx.block_hash,
                    tx.block_height,
@@ -75,11 +65,7 @@ object WDOperationQueries extends DoobieLogHandler {
                    COALESCE(tx.output_amount, 0),
                    COALESCE(tx.change_amount, 0)
           FROM transaction_amount tx
-            LEFT JOIN ops
-              ON tx.hash = ops.hash
-              AND tx.account_uid = ops.account_uid
-          WHERE tx.account_uid = $accountId
-            AND ops.block_uid IS NULL""" ++ Fragment
+          WHERE tx.account_uid = $accountId""" ++ Fragment
         .const(s" ORDER BY tx.block_time $sort, tx.hash $sort")
     )
       .query[TransactionAmounts]
