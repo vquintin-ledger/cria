@@ -1,6 +1,5 @@
 package co.ledger.cria.domain.models.interpreter
 
-import cats.data.NonEmptyList
 import co.ledger.cria.domain.models.keychain.ChangeType
 
 case class OutputView(
@@ -9,7 +8,7 @@ case class OutputView(
     address: String,
     scriptHex: String,
     changeType: Option[ChangeType],
-    derivation: Option[NonEmptyList[Int]]
+    derivation: Option[Derivation]
 ) {
   val belongs: Boolean = derivation.isDefined
 }

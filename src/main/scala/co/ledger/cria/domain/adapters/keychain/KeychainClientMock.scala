@@ -1,7 +1,7 @@
 package co.ledger.cria.domain.adapters.keychain
 
-import cats.data.NonEmptyList
 import cats.effect.IO
+import co.ledger.cria.domain.models.interpreter.Derivation
 import co.ledger.cria.domain.models.keychain
 import co.ledger.cria.domain.models.keychain.ChangeType.External
 import co.ledger.cria.domain.models.keychain.{AccountAddress, ChangeType, KeychainId}
@@ -13,7 +13,7 @@ class KeychainClientMock extends KeychainClient {
 
   var usedAddresses: mutable.Seq[String] = mutable.Seq.empty
 
-  private val derivations: NonEmptyList[Int] = NonEmptyList(1, List(0))
+  private val derivations: Derivation = Derivation(1, 0)
   private val change: External.type          = ChangeType.External
 
   val derivedAddresses: List[AccountAddress] = List(
@@ -54,7 +54,7 @@ class KeychainClientMock extends KeychainClient {
     keychain.AccountAddress("1Aj3Gi1j5UsvZh4ccjaqdnogPMWy54Z5ii", change, derivations)
   ) ++ (1 to 20).map(i => keychain.AccountAddress(s"unused$i", change, derivations))
 
-  private val derivationsInternal: NonEmptyList[Int] = NonEmptyList(1, List(1))
+  private val derivationsInternal: Derivation = Derivation(1, 1)
   val derivedAddressesInternal: List[AccountAddress] =
     (1 to 20)
       .map(i => keychain.AccountAddress(s"changeAddr$i", ChangeType.Internal, derivationsInternal))

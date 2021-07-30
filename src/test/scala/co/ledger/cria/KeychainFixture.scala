@@ -1,8 +1,8 @@
 package co.ledger.cria
 
-import cats.data.NonEmptyList
 import cats.effect.IO
 import co.ledger.cria.clients.explorer.ExplorerClient.Address
+import co.ledger.cria.domain.models.interpreter.Derivation
 import co.ledger.cria.domain.models.keychain
 import co.ledger.cria.domain.models.keychain.{AccountAddress, ChangeType, KeychainId}
 import co.ledger.cria.domain.services.KeychainClient
@@ -32,7 +32,7 @@ object KeychainFixture {
         IO.delay(
           addresses
             .slice(fromIndex, toIndex)
-            .map(AccountAddress(_, ChangeType.External, derivation = NonEmptyList.one(1)))
+            .map(AccountAddress(_, ChangeType.External, derivation = Derivation(1, 0)))
             .toList
         )
 
@@ -51,7 +51,7 @@ object KeychainFixture {
         for {
           knownAddresses <- IO(
             newlyMarkedAddresses.keys.toList.map(
-              keychain.AccountAddress(_, ChangeType.External, derivation = NonEmptyList.one(1))
+              keychain.AccountAddress(_, ChangeType.External, derivation = Derivation(1, 0))
             )
           )
 

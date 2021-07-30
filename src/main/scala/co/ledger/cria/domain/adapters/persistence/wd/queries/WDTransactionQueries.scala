@@ -10,6 +10,7 @@ import doobie._
 import doobie.implicits._
 import doobie.postgres.implicits._
 import fs2._
+import WDQueryImplicits._
 
 object WDTransactionQueries extends DoobieLogHandler {
 

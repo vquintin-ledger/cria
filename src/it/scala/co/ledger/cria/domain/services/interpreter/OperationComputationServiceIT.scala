@@ -2,13 +2,13 @@ package co.ledger.cria.domain.services.interpreter
 
 import java.time.Instant
 import fs2.Stream
-import cats.data.NonEmptyList
 import co.ledger.cria.domain.models.account.{AccountUid, WalletUid}
 import co.ledger.cria.domain.models.interpreter.{
   AccountTxView,
   BlockHash,
   BlockView,
   Coin,
+  Derivation,
   InputView,
   Operation,
   OperationType,
@@ -36,19 +36,19 @@ class OperationComputationServiceIT
     AccountAddress(
       "1DtwACvd338XtHBFYJRVKRLxviD7YtYADa",
       ChangeType.External,
-      NonEmptyList.of(1, 0)
+      Derivation(1, 0)
     )
   private val outputAddress2 =
     AccountAddress(
       "1LK8UbiRwUzC8KFEbMKvgbvriM9zLMce3C",
       ChangeType.Internal,
-      NonEmptyList.of(0, 0)
+      Derivation(0, 0)
     )
   private val inputAddress =
     keychain.AccountAddress(
       "1LD1pARePgXXyZA1J3EyvRtB82vxENs5wQ",
       ChangeType.External,
-      NonEmptyList.of(1, 1)
+      Derivation(1, 1)
     )
 
   private val time: Instant = Instant.parse("2019-04-04T10:03:22Z")

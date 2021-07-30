@@ -17,6 +17,7 @@ import doobie._
 import doobie.implicits._
 import doobie.postgres.implicits._
 import fs2.{Chunk, Pipe, Stream}
+import co.ledger.cria.domain.adapters.persistence.lama.queries.LamaQueryImplicits._
 
 object LamaOperationTestQueries extends DoobieLogHandler {
 
