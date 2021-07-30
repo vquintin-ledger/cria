@@ -10,10 +10,9 @@ import co.ledger.cria.domain.models.interpreter._
 import co.ledger.cria.domain.models.implicits._
 import co.ledger.cria.domain.models.keychain.{AccountAddress, ChangeType}
 import doobie._
-import doobie.implicits._
-import doobie.postgres.implicits._
 import fs2.Stream
-import WDQueryImplicits._
+import WDSqliteImplicits._
+import doobie.implicits.toSqlInterpolator
 
 import java.time.Instant
 

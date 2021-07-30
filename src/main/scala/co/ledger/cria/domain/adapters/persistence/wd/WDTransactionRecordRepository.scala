@@ -3,7 +3,7 @@ package co.ledger.cria.domain.adapters.persistence.wd
 import cats.data.NonEmptyList
 import cats.implicits._
 import cats.effect.{ContextShift, IO}
-import co.ledger.cria.domain.adapters.persistence.wd.queries.{WDQueries, WDTransactionQueries}
+import co.ledger.cria.domain.adapters.persistence.wd.queries.{WDQueries, WDTemporaryQueries, WDTransactionQueries}
 import co.ledger.cria.domain.models.account.AccountUid
 import co.ledger.cria.domain.models.interpreter.{AccountTxView, BlockView}
 import co.ledger.cria.domain.services.interpreter.TransactionRecordRepository
@@ -28,7 +28,7 @@ final class WDTransactionRecordRepository(
       .parEvalMapUnordered(maxConcurrent) { chunk =>
         Stream
           .chunk(chunk)
-          .evalMap(a => WDTransactionQueries.saveTransaction(a.accountId, a.tx))
+          .evalMap(a => WDTemporaryQueries.saveTransaction(a.accountId, a.tx))
           .transact(temporary)
           .compile
           .foldMonoid

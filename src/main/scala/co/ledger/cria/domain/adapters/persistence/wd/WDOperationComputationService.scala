@@ -3,7 +3,7 @@ package co.ledger.cria.domain.adapters.persistence.wd
 import cats.implicits._
 import cats.data.NonEmptyList
 import cats.effect.{ContextShift, IO}
-import co.ledger.cria.domain.adapters.persistence.wd.queries.{WDOperationQueries, WDTransactionQueries}
+import co.ledger.cria.domain.adapters.persistence.wd.queries.{WDOperationQueries, WDTemporaryQueries}
 import co.ledger.cria.domain.models.{Sort, TxHash}
 import co.ledger.cria.domain.models.account.AccountUid
 import co.ledger.cria.domain.models.interpreter.{TransactionAmounts, TransactionView}
@@ -35,9 +35,9 @@ class WDOperationComputationService(
       hashes: NonEmptyList[TxHash]
   ): Stream[IO, TransactionView] = {
     val txStream =
-      WDTransactionQueries.fetchTransaction(accountId, sort, hashes).transact(temporary)
+      WDTemporaryQueries.fetchTransaction(accountId, sort, hashes).transact(temporary)
     val txDetailsStream =
-      WDTransactionQueries.fetchTransactionDetails(accountId, sort, hashes).transact(temporary)
+      WDTemporaryQueries.fetchTransactionDetails(accountId, sort, hashes).transact(temporary)
 
     txStream
       .zip(txDetailsStream)

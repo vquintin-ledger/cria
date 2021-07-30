@@ -4,13 +4,13 @@ CREATE TABLE 'transaction' (
     hash VARCHAR NOT NULL,
     block_hash VARCHAR,
     block_height BIGINT,
-    block_time timestamp with time zone,
-    received_at timestamp with time zone,
+    block_time VARCHAR,
+    received_at VARCHAR,
     lock_time BIGINT,
     fees NUMERIC(30, 0),
     confirmations INTEGER,
 
-    PRIMARY KEY (account_uid, hash)
+    PRIMARY KEY (account_uid, hash) ON CONFLICT REPLACE
 );
 
 CREATE TABLE input (
@@ -22,11 +22,11 @@ CREATE TABLE input (
     value NUMERIC(30, 0) NOT NULL,
     address VARCHAR NOT NULL,
     script_signature VARCHAR,
-    txinwitness VARCHAR[],
+    txinwitness VARCHAR,
     sequence BIGINT NOT NULL,
     derivation VARCHAR,
 
-    PRIMARY KEY (account_uid, hash, output_hash, output_index),
+    PRIMARY KEY (account_uid, hash, output_hash, output_index) ON CONFLICT IGNORE,
     FOREIGN KEY (account_uid, hash) REFERENCES 'transaction' (account_uid, hash) ON DELETE CASCADE
 );
 
@@ -40,9 +40,9 @@ CREATE TABLE output (
     address VARCHAR NOT NULL,
     script_hex VARCHAR,
     derivation VARCHAR,
-    change_type CHANGE_TYPE,
+    change_type VARCHAR,
 
-    PRIMARY KEY (account_uid, hash, output_index),
+    PRIMARY KEY (account_uid, hash, output_index) ON CONFLICT IGNORE,
     FOREIGN KEY (account_uid, hash) REFERENCES 'transaction' (account_uid, hash) ON DELETE CASCADE
 );
 

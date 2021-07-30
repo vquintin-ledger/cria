@@ -8,7 +8,7 @@ import co.ledger.cria.domain.models.interpreter.{OperationType, TransactionView}
 import co.ledger.cria.domain.models.interpreter._
 import co.ledger.cria.domain.models.keychain.ChangeType
 import doobie._
-import doobie.postgres.implicits._
+import doobie.postgres.implicits.pgEnumStringOpt
 
 import scala.math.BigDecimal.javaBigDecimal2bigDecimal
 
@@ -35,7 +35,8 @@ object implicits {
   implicit val doobieMetaWalletUid: Meta[WalletUid] =
     Meta[String].timap[WalletUid](WalletUid)(_.value)
 
-  implicit lazy val readTransactionView: Read[TransactionView] =
+  implicit def readTransactionView(implicit getInstant: Get[Instant]): Read[TransactionView] = {
+    val _ = getInstant // thanks -Werror
     Read[
       (String, TxHash, Option[BlockHash], Option[Long], Option[Instant], Instant, Long, BigInt, Int)
     ].map {
@@ -63,4 +64,5 @@ object implicits {
           confirmations = confirmations
         )
     }
+  }
 }
