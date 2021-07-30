@@ -27,12 +27,12 @@ object WDInput {
       uid = createUid(
         accountUid = accountId,
         outputIndex = input.outputIndex,
-        previousTxHash = input.outputHash,
+        previousTxHash = input.outputHash.asString,
         coinbase = None
       ),
       previousOutputIdx = input.outputIndex,
-      previousTxHash = input.outputHash,
-      previousTxUid = WDTransaction.createUid(accountId, input.outputHash),
+      previousTxHash = input.outputHash.asString,
+      previousTxUid = WDTransaction.createUid(accountId, input.outputHash.asString),
       amount = input.value,
       inputIndex = input.inputIndex,
       address = input.address,

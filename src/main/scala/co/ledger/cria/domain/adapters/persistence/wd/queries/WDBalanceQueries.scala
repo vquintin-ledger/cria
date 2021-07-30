@@ -9,33 +9,32 @@ import doobie.implicits._
 
 object WDBalanceQueries extends DoobieLogHandler {
 
-  //FIXME: rework on WD tables instead of temp lama tables...
   def getBlockchainBalance(
       accountId: AccountUid
   ): ConnectionIO[BlockchainBalance] = {
     val balanceAndUtxosQuery =
       sql"""
-          WITH confirmed_utxos as (
-            SELECT o.account_uid, o.hash, o.output_index, o.address, o.value
-            FROM output o
-              INNER JOIN transaction tx
-                ON  o.account_uid = tx.account_uid
-                AND o.hash       = tx.hash
-                AND tx.block_hash IS NOT NULL
-            WHERE o.account_uid = $accountId
-            AND   o.derivation IS NOT NULL
-
-            EXCEPT
-
-            SELECT i.account_uid, i.output_hash, i.output_index, i.address, i.value
-            FROM input i
-              INNER JOIN transaction tx
-                ON  i.account_uid = tx.account_uid
-                AND i.hash       = tx.hash
-                AND tx.block_hash IS NOT NULL
-            WHERE i.account_uid = $accountId
-            AND   i.derivation IS NOT NULL
-          )
+          WITH
+            input_usage as (
+              SELECT i.previous_tx_hash, i.previous_output_idx, tx2.block_uid
+              FROM bitcoin_inputs i
+                INNER JOIN bitcoin_transaction_inputs txi
+                  ON i.uid = txi.input_uid
+                INNER JOIN bitcoin_transactions tx2
+                  ON txi.transaction_uid = tx2.transaction_uid
+            ),
+            confirmed_utxos as (
+              SELECT o.amount AS value
+              FROM bitcoin_outputs o
+                INNER JOIN bitcoin_transactions tx
+                  ON o.transaction_hash = tx.hash
+                  AND tx.block_uid IS NOT NULL
+                LEFT JOIN input_usage iu
+                  ON o.transaction_hash = iu.previous_tx_hash
+                  AND o.idx = iu.previous_output_idx
+              WHERE o.account_uid = $accountId
+              AND iu.block_uid IS NULL -- input is unused
+            )
 
           SELECT COALESCE(SUM(value), 0), COALESCE(COUNT(value), 0)
           FROM confirmed_utxos
@@ -69,29 +68,35 @@ object WDBalanceQueries extends DoobieLogHandler {
       accountId: AccountUid
   ): ConnectionIO[BigInt] =
     sql"""
-          WITH new_utxo as (SELECT COALESCE(SUM(o.value), 0) as value
-          FROM output o
-            INNER JOIN transaction tx
-              ON  o.account_uid = tx.account_uid
-              AND o.hash       = tx.hash
-              AND tx.block_hash IS NULL -- take only new inputs account
-          WHERE o.account_uid = $accountId
-            AND o.derivation IS NOT NULL
-          ),
+          WITH
+            new_utxos as (
+              SELECT COALESCE(SUM(o.amount), 0) as value
+              FROM bitcoin_outputs o
+                INNER JOIN bitcoin_transactions tx
+                  ON o.transaction_hash = tx.hash
+                  AND tx.block_uid IS NULL
+                LEFT JOIN bitcoin_inputs i
+                  ON o.transaction_hash = i.previous_tx_hash
+                  AND o.idx = i.previous_output_idx
+              WHERE o.account_uid = $accountId
+              AND i.uid IS NULL
+            ),
+            used_utxos as (
+              SELECT COALESCE(SUM(i.amount), 0) as value
+              FROM bitcoin_transaction_inputs txi
+                INNER JOIN bitcoin_transactions tx
+                  ON tx.transaction_uid = txi.transaction_uid
+                  AND tx.block_uid IS NULL
+                INNER JOIN bitcoin_inputs i
+                  ON txi.input_uid = i.uid
+                INNER JOIN bitcoin_outputs o
+                  ON o.transaction_hash = i.previous_tx_hash
+                  AND o.idx = i.previous_output_idx
+              WHERE o.account_uid = $accountId
+            )
 
-          used_utxos as (
-            SELECT COALESCE(SUM(i.value), 0) as value
-            FROM input i
-              INNER JOIN transaction tx
-                ON  i.account_uid = tx.account_uid
-                AND i.hash       = tx.hash
-                AND tx.block_hash IS NULL
-            WHERE i.account_uid = $accountId
-              AND i.derivation IS NOT NULL
-          )
-
-          SELECT new_utxo.value - used_utxos.value as pending_amount
-          FROM new_utxo, used_utxos
+          SELECT new_utxos.value - used_utxos.value as pending_amount
+          FROM new_utxos, used_utxos
       """
       .query[BigInt]
       .unique

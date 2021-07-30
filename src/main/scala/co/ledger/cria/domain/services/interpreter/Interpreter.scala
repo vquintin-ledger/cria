@@ -43,6 +43,7 @@ class InterpreterImpl(explorer: Coin => ExplorerClient, persistenceFacade: Persi
   private val transactionRecordRepository = persistenceFacade.transactionRecordRepository
   private val operationComputationService = persistenceFacade.operationComputationService
   private val operationRepository         = persistenceFacade.operationRepository
+  private val postSyncCheckService        = persistenceFacade.postSyncCheckService
 
   private val UTXO_LOCKING_TIME = Duration("12 hours")
 
@@ -92,7 +93,7 @@ class InterpreterImpl(explorer: Coin => ExplorerClient, persistenceFacade: Persi
 
       _ <- log.info(s"$nbSavedOps operations saved")
 
-//      _ <- postSyncCheckService.check(account.accountUid)
+      _ <- postSyncCheckService.check(account.accountUid)
     } yield nbSavedOps
   }
 

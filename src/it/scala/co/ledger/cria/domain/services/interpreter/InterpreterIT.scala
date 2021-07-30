@@ -70,7 +70,7 @@ class InterpreterIT extends AnyFlatSpec with ContainerSpec with Matchers {
   )
   val inputs = List(
     InputView(
-      "0f38e5f1b12078495a9e80c6e0d77af3d674cfe6096bb6e7909993a53b6e8386",
+      TxHash.fromStringUnsafe("0f38e5f1b12078495a9e80c6e0d77af3d674cfe6096bb6e7909993a53b6e8386"),
       0,
       0,
       80000,
@@ -309,6 +309,8 @@ class InterpreterIT extends AnyFlatSpec with ContainerSpec with Matchers {
 
         val utils = tr.testUtils
 
+        val txHash0 = TxHash.fromStringUnsafe("d0a75f8295419c72782aadb8de23b4d8ed095c9ec3c26a144b8e8f9ab0c11730")
+
         val uTx1 = TransactionView(
           "tx1",
           TxHash.fromStringUnsafe(
@@ -318,7 +320,7 @@ class InterpreterIT extends AnyFlatSpec with ContainerSpec with Matchers {
           0,
           1000,
           List(
-            InputView(".", 0, 0, 101000, inputAddress.accountAddress, "script", List(), 0L, None)
+            InputView(txHash0, 0, 0, 101000, inputAddress.accountAddress, "script", List(), 0L, None)
           ),
           List(
             OutputView(0, 100000, outputAddress1.accountAddress, "script", None, None)
@@ -346,7 +348,7 @@ class InterpreterIT extends AnyFlatSpec with ContainerSpec with Matchers {
           ),
           inputs = List(
             InputView(
-              "tx1",
+              uTx1.hash,
               0,
               0,
               100000,
@@ -413,7 +415,6 @@ class InterpreterIT extends AnyFlatSpec with ContainerSpec with Matchers {
           )
           lastBalance        <- utils.getBalance(accountUid)
           lastOperationCount <- utils.getOperationCount(accountUid)
-
         } yield {
 
           firstOperationCount shouldBe 1
@@ -438,6 +439,8 @@ class InterpreterIT extends AnyFlatSpec with ContainerSpec with Matchers {
 
         val utils = tr.testUtils
 
+        val txHash0 = TxHash.fromStringUnsafe("6a7a2a7365343ac22a30e4971ec9699af7d01d61e33f6b4381b745d556ddc92c")
+
         val uTx1 = AccountTxView(
           accountUid,
           TransactionView(
@@ -449,7 +452,7 @@ class InterpreterIT extends AnyFlatSpec with ContainerSpec with Matchers {
             0,
             1000,
             List(
-              InputView(".", 0, 0, 101000, inputAddress.accountAddress, "script", List(), 0L, None)
+              InputView(txHash0, 0, 0, 101000, inputAddress.accountAddress, "script", List(), 0L, None)
             ),
             List(
               OutputView(0, 100000, outputAddress1.accountAddress, "script", None, None)

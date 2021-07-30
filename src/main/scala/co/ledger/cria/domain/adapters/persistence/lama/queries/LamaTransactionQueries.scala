@@ -181,6 +181,7 @@ object LamaTransactionQueries extends DoobieLogHandler {
 
     val inputs  = fetchInputs(accountId, sort, txHashes).stream.through(groupByTxHash)
     val outputs = fetchOutputs(accountId, sort, txHashes).stream.through(groupByTxHash)
+    implicit val txHashOrdering: Ordering[TxHash] = TxHash.orderTxHash.toOrdering
 
     inputs
       .zip(outputs)

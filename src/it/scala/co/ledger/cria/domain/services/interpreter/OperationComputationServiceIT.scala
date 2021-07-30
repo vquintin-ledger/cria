@@ -65,7 +65,7 @@ class OperationComputationServiceIT
   )
   val inputs = List(
     InputView(
-      "0f38e5f1b12078495a9e80c6e0d77af3d674cfe6096bb6e7909993a53b6e8386",
+      TxHash.fromStringUnsafe("0f38e5f1b12078495a9e80c6e0d77af3d674cfe6096bb6e7909993a53b6e8386"),
       0,
       0,
       80000,
