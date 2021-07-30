@@ -1,9 +1,9 @@
 package co.ledger.cria.domain.models.keychain
 
-import cats.data.NonEmptyList
+import co.ledger.cria.domain.models.interpreter.Derivation
 
 case class AccountAddress(
     accountAddress: String,
     changeType: ChangeType,
-    derivation: NonEmptyList[Int]
+    derivation: Derivation
 )

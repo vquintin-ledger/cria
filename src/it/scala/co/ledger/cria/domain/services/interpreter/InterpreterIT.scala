@@ -3,8 +3,6 @@ package co.ledger.cria.domain.services.interpreter
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import java.util.UUID
-
-import cats.data.NonEmptyList
 import cats.effect.IO
 import co.ledger.cria.domain.mocks.ExplorerClientMock
 import co.ledger.cria.itutils.ContainerSpec
@@ -17,6 +15,7 @@ import co.ledger.cria.domain.models.interpreter.{
   BlockHash,
   BlockView,
   Coin,
+  Derivation,
   InputView,
   OutputView,
   TransactionView
@@ -43,18 +42,18 @@ class InterpreterIT extends AnyFlatSpec with ContainerSpec with Matchers {
   override implicit val lc: CriaLogContext = CriaLogContext().withAccountId(accountUid)
 
   private val outputAddress1 =
-    AccountAddress("1DtwACvd338XtHBFYJRVKRLxviD7YtYADa", ChangeType.External, NonEmptyList.of(1, 0))
+    AccountAddress("1DtwACvd338XtHBFYJRVKRLxviD7YtYADa", ChangeType.External, Derivation(1, 0))
   private val outputAddress2 =
     AccountAddress(
       "1LK8UbiRwUzC8KFEbMKvgbvriM9zLMce3C",
       ChangeType.Internal,
-      NonEmptyList.of(0, 0)
+      Derivation(0, 0)
     )
   private val inputAddress =
     keychain.AccountAddress(
       "1LD1pARePgXXyZA1J3EyvRtB82vxENs5wQ",
       ChangeType.External,
-      NonEmptyList.of(1, 1)
+      Derivation(1, 1)
     )
 
   private val time: Instant = Instant.parse("2019-04-04T10:03:22Z")

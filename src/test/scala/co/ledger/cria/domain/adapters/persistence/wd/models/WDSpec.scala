@@ -1,9 +1,8 @@
 package co.ledger.cria.domain.adapters.persistence.wd.models
 
-import cats.data.NonEmptyList
 import co.ledger.cria.domain.models.TxHash
 import co.ledger.cria.domain.models.account.AccountUid
-import co.ledger.cria.domain.models.interpreter.{BlockHash, Coin, OperationType, OutputView}
+import co.ledger.cria.domain.models.interpreter.{BlockHash, Coin, Derivation, OperationType, OutputView}
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
@@ -48,7 +47,7 @@ class WDSpec extends AnyFlatSpec with Matchers {
   "an operations recipients" should "depend on the operationType" in {
     val belongAddess     = "address1"
     val notBelongAddress = "address2"
-    val belongOutput     = OutputView(0, 0, belongAddess, "", None, Some(NonEmptyList(1, List(0))))
+    val belongOutput     = OutputView(0, 0, belongAddess, "", None, Some(Derivation(1, 0)))
     val notBelongOutput  = OutputView(0, 0, notBelongAddress, "", None, None)
     WDOperation.getRecipients(
       OperationType.Receive,

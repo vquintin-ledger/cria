@@ -15,6 +15,7 @@ import doobie._
 import doobie.implicits._
 import doobie.postgres.implicits._
 import co.ledger.cria.domain.models.implicits._
+import LamaQueryImplicits._
 import fs2._
 
 import java.time.Instant

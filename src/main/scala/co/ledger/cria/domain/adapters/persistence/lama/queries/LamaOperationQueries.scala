@@ -14,6 +14,7 @@ import doobie._
 import doobie.implicits._
 import doobie.postgres.implicits._
 import fs2.Stream
+import LamaQueryImplicits._
 
 object LamaOperationQueries extends DoobieLogHandler {
 
@@ -93,7 +94,7 @@ object LamaOperationQueries extends DoobieLogHandler {
   ): ConnectionIO[Int] = {
     val queries = addresses.map { addr =>
       sql"""UPDATE input
-            SET derivation = ${addr.derivation.toList}
+            SET derivation = ${addr.derivation}
             WHERE account_id = $accountId
             AND address = ${addr.accountAddress}
          """
@@ -110,7 +111,7 @@ object LamaOperationQueries extends DoobieLogHandler {
     val queries = addresses.map { addr =>
       sql"""UPDATE output
             SET change_type = $changeType,
-                derivation = ${addr.derivation.toList}
+                derivation = ${addr.derivation}
             WHERE account_id = $accountId
             AND address = ${addr.accountAddress}
          """

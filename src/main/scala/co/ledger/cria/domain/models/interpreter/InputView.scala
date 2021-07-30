@@ -1,7 +1,5 @@
 package co.ledger.cria.domain.models.interpreter
 
-import cats.data.NonEmptyList
-
 case class InputView(
     outputHash: String,
     outputIndex: Int,
@@ -11,7 +9,7 @@ case class InputView(
     scriptSignature: String,
     txinwitness: List[String],
     sequence: Long,
-    derivation: Option[NonEmptyList[Int]]
+    derivation: Option[Derivation]
 ) {
   val belongs: Boolean = derivation.isDefined
 }
