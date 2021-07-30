@@ -41,10 +41,6 @@ class CriaE2ETest
           actual.opsSize shouldBe tc.expected.opsSize
         }
 
-        withClue(s"have ${tc.expected.utxosSize} utxos") {
-          actual.utxosSize shouldBe tc.expected.utxosSize
-        }
-
         withClue(s"have received ${tc.expected.amountReceived} in total") {
           actual.amountReceived shouldBe tc.expected.amountReceived
         }

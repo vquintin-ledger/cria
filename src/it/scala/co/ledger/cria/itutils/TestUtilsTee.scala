@@ -7,10 +7,8 @@ import co.ledger.cria.domain.adapters.persistence.tee.{
   TeeConcurrency,
   TeeConfig
 }
-import co.ledger.cria.domain.models.Sort
 import co.ledger.cria.domain.models.account.{AccountUid, WalletUid}
 import co.ledger.cria.domain.models.interpreter.CurrentBalance
-import co.ledger.cria.itutils.models.GetUtxosResult
 import co.ledger.cria.logging.{IOLogger, LogContext}
 
 final class TestUtilsTee private (primary: TestUtils, secondary: TestUtils, combiner: Combiner)
@@ -25,17 +23,6 @@ final class TestUtilsTee private (primary: TestUtils, secondary: TestUtils, comb
     combiner.combineAction(
       primary.getOperationCount(accountId),
       secondary.getOperationCount(accountId)
-    )
-
-  override def getUtxos(
-      accountId: AccountUid,
-      limit: Int,
-      offset: Int,
-      sort: Sort
-  ): IO[GetUtxosResult] =
-    combiner.combineAction(
-      primary.getUtxos(accountId, limit, offset, sort),
-      secondary.getUtxos(accountId, limit, offset, sort)
     )
 
   override def getBalance(accountId: AccountUid): IO[CurrentBalance] =

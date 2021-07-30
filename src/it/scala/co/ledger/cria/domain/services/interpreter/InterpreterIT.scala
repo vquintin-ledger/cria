@@ -8,7 +8,7 @@ import co.ledger.cria.domain.mocks.ExplorerClientMock
 import co.ledger.cria.itutils.ContainerSpec
 import co.ledger.cria.utils.IOAssertion
 import co.ledger.cria.logging.CriaLogContext
-import co.ledger.cria.domain.models.{Sort, TxHash, keychain}
+import co.ledger.cria.domain.models.{TxHash, keychain}
 import co.ledger.cria.domain.models.account.{Account, AccountUid, WalletUid}
 import co.ledger.cria.domain.models.interpreter.{
   AccountTxView,
@@ -21,7 +21,6 @@ import co.ledger.cria.domain.models.interpreter.{
   TransactionView
 }
 import co.ledger.cria.domain.models.keychain.{AccountAddress, ChangeType, KeychainId}
-import co.ledger.cria.itutils.models.GetUtxosResult
 import org.scalatest.matchers.should.Matchers
 import fs2.Stream
 import org.scalatest.flatspec.AnyFlatSpec
@@ -158,14 +157,6 @@ class InterpreterIT extends AnyFlatSpec with ContainerSpec with Matchers {
 
           blocks                 <- interpreter.getLastBlocks(accountUid)
           opsBeforeDeletionTotal <- utils.getOperationCount(accountUid)
-          resUtxoBeforeDeletion <- utils.getUtxos(
-            accountUid,
-            20,
-            0,
-            Sort.Ascending
-          )
-          GetUtxosResult(utxosBeforeDeletion, utxosBeforeDeletionTotal, utxosBeforeDeletionTrunc) =
-            resUtxoBeforeDeletion
 
           _ <- interpreter.removeDataFromCursor(
             accountUid,
@@ -181,11 +172,6 @@ class InterpreterIT extends AnyFlatSpec with ContainerSpec with Matchers {
           }
           withClue(s"There should be 2 ops before delete") {
             opsBeforeDeletionTotal shouldBe 2
-          }
-          withClue(s"There should be 1 utxo before delete") {
-            utxosBeforeDeletion should have size 1
-            utxosBeforeDeletionTotal shouldBe 1
-            utxosBeforeDeletionTrunc shouldBe false
           }
           withClue(s"There should be no ops after delete") {
             opsAfterDeletionTotal shouldBe 0

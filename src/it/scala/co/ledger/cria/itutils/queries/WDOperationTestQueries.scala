@@ -1,6 +1,6 @@
 package co.ledger.cria.itutils.queries
 
-import co.ledger.cria.itutils.models.{ConfirmedUtxo, Utxo}
+import co.ledger.cria.itutils.models.ConfirmedUtxo
 import co.ledger.cria.logging.DoobieLogHandler
 import co.ledger.cria.domain.models.account.AccountUid
 import co.ledger.cria.domain.models.Sort
@@ -59,25 +59,6 @@ object WDOperationTestQueries extends DoobieLogHandler {
          """ ++ orderF ++ limitF ++ offsetF
     query.query[ConfirmedUtxo].stream
   }
-
-  def fetchUnconfirmedUTXOs(
-      accountId: AccountUid
-  ): Stream[ConnectionIO, Utxo] =
-    sql"""SELECT tx.hash, o.output_index, o.value, o.address, o.script_hex, o.change_type, o.derivation, tx.received_at
-            FROM output o
-              LEFT JOIN input i
-                ON o.account_uid = i.account_uid
-                AND o.address = i.address
-                AND o.output_index = i.output_index
-			          AND o.hash = i.output_hash
-              INNER JOIN transaction tx
-                ON o.account_uid = tx.account_uid
-                AND o.hash = tx.hash
-                AND tx.block_hash IS NULL
-            WHERE o.account_uid = $accountId
-              AND o.derivation IS NOT NULL
-              AND i.address IS NULL
-         """.query[Utxo].stream
 
   def countOperations(accountId: AccountUid): ConnectionIO[Int] =
     sql"""SELECT COUNT(*) FROM operations WHERE account_uid = $accountId"""

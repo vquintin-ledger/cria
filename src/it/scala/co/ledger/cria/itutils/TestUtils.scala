@@ -2,10 +2,8 @@ package co.ledger.cria.itutils
 
 import cats.effect.{ContextShift, IO, Resource, Timer}
 import co.ledger.cria.config.PersistenceConfig
-import co.ledger.cria.domain.models.Sort
 import co.ledger.cria.domain.models.account.{AccountUid, WalletUid}
 import co.ledger.cria.domain.models.interpreter.CurrentBalance
-import co.ledger.cria.itutils.models.GetUtxosResult
 import co.ledger.cria.logging.{IOLogger, LogContext}
 
 trait TestUtils {
@@ -15,14 +13,14 @@ trait TestUtils {
   def getOperationCount(
       accountId: AccountUid
   ): IO[Int]
-
+/*
   def getUtxos(
       accountId: AccountUid,
       limit: Int,
       offset: Int,
       sort: Sort
   ): IO[GetUtxosResult]
-
+*/
   def getBalance(accountId: AccountUid): IO[CurrentBalance]
 
   def migrate: IO[Unit]

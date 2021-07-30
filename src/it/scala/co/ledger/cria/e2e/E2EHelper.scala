@@ -5,7 +5,7 @@ import co.ledger.cria.domain.models.interpreter.Coin
 import co.ledger.cria.itutils.models.keychain.AccountKey.Xpub
 import co.ledger.cria.itutils.models.keychain.Scheme
 import co.ledger.cria.clients.explorer.models.circeImplicits._
-import co.ledger.cria.domain.models.{Sort, SynchronizationResult}
+import co.ledger.cria.domain.models.SynchronizationResult
 import co.ledger.cria.domain.models.SynchronizationResult.{
   SynchronizationFailure,
   SynchronizationSuccess
@@ -27,11 +27,9 @@ trait E2EHelper { cfs: ContainerSpec =>
       val account = Account(AccountUid(accountUid), keychainId, coin)
       for {
         opsSize   <- res.testUtils.getOperationCount(account.accountUid)
-        utxosSize <- res.testUtils.getUtxos(account.accountUid, 20, 0, Sort.Ascending)
         balance   <- res.testUtils.getBalance(account.accountUid)
       } yield SyncResult(
         opsSize,
-        utxosSize.total,
         balance.balance.longValue,
         balance.received.longValue,
         balance.sent.longValue
@@ -78,7 +76,6 @@ object RegisterRequest {
 
 case class SyncResult(
     opsSize: Int,
-    utxosSize: Int,
     balance: Long,
     amountReceived: Long,
     amountSent: Long
