@@ -9,7 +9,9 @@ import doobie._
 import doobie.implicits._
 import fs2._
 import WDSqliteImplicits._
+import cats.Monad
 import co.ledger.cria.logging.DoobieLogHandler
+import doobie.free.connection
 
 object WDTemporaryQueries extends DoobieLogHandler {
 
@@ -21,7 +23,7 @@ object WDTemporaryQueries extends DoobieLogHandler {
 
   def saveTransaction(accountId: AccountUid, tx: TransactionView): ConnectionIO[Int] =
     for {
-      txStatement <- insertTx(accountId, tx)
+      txStatement <- insertOrUpdateTx(accountId, tx)
 
       _ <- insertInputs(
         accountId,
@@ -32,22 +34,13 @@ object WDTemporaryQueries extends DoobieLogHandler {
       _ <- insertOutputs(accountId, tx.hash, tx.outputs.toList)
     } yield txStatement
 
+  private def insertOrUpdateTx(accountUid: AccountUid, tx: TransactionView): ConnectionIO[Int] =
+    Monad[ConnectionIO].ifM(hasTx(accountUid, tx.hash))(tx.block.fold(connection.pure(0))(_ => updateTx(accountUid, tx)), insertTx(accountUid, tx))
+
   private def insertTx(
       accountId: AccountUid,
       tx: TransactionView
   ): doobie.ConnectionIO[Int] = {
-
-    //TODO: check if we should remove the "WHERE" clause to allow transctions to fall back in mempool (after reorg)
-    /*    val update =
-      fr"""DO UPDATE SET
-              block_hash   = ${tx.block.map(_.hash)},
-              block_height = ${tx.block.map(_.height)},
-              block_time   = ${tx.block.map(_.time)}
-            WHERE 'transaction.block_hash' IS NULL
-       """
-
-    val noUpdate = fr"""DO NOTHING"""
-     */
     val query =
       sql"""INSERT INTO 'transaction' (
             account_uid, id, hash, block_hash, block_height, block_time, received_at, lock_time, fees, confirmations
@@ -62,11 +55,24 @@ object WDTemporaryQueries extends DoobieLogHandler {
             ${tx.lockTime},
             ${tx.fees},
             ${tx.confirmations}
-          )""" /* ON CONFLICT """ ++
-        tx.block.map(_ => update).getOrElse(noUpdate)*/
-
+          )"""
     query.update.run
   }
+
+  private def hasTx(accountUid: AccountUid, txHash: TxHash): doobie.ConnectionIO[Boolean] =
+    sql"""SELECT COUNT(*)
+          FROM 'transaction'
+          WHERE account_uid = ${accountUid} AND hash = ${txHash}
+       """.query[Int].unique.map(_ == 1)
+
+  private def updateTx(accountUid: AccountUid, tx: TransactionView): doobie.ConnectionIO[Int] =
+    sql"""UPDATE 'transaction'
+          SET
+              block_hash   = ${tx.block.map(_.hash)},
+              block_height = ${tx.block.map(_.height)},
+              block_time   = ${tx.block.map(_.time)}
+          WHERE account_uid = ${accountUid} AND hash = ${tx.hash}
+       """.update.run
 
   private def insertInputs(
       accountId: AccountUid,

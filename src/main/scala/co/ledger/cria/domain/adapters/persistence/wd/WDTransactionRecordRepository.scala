@@ -23,7 +23,7 @@ final class WDTransactionRecordRepository(
 ) extends ContextLogging
     with TransactionRecordRepository {
 
-  override def saveTransactions(implicit lc: CriaLogContext): Pipe[IO, AccountTxView, Int] =
+  override def saveTransactions(implicit lc: CriaLogContext): Pipe[IO, AccountTxView, Unit] =
     _.chunkN(100)
       .parEvalMapUnordered(maxConcurrent) { chunk =>
         Stream
@@ -33,8 +33,7 @@ final class WDTransactionRecordRepository(
           .compile
           .foldMonoid
           .flatMap { nbSaved =>
-            log.info(s"$nbSaved new transactions saved (from chunk size: ${chunk.size})") *>
-              IO.pure(nbSaved)
+            log.info(s"$nbSaved new transactions saved (from chunk size: ${chunk.size})")
           }
       }
 

@@ -15,7 +15,7 @@ class TransactionRecordRepositoryTee(
 
   override def saveTransactions(implicit
       lc: CriaLogContext
-  ): Pipe[IO, AccountTxView, Int] =
+  ): Pipe[IO, AccountTxView, Unit] =
     combiner.combinePipe(primary.saveTransactions, secondary.saveTransactions)
 
   override def removeFromCursor(accountId: AccountUid, blockHeight: Long): IO[Int] =

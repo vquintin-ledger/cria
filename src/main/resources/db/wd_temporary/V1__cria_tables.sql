@@ -10,7 +10,7 @@ CREATE TABLE 'transaction' (
     fees NUMERIC(30, 0),
     confirmations INTEGER,
 
-    PRIMARY KEY (account_uid, hash) ON CONFLICT REPLACE
+    PRIMARY KEY (account_uid, hash)
 );
 
 CREATE TABLE input (

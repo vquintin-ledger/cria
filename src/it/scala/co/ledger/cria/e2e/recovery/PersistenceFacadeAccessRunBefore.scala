@@ -17,7 +17,7 @@ final class PersistenceFacadeAccessRunBefore(persistenceFacade: PersistenceFacad
     new TransactionRecordRepository {
       val delegate = persistenceFacade.transactionRecordRepository
 
-      override def saveTransactions(implicit lc: CriaLogContext): Pipe[IO, AccountTxView, Int] =
+      override def saveTransactions(implicit lc: CriaLogContext): Pipe[IO, AccountTxView, Unit] =
         doBeforePipe(delegate.saveTransactions)
 
       override def removeFromCursor(accountId: AccountUid, blockHeight: Long): IO[Int] =
