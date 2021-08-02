@@ -29,7 +29,7 @@ class WDPostSyncCheckService(db: Transactor[IO]) extends ContextLogging with Pos
       balance = blockchainBalance.balance,
       utxos = blockchainBalance.utxos,
       received = blockchainBalance.received,
-      sent = blockchainBalance.netSent,
+      sent = blockchainBalance.netSent + blockchainBalance.fees,
       unconfirmedBalance = unconfirmedBalance
     )
 

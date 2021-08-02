@@ -70,28 +70,17 @@ object TypeHelper {
     private def unconfirmedTransaction[F[_]](t: explorer.UnconfirmedTransaction, txHash: TxHash)(
         implicit me: MonadError[F, Throwable]
     ): F[TransactionView] = {
-      import t._
-      me.pure(
+      for {
+        inputs <- t.inputs.collect { case i: DefaultInput => i }.traverse(input.fromDefaultInput[F])
+      } yield {
         TransactionView(
-          id,
+          t.id,
           txHash,
-          receivedAt,
-          lockTime,
-          fees,
-          inputs.collect { case i: DefaultInput =>
-            InputView(
-              i.outputHash,
-              i.outputIndex,
-              i.inputIndex,
-              i.value,
-              i.address,
-              i.scriptSignature,
-              i.txinwitness,
-              i.sequence,
-              None
-            )
-          },
-          outputs.map { o =>
+          t.receivedAt,
+          t.lockTime,
+          t.fees,
+          inputs,
+          t.outputs.map { o =>
             OutputView(
               o.outputIndex,
               o.value,
@@ -102,51 +91,64 @@ object TypeHelper {
             )
           },
           None,
-          confirmations
+          t.confirmations
         )
-      )
+      }
     }
 
     private def confirmedTransaction[F[_]](t: explorer.ConfirmedTransaction, txHash: TxHash)(
         implicit me: MonadError[F, Throwable]
     ): F[TransactionView] = {
-      import t.{block => b, _}
-      block
-        .fromExplorer[F](b)
-        .map(blockView =>
-          TransactionView(
-            id,
-            txHash,
-            receivedAt,
-            lockTime,
-            fees,
-            inputs.collect { case i: DefaultInput =>
-              InputView(
-                i.outputHash,
-                i.outputIndex,
-                i.inputIndex,
-                i.value,
-                i.address,
-                i.scriptSignature,
-                i.txinwitness,
-                i.sequence,
-                None
-              )
-            },
-            outputs.map { o =>
-              OutputView(
-                o.outputIndex,
-                o.value,
-                o.address,
-                o.scriptHex,
-                None,
-                None
-              )
-            },
-            Some(blockView),
-            confirmations
-          )
+      for {
+        blockView <- block.fromExplorer[F](t.block)
+        inputs    <- t.inputs.collect { case i: DefaultInput => i }.traverse(input.fromDefaultInput[F])
+      } yield {
+        TransactionView(
+          t.id,
+          txHash,
+          t.receivedAt,
+          t.lockTime,
+          t.fees,
+          inputs,
+          t.outputs.map { o =>
+            OutputView(
+              o.outputIndex,
+              o.value,
+              o.address,
+              o.scriptHex,
+              None,
+              None
+            )
+          },
+          Some(blockView),
+          t.confirmations
         )
+      }
     }
+  }
+
+  object input {
+    def fromDefaultInput[F[_]](
+        i: explorer.DefaultInput
+    )(implicit me: MonadError[F, Throwable]): F[InputView] =
+      for {
+        outputHash <- me.fromEither(
+          TxHash
+            .fromString(i.outputHash)
+            .leftMap(s => new RuntimeException(s"Not a valid txHash from explorer: $s"))
+        )
+      } yield {
+        InputView(
+          outputHash,
+          i.outputIndex,
+          i.inputIndex,
+          i.value,
+          i.address,
+          i.scriptSignature,
+          i.txinwitness,
+          i.sequence,
+          None
+        )
+      }
   }
 }

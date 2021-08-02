@@ -1,7 +1,9 @@
 package co.ledger.cria.domain.models.interpreter
 
+import co.ledger.cria.domain.models.TxHash
+
 case class InputView(
-    outputHash: String,
+    outputHash: TxHash,
     outputIndex: Int,
     inputIndex: Int,
     value: BigInt,

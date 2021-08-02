@@ -9,7 +9,7 @@ case class TxHash(private val hash: SHA256) extends AnyVal {
 }
 
 object TxHash {
-  implicit val ordering: Order[TxHash] = Order.by(_.hash)
+  implicit val orderTxHash: Order[TxHash] = Order.by(_.hash)
 
   // TODO Move to adaptation layer when dependency split for persistence is done
   implicit val metaHash: Meta[TxHash] = Meta[SHA256].timap(TxHash(_))(_.hash)

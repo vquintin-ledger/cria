@@ -29,7 +29,7 @@ object TransactionFixture {
   )
 
   def input(address: Address): InputView = InputView(
-    outputHash = "",
+    outputHash = TxHash.fromStringUnsafe("0eb14f1817ad99446764f190479b8e7f987127113ab3af1504dc4603655f987a"),
     outputIndex = 0,
     inputIndex = 0,
     value = 1L,
