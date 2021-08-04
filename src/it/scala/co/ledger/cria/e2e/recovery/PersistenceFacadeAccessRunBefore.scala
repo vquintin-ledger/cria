@@ -17,7 +17,7 @@ final class PersistenceFacadeAccessRunBefore(persistenceFacade: PersistenceFacad
     new TransactionRecordRepository {
       val delegate = persistenceFacade.transactionRecordRepository
 
-      override def saveTransactions(implicit lc: CriaLogContext): Pipe[IO, AccountTxView, Int] =
+      override def saveTransactions(implicit lc: CriaLogContext): Pipe[IO, AccountTxView, Unit] =
         doBeforePipe(delegate.saveTransactions)
 
       override def removeFromCursor(accountId: AccountUid, blockHeight: Long): IO[Int] =
@@ -39,9 +39,10 @@ final class PersistenceFacadeAccessRunBefore(persistenceFacade: PersistenceFacad
 
       override def getUncomputedOperations(
           accountId: AccountUid,
-          sort: Sort
+          sort: Sort,
+          fromBlockHeight: Option[Long]
       ): fs2.Stream[IO, TransactionAmounts] =
-        doBeforeStream(delegate.getUncomputedOperations(accountId, sort))
+        doBeforeStream(delegate.getUncomputedOperations(accountId, sort, fromBlockHeight))
 
       override def fetchTransactions(
           accountId: AccountUid,

@@ -18,7 +18,7 @@ final class LamaTransactionRecordRepository(db: Transactor[IO], maxConcurrent: I
 
   override def saveTransactions(implicit
       lc: CriaLogContext
-  ): Pipe[IO, AccountTxView, Int] =
+  ): Pipe[IO, AccountTxView, Unit] =
     _.chunkN(100)
       .parEvalMapUnordered(maxConcurrent) { chunk =>
         Stream
@@ -28,8 +28,7 @@ final class LamaTransactionRecordRepository(db: Transactor[IO], maxConcurrent: I
           .compile
           .foldMonoid
           .flatMap { nbSaved =>
-            log.info(s"$nbSaved new transactions saved (from chunk size: ${chunk.size})") *>
-              IO.pure(nbSaved)
+            log.info(s"$nbSaved new transactions saved (from chunk size: ${chunk.size})")
           }
       }
 

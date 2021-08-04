@@ -29,7 +29,7 @@ trait Interpreter {
 
   def getLastBlocks(accountId: AccountUid)(implicit lc: CriaLogContext): IO[List[BlockView]]
 
-  def compute(account: Account, walletUid: WalletUid)(
+  def compute(account: Account, walletUid: WalletUid, fromBlockHeight: Option[Long])(
       addresses: List[AccountAddress]
   )(implicit lc: CriaLogContext): IO[Int]
 
@@ -79,7 +79,7 @@ class InterpreterImpl(explorer: Coin => ExplorerClient, persistenceFacade: Persi
     } yield txRes
   }
 
-  def compute(account: Account, walletUid: WalletUid)(
+  def compute(account: Account, walletUid: WalletUid, fromBlockHeight: Option[Long])(
       addresses: List[AccountAddress]
   )(implicit lc: CriaLogContext): IO[Int] = {
     for {
@@ -88,7 +88,12 @@ class InterpreterImpl(explorer: Coin => ExplorerClient, persistenceFacade: Persi
       _ <- log.info(s"Computing operations")
 
       nbSavedOps <- IOUtils.withTimer("Computing finished")(
-        computeOperations(account.accountUid, account.coin, walletUid).compile.foldMonoid
+        computeOperations(
+          account.accountUid,
+          account.coin,
+          walletUid,
+          fromBlockHeight
+        ).compile.foldMonoid
       )
 
       _ <- log.info(s"$nbSavedOps operations saved")
@@ -97,10 +102,15 @@ class InterpreterImpl(explorer: Coin => ExplorerClient, persistenceFacade: Persi
     } yield nbSavedOps
   }
 
-  private def computeOperations(accountId: AccountUid, coin: Coin, walletUid: WalletUid)(implicit
+  private def computeOperations(
+      accountId: AccountUid,
+      coin: Coin,
+      walletUid: WalletUid,
+      fromBlockHeight: Option[Long]
+  )(implicit
       lc: CriaLogContext
   ): Stream[IO, Int] =
-    getUncomputedTxs(accountId)(200)
+    getUncomputedTxs(accountId, fromBlockHeight)(200)
       .evalMap(
         _.traverse(getAction(coin, _))
       )
@@ -128,14 +138,14 @@ class InterpreterImpl(explorer: Coin => ExplorerClient, persistenceFacade: Persi
         }
     }
 
-  private def getUncomputedTxs(accountId: AccountUid)(
+  private def getUncomputedTxs(accountId: AccountUid, fromBlockHeight: Option[Long])(
       chunkSize: Int
   )(implicit
       lc: CriaLogContext
   ): Stream[IO, List[Operation]] = {
     val sort = Sort.Ascending
     operationComputationService
-      .getUncomputedOperations(accountId, sort)
+      .getUncomputedOperations(accountId, sort, fromBlockHeight)
       .chunkN(chunkSize)
       .evalMap(chunk => getWDTxToSave(accountId, sort, chunk.toList))
   }

@@ -4,6 +4,7 @@ dbs=(
   # For IT tests
   test_lama
   test_lama_btc
+  wd_cria_extra
 )
 
 for db in "${dbs[@]}"

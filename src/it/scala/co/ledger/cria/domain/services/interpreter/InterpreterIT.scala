@@ -152,7 +152,7 @@ class InterpreterIT extends AnyFlatSpec with ContainerSpec with Matchers {
             )
           )
 
-          _ <- interpreter.compute(account, walletUid)(
+          _ <- interpreter.compute(account, walletUid, None)(
             List(inputAddress, outputAddress2)
           )
 
@@ -232,7 +232,7 @@ class InterpreterIT extends AnyFlatSpec with ContainerSpec with Matchers {
           _ <- utils.setupAccount(accountUid, walletUid)
           _ <- saveTxs(interpreter, List(uTx, uTx2))
 
-          _ <- interpreter.compute(account, walletUid)(
+          _ <- interpreter.compute(account, walletUid, None)(
             List(outputAddress1)
           )
           operationCount <- utils.getOperationCount(accountUid)
@@ -290,7 +290,7 @@ class InterpreterIT extends AnyFlatSpec with ContainerSpec with Matchers {
           _ <- utils.setupAccount(accountUid, walletUid)
           _ <- saveTxs(interpreter, List(uTx, tx))
 
-          _ <- interpreter.compute(account, walletUid)(
+          _ <- interpreter.compute(account, walletUid, None)(
             List(outputAddress1)
           )
           operationCount <- utils.getOperationCount(accountUid)
@@ -309,7 +309,9 @@ class InterpreterIT extends AnyFlatSpec with ContainerSpec with Matchers {
 
         val utils = tr.testUtils
 
-        val txHash0 = TxHash.fromStringUnsafe("d0a75f8295419c72782aadb8de23b4d8ed095c9ec3c26a144b8e8f9ab0c11730")
+        val txHash0 = TxHash.fromStringUnsafe(
+          "d0a75f8295419c72782aadb8de23b4d8ed095c9ec3c26a144b8e8f9ab0c11730"
+        )
 
         val uTx1 = TransactionView(
           "tx1",
@@ -320,7 +322,17 @@ class InterpreterIT extends AnyFlatSpec with ContainerSpec with Matchers {
           0,
           1000,
           List(
-            InputView(txHash0, 0, 0, 101000, inputAddress.accountAddress, "script", List(), 0L, None)
+            InputView(
+              txHash0,
+              0,
+              0,
+              101000,
+              inputAddress.accountAddress,
+              "script",
+              List(),
+              0L,
+              None
+            )
           ),
           List(
             OutputView(0, 100000, outputAddress1.accountAddress, "script", None, None)
@@ -366,7 +378,7 @@ class InterpreterIT extends AnyFlatSpec with ContainerSpec with Matchers {
         for {
           _                   <- utils.setupAccount(accountUid, walletUid)
           _                   <- saveTxs(interpreter, List(uTx1))
-          _                   <- interpreter.compute(account, walletUid)(List(outputAddress1))
+          _                   <- interpreter.compute(account, walletUid, None)(List(outputAddress1))
           firstBalance        <- utils.getBalance(accountUid)
           firstOperationCount <- utils.getOperationCount(accountUid)
 
@@ -387,7 +399,7 @@ class InterpreterIT extends AnyFlatSpec with ContainerSpec with Matchers {
               uTx2
             )
           )
-          _ <- interpreter.compute(account, walletUid)(
+          _ <- interpreter.compute(account, walletUid, None)(
             List(outputAddress1, outputAddress2)
           )
           secondBalance        <- utils.getBalance(accountUid)
@@ -410,7 +422,7 @@ class InterpreterIT extends AnyFlatSpec with ContainerSpec with Matchers {
               uTx3
             )
           )
-          _ <- interpreter.compute(account, walletUid)(
+          _ <- interpreter.compute(account, walletUid, None)(
             List(outputAddress1, outputAddress2)
           )
           lastBalance        <- utils.getBalance(accountUid)
@@ -439,7 +451,9 @@ class InterpreterIT extends AnyFlatSpec with ContainerSpec with Matchers {
 
         val utils = tr.testUtils
 
-        val txHash0 = TxHash.fromStringUnsafe("6a7a2a7365343ac22a30e4971ec9699af7d01d61e33f6b4381b745d556ddc92c")
+        val txHash0 = TxHash.fromStringUnsafe(
+          "6a7a2a7365343ac22a30e4971ec9699af7d01d61e33f6b4381b745d556ddc92c"
+        )
 
         val uTx1 = AccountTxView(
           accountUid,
@@ -452,7 +466,17 @@ class InterpreterIT extends AnyFlatSpec with ContainerSpec with Matchers {
             0,
             1000,
             List(
-              InputView(txHash0, 0, 0, 101000, inputAddress.accountAddress, "script", List(), 0L, None)
+              InputView(
+                txHash0,
+                0,
+                0,
+                101000,
+                inputAddress.accountAddress,
+                "script",
+                List(),
+                0L,
+                None
+              )
             ),
             List(
               OutputView(0, 100000, outputAddress1.accountAddress, "script", None, None)
@@ -472,14 +496,14 @@ class InterpreterIT extends AnyFlatSpec with ContainerSpec with Matchers {
             .through(interpreter.saveTransactions(uTx1.accountId))
             .compile
             .drain
-          _     <- interpreter.compute(account, walletUid)(List(outputAddress1))
+          _     <- interpreter.compute(account, walletUid, None)(List(outputAddress1))
           first <- utils.getOperationCount(accountUid)
           _ <- Stream
             .emit(uTx1.tx)
             .through(interpreter.saveTransactions(uTx1.accountId))
             .compile
             .drain
-          _      <- interpreter.compute(account, walletUid)(List(outputAddress1))
+          _      <- interpreter.compute(account, walletUid, None)(List(outputAddress1))
           second <- utils.getOperationCount(accountUid)
           // The third time the transaction is not saved again, meaning that it disapeared from the network without being mined.
           // We now remove the transaction from the explorer
@@ -491,7 +515,7 @@ class InterpreterIT extends AnyFlatSpec with ContainerSpec with Matchers {
             .compile
             .drain
           _ = explorer.removeFromBC(uTx1.tx.hash)
-          _     <- interpreter.compute(account, walletUid)(List(outputAddress1))
+          _     <- interpreter.compute(account, walletUid, None)(List(outputAddress1))
           third <- utils.getOperationCount(accountUid)
         } yield {
           withClue("On first sync, tx should be present") {

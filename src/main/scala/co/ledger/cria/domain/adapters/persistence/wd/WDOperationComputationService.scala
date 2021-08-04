@@ -16,29 +16,31 @@ import co.ledger.cria.logging.ContextLogging
 import doobie._
 import doobie.implicits._
 import fs2.Stream
+import shapeless.tag.@@
 
-class WDOperationComputationService(
-    db: Transactor[IO]
-)(implicit cs: ContextShift[IO])
-    extends ContextLogging
+class WDOperationComputationService(criaExtra: Transactor[IO] @@ DBType.Temporary)(implicit
+    cs: ContextShift[IO]
+) extends ContextLogging
     with OperationComputationService {
 
   override def getUncomputedOperations(
       accountId: AccountUid,
-      sort: Sort
+      sort: Sort,
+      fromBlockHeight: Option[Long]
   ): fs2.Stream[IO, TransactionAmounts] =
     WDOperationQueries
-      .fetchUncomputedTransactionAmounts(accountId, sort)
-      .transact(db)
+      .fetchUncomputedTransactionAmounts(accountId, sort, fromBlockHeight)
+      .transact(criaExtra)
 
   override def fetchTransactions(
       accountId: AccountUid,
       sort: Sort,
       hashes: NonEmptyList[TxHash]
   ): Stream[IO, TransactionView] = {
-    val txStream = WDTransactionQueries.fetchTransaction(accountId, sort, hashes).transact(db)
+    val txStream =
+      WDTransactionQueries.fetchTransaction(accountId, sort, hashes).transact(criaExtra)
     val txDetailsStream =
-      WDTransactionQueries.fetchTransactionDetails(accountId, sort, hashes).transact(db)
+      WDTransactionQueries.fetchTransactionDetails(accountId, sort, hashes).transact(criaExtra)
 
     txStream
       .zip(txDetailsStream)
@@ -66,7 +68,7 @@ class WDOperationComputationService(
               accountId,
               addresses
             )
-            .transact(db)
+            .transact(criaExtra)
         }
         .getOrElse(IO.pure(0))
 
@@ -81,7 +83,7 @@ class WDOperationComputationService(
               addresses,
               ChangeType.Internal
             )
-            .transact(db)
+            .transact(criaExtra)
         }
         .getOrElse(IO.pure(0))
 
@@ -95,7 +97,7 @@ class WDOperationComputationService(
               addresses,
               ChangeType.External
             )
-            .transact(db)
+            .transact(criaExtra)
         }
         .getOrElse(IO.pure(0))
 

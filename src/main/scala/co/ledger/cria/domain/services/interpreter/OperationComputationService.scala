@@ -14,7 +14,11 @@ trait OperationComputationService {
       accountAddresses: List[AccountAddress]
   ): IO[Unit]
 
-  def getUncomputedOperations(accountId: AccountUid, sort: Sort): fs2.Stream[IO, TransactionAmounts]
+  def getUncomputedOperations(
+      accountId: AccountUid,
+      sort: Sort,
+      fromBlockHeight: Option[Long]
+  ): fs2.Stream[IO, TransactionAmounts]
 
   def fetchTransactions(
       accountId: AccountUid,

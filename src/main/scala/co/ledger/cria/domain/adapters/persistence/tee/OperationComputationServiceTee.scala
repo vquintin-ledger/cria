@@ -25,11 +25,12 @@ final class OperationComputationServiceTee(
 
   override def getUncomputedOperations(
       accountId: AccountUid,
-      sort: Sort
+      sort: Sort,
+      fromBlockHeight: Option[Long]
   ): fs2.Stream[IO, TransactionAmounts] =
     combiner.combineStream(
-      primary.getUncomputedOperations(accountId, sort),
-      secondary.getUncomputedOperations(accountId, sort)
+      primary.getUncomputedOperations(accountId, sort, fromBlockHeight),
+      secondary.getUncomputedOperations(accountId, sort, fromBlockHeight)
     )
 
   override def fetchTransactions(

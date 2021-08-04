@@ -49,7 +49,8 @@ object LamaOperationQueries extends DoobieLogHandler {
 
   def fetchUncomputedTransactionAmounts(
       accountId: AccountUid,
-      sort: Sort
+      sort: Sort,
+      fromBlockHeight: Option[Long]
   ): Stream[ConnectionIO, TransactionAmounts] =
     (sql"""SELECT tx.account_id,
                  tx.hash,
@@ -61,13 +62,10 @@ object LamaOperationQueries extends DoobieLogHandler {
                  COALESCE(tx.output_amount, 0),
                  COALESCE(tx.change_amount, 0)
           FROM transaction_amount tx
-            LEFT JOIN operation op
-              ON op.hash = tx.hash
-              AND op.account_id = tx.account_id
-          WHERE op.block_hash IS null --either the operation doesn't exist or it's mempool
-          AND tx.account_id = $accountId
-       """ ++ Fragment
-      .const(s"ORDER BY tx.block_time $sort, tx.hash $sort"))
+          WHERE tx.account_id = $accountId
+       """
+      ++ (fromBlockHeight.fold(Fragment.empty)(h => Fragment.const(s"AND tx.block_height >= $h")))
+      ++ Fragment.const(s"ORDER BY tx.block_time $sort, tx.hash $sort"))
       .query[TransactionAmounts]
       .stream
 

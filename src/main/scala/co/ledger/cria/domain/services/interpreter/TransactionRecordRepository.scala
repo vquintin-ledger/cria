@@ -8,7 +8,7 @@ import fs2.Pipe
 
 trait TransactionRecordRepository {
 
-  def saveTransactions(implicit lc: CriaLogContext): Pipe[IO, AccountTxView, Int]
+  def saveTransactions(implicit lc: CriaLogContext): Pipe[IO, AccountTxView, Unit]
 
   def removeFromCursor(accountId: AccountUid, blockHeight: Long): IO[Int]
 

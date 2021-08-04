@@ -7,7 +7,8 @@ import pureconfig.generic.semiauto.deriveReader
 
 case class WalletDaemonDb(
     batchConcurrency: WalletDaemonDb.BatchConcurrency,
-    postgres: PostgresConfig
+    walletDaemon: PostgresConfig,
+    criaExtra: PostgresConfig
 )
 
 object WalletDaemonDb {

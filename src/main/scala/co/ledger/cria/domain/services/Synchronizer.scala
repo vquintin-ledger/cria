@@ -89,7 +89,7 @@ class Synchronizer(
 
       lastMinedBlock <- lastMinedBlock(account.coin)
 
-      addressesUsed <- Stream
+      blockHeightAndAddressesUsed <- Stream
         .emit(previousBlockState)
         .filter {
           case Some(previousBlock) => previousBlock < lastMinedBlock.block
@@ -115,16 +115,15 @@ class Synchronizer(
               keychainId,
               ChangeType.External,
               lastValidBlock.map(_.hash)
-            )).compile.toList
+            )).compile.toList.map((lastValidBlock, _))
         }
         .compile
-        .toList
-        .map(_.flatten)
-
+        .lastOrError
+      (blockView, addressesUsed) = blockHeightAndAddressesUsed
       _ <- log.info(s"Last block synchronized: ${lastMinedBlock.block}")
 
       _ <- IOUtils.withTimer("Computation finished")(
-        interpreterClient.compute(account, syncParams.walletUid)(
+        interpreterClient.compute(account, syncParams.walletUid, blockView.map(_.height))(
           (addressesUsed ++ addressesUsedByMempool).distinct
         )
       )

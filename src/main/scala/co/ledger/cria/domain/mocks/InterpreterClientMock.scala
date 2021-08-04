@@ -92,7 +92,7 @@ class InterpreterClientMock extends Interpreter {
     IO(lastBlocks)
   }
 
-  def compute(account: Account, walletUid: WalletUid)(
+  def compute(account: Account, walletUid: WalletUid, fromBlockHeight: Option[Long])(
       addresses: List[AccountAddress]
   )(implicit lc: CriaLogContext): IO[Int] = {
 
