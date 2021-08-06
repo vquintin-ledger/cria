@@ -1,4 +1,4 @@
-package co.ledger.cria.clients.explorer.models
+package co.ledger.cria.clients.explorer.v2.models
 
 import io.circe.generic.extras.semiauto.{deriveConfiguredDecoder, deriveConfiguredEncoder}
 import io.circe.syntax._
@@ -14,7 +14,6 @@ case class DefaultInput(
     value: BigInt,
     address: String,
     scriptSignature: String,
-    txinwitness: List[String],
     sequence: Long
 ) extends Input
 

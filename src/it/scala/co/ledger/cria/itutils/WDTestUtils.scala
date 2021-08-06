@@ -64,8 +64,10 @@ final class WDTestUtils private (
       )
     }).transact(db)
 
-  private lazy val flywayWalletDaemon: Flyway = DbUtils.flyway(conf.walletDaemon, "classpath:/db/wd_dump/")
-  private lazy val flywayCriaExtra: Flyway = DbUtils.flyway(conf.criaExtra, "classpath:/db/wd_temporary/")
+  private lazy val flywayWalletDaemon: Flyway =
+    DbUtils.flyway(conf.walletDaemon, "classpath:/db/wd_dump/")
+  private lazy val flywayCriaExtra: Flyway =
+    DbUtils.flyway(conf.criaExtra, "classpath:/db/wd_temporary/")
 
   override def migrate: IO[Unit] = IO(flywayWalletDaemon.migrate()) *> IO(flywayCriaExtra.migrate())
 
@@ -78,7 +80,7 @@ object WDTestUtils {
   )(implicit cs: ContextShift[IO], t: Timer[IO]): Resource[IO, TestUtils] =
     for {
       walletDaemonTransactor <- ResourceUtils.postgresTransactor(conf.walletDaemon)
-      criaExtraTransactor <- ResourceUtils.postgresTransactor(conf.criaExtra)
+      criaExtraTransactor    <- ResourceUtils.postgresTransactor(conf.criaExtra)
     } yield new WDTestUtils(
       conf,
       tag[DBType.WD](walletDaemonTransactor),

@@ -142,7 +142,7 @@ class OperationComputationServiceIT
         } yield {
           firstResult should have size 2
           assert(secondResult.nonEmpty)
-          secondResult.map(_.hash) should contain (insertTx2.hash)
+          secondResult.map(_.hash) should contain(insertTx2.hash)
         }
 
       }

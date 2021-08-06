@@ -67,8 +67,8 @@ object WDOperationQueries extends DoobieLogHandler {
                    COALESCE(tx.change_amount, 0)
             FROM transaction_amount tx
             WHERE tx.account_uid = $accountId"""
-      ++ (fromBlockHeight.fold(Fragment.empty)(h => Fragment.const(s"AND tx.block_height >= $h")))
-      ++ Fragment.const(s" ORDER BY tx.block_time $sort, tx.hash $sort")
+        ++ (fromBlockHeight.fold(Fragment.empty)(h => Fragment.const(s"AND tx.block_height >= $h")))
+        ++ Fragment.const(s" ORDER BY tx.block_time $sort, tx.hash $sort")
     )
       .query[TransactionAmounts]
       .stream

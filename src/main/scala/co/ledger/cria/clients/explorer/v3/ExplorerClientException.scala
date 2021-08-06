@@ -1,4 +1,4 @@
-package co.ledger.cria.clients.explorer
+package co.ledger.cria.clients.explorer.v3
 
 import org.http4s.Uri
 

@@ -23,7 +23,11 @@ class LamaOperationComputationService(
     extends OperationComputationService
     with ContextLogging {
 
-  override def getUncomputedOperations(accountId: AccountUid, sort: Sort, fromBlockHeight: Option[Long]) =
+  override def getUncomputedOperations(
+      accountId: AccountUid,
+      sort: Sort,
+      fromBlockHeight: Option[Long]
+  ) =
     LamaOperationQueries
       .fetchUncomputedTransactionAmounts(accountId, sort, fromBlockHeight)
       .transact(db)

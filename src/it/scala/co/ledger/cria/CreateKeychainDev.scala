@@ -68,7 +68,7 @@ class CreateKeychainDev extends AnyFlatSpec with DefaultContextLogging {
   def testResources: Resource[IO, TestResources] = {
     for {
       resources           <- appResources
-      testUtils           <- TestUtils.fromConfig(conf.db, log)
+      testUtils           <- TestUtils.fromConfig(conf.persistence, log)
       keychainGrpcChannel <- grpcManagedChannel(conf.keychain)
     } yield TestResources(
       resources,

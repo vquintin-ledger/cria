@@ -1,18 +1,11 @@
-package co.ledger.cria.domain.adapters.explorer
+package co.ledger.cria.domain.adapters.explorer.v3
 
 import cats.MonadError
-import co.ledger.cria.clients.explorer.models.{Block, DefaultInput}
-import co.ledger.cria.clients.explorer.{models => explorer}
+import co.ledger.cria.clients.explorer.v3.models.{Block, DefaultInput}
+import co.ledger.cria.clients.explorer.v3.{models => explorer}
 import co.ledger.cria.domain.models.TxHash
 import cats.implicits._
-import co.ledger.cria.domain.models.interpreter.{
-  BlockHash,
-  BlockView,
-  Coin,
-  InputView,
-  OutputView,
-  TransactionView
-}
+import co.ledger.cria.domain.models.interpreter._
 
 object TypeHelper {
   object block {

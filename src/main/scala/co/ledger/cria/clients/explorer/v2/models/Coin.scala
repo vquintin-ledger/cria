@@ -1,4 +1,4 @@
-package co.ledger.cria.clients.explorer.models
+package co.ledger.cria.clients.explorer.v2.models
 
 import cats.effect.IO
 import io.circe.{Decoder, Encoder}

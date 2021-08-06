@@ -1,29 +1,26 @@
-package co.ledger.cria.domain.adapters.explorer
+package co.ledger.cria.domain.adapters.explorer.v2
 
-import cats.effect.{ContextShift, IO, Timer}
-import co.ledger.cria.clients.explorer
+import cats.effect.{ContextShift, IO, Resource, Timer}
+import cats.implicits._
+import co.ledger.cria.clients.explorer.v2.ExplorerHttpClient
+import co.ledger.cria.clients.explorer.v2.models.ExplorerConfig
+import co.ledger.cria.clients.explorer.{v2 => explorer}
+import co.ledger.cria.clients.protocol.http.Clients
 import co.ledger.cria.domain.models.TxHash
-import co.ledger.cria.domain.models.interpreter.{
-  BlockHash,
-  BlockView,
-  Coin,
-  Confirmation,
-  TransactionView
-}
+import co.ledger.cria.domain.models.interpreter._
 import co.ledger.cria.domain.services.ExplorerClient
 import co.ledger.cria.logging.CriaLogContext
 import shapeless.tag
 import shapeless.tag.@@
-import cats.implicits._
 
-final class ExplorerClientAdapter(client: explorer.ExplorerClient) extends ExplorerClient {
+final class ExplorerClientAdapter(client: explorer.ExplorerClient, fallback: ExplorerClient)
+    extends ExplorerClient {
   override def getCurrentBlock(implicit lc: CriaLogContext, t: Timer[IO]): IO[BlockView] =
     client.getCurrentBlock.flatMap(TypeHelper.block.fromExplorer[IO])
 
   override def getBlock(
       hash: BlockHash
-  )(implicit lc: CriaLogContext, t: Timer[IO]): IO[Option[BlockView]] =
-    client.getBlock(hash.asString).flatMap(_.traverse(TypeHelper.block.fromExplorer[IO]))
+  )(implicit lc: CriaLogContext, t: Timer[IO]): IO[Option[BlockView]] = fallback.getBlock(hash)
 
   override def getConfirmedTransactions(addresses: Seq[String], blockHash: Option[BlockHash])(
       implicit
@@ -32,7 +29,8 @@ final class ExplorerClientAdapter(client: explorer.ExplorerClient) extends Explo
       lc: CriaLogContext
   ): fs2.Stream[IO, TransactionView @@ Confirmation.Confirmed] =
     client
-      .getConfirmedTransactions(addresses, blockHash.map(_.asString))
+      .getTransactions(addresses, blockHash.map(_.asString))
+      .filter(t => t.block.isDefined)
       .evalMap(TypeHelper.transaction.fromExplorer[IO])
       .map(tag[Confirmation.Confirmed].apply)
 
@@ -42,7 +40,8 @@ final class ExplorerClientAdapter(client: explorer.ExplorerClient) extends Explo
       lc: CriaLogContext
   ): fs2.Stream[IO, TransactionView @@ Confirmation.Unconfirmed] =
     client
-      .getUnconfirmedTransactions(addresses)
+      .getTransactions(addresses.toSeq, None)
+      .filter(t => t.block.isEmpty)
       .evalMap(TypeHelper.transaction.fromExplorer[IO])
       .map(tag[Confirmation.Unconfirmed].apply)
 
@@ -55,6 +54,19 @@ final class ExplorerClientAdapter(client: explorer.ExplorerClient) extends Explo
 }
 
 object ExplorerClientAdapter {
-  def explorerForCoin(f: explorer.models.Coin => explorer.ExplorerClient)(c: Coin): ExplorerClient =
-    new ExplorerClientAdapter(f(TypeHelper.coin.toExplorer(c)))
+  def apply(
+      config: ExplorerConfig,
+      fallback: Coin => ExplorerClient
+  )(implicit cs: ContextShift[IO]): Resource[IO, Coin => ExplorerClient] =
+    Clients.htt4s.map(c =>
+      ExplorerClientAdapter.explorerForCoin(new ExplorerHttpClient(c, config, _), fallback) _
+    )
+
+  private def explorerForCoin(
+      f: explorer.models.Coin => explorer.ExplorerClient,
+      fallback: Coin => ExplorerClient
+  )(
+      c: Coin
+  ): ExplorerClient =
+    new ExplorerClientAdapter(f(TypeHelper.coin.toExplorer(c)), fallback(c))
 }

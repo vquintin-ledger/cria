@@ -4,7 +4,7 @@ import cats.effect.IO
 import co.ledger.cria.domain.models.interpreter.Coin
 import co.ledger.cria.itutils.models.keychain.AccountKey.Xpub
 import co.ledger.cria.itutils.models.keychain.Scheme
-import co.ledger.cria.clients.explorer.models.circeImplicits._
+import co.ledger.cria.clients.explorer.v3.models.circeImplicits._
 import co.ledger.cria.domain.models.{Sort, SynchronizationResult}
 import co.ledger.cria.domain.models.SynchronizationResult.{
   SynchronizationFailure,

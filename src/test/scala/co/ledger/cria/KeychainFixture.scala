@@ -1,7 +1,7 @@
 package co.ledger.cria
 
 import cats.effect.IO
-import co.ledger.cria.clients.explorer.ExplorerClient.Address
+import co.ledger.cria.clients.explorer.v3.ExplorerClient.Address
 import co.ledger.cria.domain.models.interpreter.Derivation
 import co.ledger.cria.domain.models.keychain
 import co.ledger.cria.domain.models.keychain.{AccountAddress, ChangeType, KeychainId}

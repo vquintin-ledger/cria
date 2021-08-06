@@ -14,7 +14,7 @@ class KeychainClientMock extends KeychainClient {
   var usedAddresses: mutable.Seq[String] = mutable.Seq.empty
 
   private val derivations: Derivation = Derivation(1, 0)
-  private val change: External.type          = ChangeType.External
+  private val change: External.type   = ChangeType.External
 
   val derivedAddresses: List[AccountAddress] = List(
     AccountAddress("1MZbRqZGpiSWGRLg8DUdVrDKHwNe1oesUZ", change, derivations),

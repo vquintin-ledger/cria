@@ -1,4 +1,4 @@
-package co.ledger.cria.clients.explorer.models
+package co.ledger.cria.clients.explorer.v3.models
 
 import io.circe.Decoder
 import io.circe.generic.extras.semiauto.deriveConfiguredDecoder

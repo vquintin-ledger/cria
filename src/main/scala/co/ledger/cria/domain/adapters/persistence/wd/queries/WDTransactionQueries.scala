@@ -167,8 +167,8 @@ object WDTransactionQueries extends DoobieLogHandler {
       _.groupAdjacentBy { case (txHash, _) => txHash }
         .map { case (txHash, chunks) => txHash -> chunks.map(_._2) }
 
-    val inputs  = fetchInputs(accountId, sort, txHashes).stream.through(groupByTxHash)
-    val outputs = fetchOutputs(accountId, sort, txHashes).stream.through(groupByTxHash)
+    val inputs                                    = fetchInputs(accountId, sort, txHashes).stream.through(groupByTxHash)
+    val outputs                                   = fetchOutputs(accountId, sort, txHashes).stream.through(groupByTxHash)
     implicit val txHashOrdering: Ordering[TxHash] = TxHash.orderTxHash.toOrdering
 
     inputs

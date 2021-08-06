@@ -2,12 +2,10 @@ package co.ledger.cria.domain.services
 
 import java.time.Instant
 import java.util.UUID
-
 import cats.effect.{ContextShift, IO, Resource, Timer}
-import co.ledger.cria.clients.explorer.ExplorerHttpClient
+import co.ledger.cria.App
 import co.ledger.cria.clients.protocol.http.Clients
 import co.ledger.cria.config.Config
-import co.ledger.cria.domain.adapters.explorer.ExplorerClientAdapter
 import co.ledger.cria.domain.mocks.InterpreterClientMock
 import co.ledger.cria.domain.models.TxHash
 import co.ledger.cria.logging.DefaultContextLogging
@@ -39,10 +37,8 @@ class CursorStateServiceIT extends AnyFlatSpecLike with Matchers with DefaultCon
   val resources: Resource[IO, Client[IO]] = Clients.htt4s
 
   it should "get the last valid cursor state" in IOAssertion {
-    resources.use { httpClient =>
-      val explorerClient = ExplorerClientAdapter.explorerForCoin(
-        new ExplorerHttpClient(httpClient, conf.explorer, _)
-      )(Coin.Btc)
+    App.makeExplorerClient(conf.explorer).use { getExplorerClient =>
+      val explorerClient     = getExplorerClient(Coin.Btc)
       val interpreterClient  = new InterpreterClientMock
       val cursorStateService = CursorStateService(explorerClient, interpreterClient)
 

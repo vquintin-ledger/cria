@@ -1,19 +1,11 @@
-package co.ledger.cria.clients.explorer
+package co.ledger.cria.clients.explorer.v3
 
 import cats.effect.{ContextShift, IO, Timer}
-import co.ledger.cria.clients.explorer.ExplorerClient.Address
-import co.ledger.cria.clients.explorer.models.{
-  Block,
-  Coin,
-  ConfirmedTransaction,
-  ExplorerConfig,
-  GetTransactionsResponse,
-  SendTransactionResult,
-  Transaction,
-  UnconfirmedTransaction
-}
+import co.ledger.cria.clients.explorer.v3
+import co.ledger.cria.clients.explorer.v3.ExplorerClient.Address
+import co.ledger.cria.clients.explorer.v3.models._
 import co.ledger.cria.logging.{ContextLogging, CriaLogContext}
-import co.ledger.cria.clients.explorer.models.circeImplicits._
+import co.ledger.cria.clients.explorer.v3.models.circeImplicits._
 import co.ledger.cria.utils
 import co.ledger.cria.utils.IOUtils
 import fs2.{Chunk, Pull, Stream}
@@ -92,7 +84,7 @@ class ExplorerHttpClient(httpClient: Client[IO], conf: ExplorerConfig, coin: Coi
       response <- IOUtils.withTimer(s"Call explorer on : ${uri.toString()}")(
         httpClient
           .expect[A](uri)
-          .handleErrorWith(e => IO.raiseError(ExplorerClientException(uri, e)))
+          .handleErrorWith(e => IO.raiseError(v3.ExplorerClientException(uri, e)))
       )
     } yield response
 
@@ -104,7 +96,7 @@ class ExplorerHttpClient(httpClient: Client[IO], conf: ExplorerConfig, coin: Coi
       response <- IOUtils.withTimer(s"Call explorer on : ${req.uri.toString()}")(
         httpClient
           .expect[A](req)
-          .handleErrorWith(e => IO.raiseError(ExplorerClientException(req.uri, e)))
+          .handleErrorWith(e => IO.raiseError(v3.ExplorerClientException(req.uri, e)))
       )
     } yield response
 
@@ -122,7 +114,7 @@ class ExplorerHttpClient(httpClient: Client[IO], conf: ExplorerConfig, coin: Coi
         policy = utils.RetryPolicy.exponential(initial = 500.millis, maxElapsedTime = 30.seconds)
       )
       .handleErrorWith { e =>
-        val explorerException = ExplorerClientException(req.uri, e)
+        val explorerException = v3.ExplorerClientException(req.uri, e)
         log.error("Explorer error", explorerException) *>
           IO.raiseError(explorerException)
       }

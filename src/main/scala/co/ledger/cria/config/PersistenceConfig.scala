@@ -4,7 +4,7 @@ import cats.Monad
 import co.ledger.cria.domain.adapters.persistence.lama.LamaDb
 import co.ledger.cria.domain.adapters.persistence.wd.WalletDaemonDb
 import cats.implicits._
-import co.ledger.cria.config.PersistenceConfig.Both
+import co.ledger.cria.config.PersistenceConfig.Tee
 import co.ledger.cria.domain.adapters.persistence.tee.TeeConfig
 import pureconfig.ConfigReader
 import pureconfig.generic.semiauto.deriveReader
@@ -13,17 +13,30 @@ sealed abstract class PersistenceConfig extends Product with Serializable
 
 object PersistenceConfig extends PersistenceConfigLowPriority {
 
-  final case class WalletDaemon(walletDaemonDb: WalletDaemonDb) extends PersistenceConfig
+  final case class WalletDaemon(db: WalletDaemonDb) extends PersistenceConfig
 
-  final case class Lama(lamaDb: LamaDb) extends PersistenceConfig
+  object WalletDaemon {
+    implicit val walletDaemonConfigReader: ConfigReader[WalletDaemon] =
+      deriveReader[WalletDaemon]
+  }
 
-  final case class Both(primary: PersistenceConfig, secondary: PersistenceConfig, tee: TeeConfig)
+  final case class Lama(db: LamaDb) extends PersistenceConfig
+
+  object Lama {
+    implicit val LamaConfigReader: ConfigReader[Lama] =
+      deriveReader[Lama]
+  }
+
+  final case class Tee(primary: PersistenceConfig, secondary: PersistenceConfig, tee: TeeConfig)
       extends PersistenceConfig
 
+  object Tee {
+    implicit val bothConfigReader: ConfigReader[Tee] =
+      deriveReader[Tee]
+  }
+
   implicit lazy val configReader: ConfigReader[PersistenceConfig] =
-    deriveReader[WalletDaemon]
-      .orElse(deriveReader[Lama])
-      .orElse(bothReader(configReader))
+    deriveReader[PersistenceConfig]
 
   def foldM[M[_], A](
       wd: WalletDaemonDb => M[A],
@@ -33,7 +46,7 @@ object PersistenceConfig extends PersistenceConfigLowPriority {
     c match {
       case WalletDaemon(db) => wd(db)
       case Lama(db)         => lama(db)
-      case Both(c1, c2, tee) =>
+      case Tee(c1, c2, tee) =>
         for {
           a1  <- foldM(wd, lama, both)(c1)
           a2  <- foldM(wd, lama, both)(c2)
@@ -47,7 +60,7 @@ object PersistenceConfig extends PersistenceConfigLowPriority {
     c match {
       case WalletDaemon(db) => wd(db)
       case Lama(db)         => lama(db)
-      case Both(c1, c2, tee) =>
+      case Tee(c1, c2, tee) =>
         val a1 = fold(wd, lama, both)(c1)
         val a2 = fold(wd, lama, both)(c2)
         both(a1, a2, tee)
@@ -55,8 +68,8 @@ object PersistenceConfig extends PersistenceConfigLowPriority {
 }
 
 trait PersistenceConfigLowPriority {
-  implicit def bothReader(implicit rReader: ConfigReader[PersistenceConfig]): ConfigReader[Both] = {
+  implicit def bothReader(implicit rReader: ConfigReader[PersistenceConfig]): ConfigReader[Tee] = {
     val _ = rReader
-    deriveReader[Both]
+    deriveReader[Tee]
   }
 }

@@ -79,7 +79,7 @@ trait ContainerSpec extends ForAllTestContainer with DefaultContextLogging { s: 
   def testResources: Resource[IO, TestResources] =
     for {
       resources <- appResources
-      testUtils <- TestUtils.fromConfig(conf.db, log)
+      testUtils <- TestUtils.fromConfig(conf.persistence, log)
       interpreterClient = new InterpreterImpl(
         resources.explorerClient,
         resources.persistenceFacade
@@ -113,7 +113,7 @@ trait ContainerSpec extends ForAllTestContainer with DefaultContextLogging { s: 
         container.getServicePort("bitcoin-keychain_1", keychainPort),
         false
       ),
-      db = adaptedPersistenceConfig(defaultConf.db)
+      persistence = adaptedPersistenceConfig(defaultConf.persistence)
     )
   }
 
@@ -123,9 +123,8 @@ trait ContainerSpec extends ForAllTestContainer with DefaultContextLogging { s: 
       val mappedPostgresPort = container.getServicePort("postgres_1", postgresPort)
       PersistenceConfig.WalletDaemon(
         db.copy(
-          walletDaemon = db.walletDaemon.copy(url =
-            s"jdbc:postgresql://$mappedPostgresHost:$mappedPostgresPort/wd_local_pool"
-          ),
+          walletDaemon = db.walletDaemon
+            .copy(url = s"jdbc:postgresql://$mappedPostgresHost:$mappedPostgresPort/wd_local_pool"),
           criaExtra = db.walletDaemon.copy(url =
             s"jdbc:postgresql://$mappedPostgresHost:$mappedPostgresPort/wd_cria_extra"
           )
@@ -146,7 +145,7 @@ trait ContainerSpec extends ForAllTestContainer with DefaultContextLogging { s: 
     }
 
     def both(left: PersistenceConfig, right: PersistenceConfig, tee: TeeConfig) =
-      PersistenceConfig.Both(left, right, tee)
+      PersistenceConfig.Tee(left, right, tee)
 
     PersistenceConfig.fold(wd, lama, both)(conf)
   }

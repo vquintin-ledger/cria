@@ -1,4 +1,4 @@
-package co.ledger.cria.clients.explorer.models
+package co.ledger.cria.clients.explorer.v2.models
 
 import cats.implicits._
 import org.http4s.Uri

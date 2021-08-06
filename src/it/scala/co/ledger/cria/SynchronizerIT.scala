@@ -5,12 +5,9 @@ import co.ledger.cria.config.Config
 import org.scalatest.flatspec.AnyFlatSpecLike
 import org.scalatest.matchers.should.Matchers
 import pureconfig.ConfigSource
+
 import java.time.Instant
 import java.util.UUID
-
-import co.ledger.cria.clients.explorer.ExplorerHttpClient
-import co.ledger.cria.clients.protocol.http.Clients
-import co.ledger.cria.domain.adapters.explorer.ExplorerClientAdapter
 import co.ledger.cria.domain.adapters.keychain.KeychainClientMock
 import co.ledger.cria.domain.mocks.InterpreterClientMock
 import co.ledger.cria.domain.models.SynchronizationParameters
@@ -32,22 +29,19 @@ class SynchronizerIT extends AnyFlatSpecLike with Matchers {
   val conf: Config = ConfigSource.default.loadOrThrow[Config]
 
   IOAssertion {
-    Clients.htt4s
-      .use { httpClient =>
+    App
+      .makeExplorerClient(conf.explorer)
+      .use { getExplorerClient =>
         val keychainId = KeychainId(UUID.randomUUID())
 
         val keychainClient = new KeychainClientMock
-
-        val explorerClient = ExplorerClientAdapter.explorerForCoin(
-          new ExplorerHttpClient(httpClient, conf.explorer, _)
-        ) _
 
         val interpreterClient = new InterpreterClientMock
 
         val cursorStateService: Coin => CursorStateService[IO] =
           c =>
             services
-              .CursorStateService(explorerClient(c), interpreterClient)
+              .CursorStateService(getExplorerClient(c), interpreterClient)
               .getLastValidState(_, _, _)
 
         val syncId = SyncId(UUID.randomUUID())
@@ -64,7 +58,7 @@ class SynchronizerIT extends AnyFlatSpecLike with Matchers {
 
         val worker = new Synchronizer(
           keychainClient,
-          explorerClient,
+          getExplorerClient,
           interpreterClient,
           cursorStateService
         )

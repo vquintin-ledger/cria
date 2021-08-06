@@ -2,7 +2,13 @@ package co.ledger.cria.domain.adapters.persistence.wd.models
 
 import co.ledger.cria.domain.models.TxHash
 import co.ledger.cria.domain.models.account.AccountUid
-import co.ledger.cria.domain.models.interpreter.{BlockHash, Coin, Derivation, OperationType, OutputView}
+import co.ledger.cria.domain.models.interpreter.{
+  BlockHash,
+  Coin,
+  Derivation,
+  OperationType,
+  OutputView
+}
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
