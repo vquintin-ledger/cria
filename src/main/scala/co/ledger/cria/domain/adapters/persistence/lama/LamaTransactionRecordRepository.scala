@@ -13,7 +13,7 @@ import cats.implicits._
 
 final class LamaTransactionRecordRepository(db: Transactor[IO], maxConcurrent: Int)(implicit
     cs: ContextShift[IO]
-) extends TransactionRecordRepository
+) extends TransactionRecordRepository[IO]
     with ContextLogging {
 
   override def saveTransactions(implicit

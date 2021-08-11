@@ -1,11 +1,11 @@
 package co.ledger.cria.domain.services.interpreter
 
-trait PersistenceFacade {
-  def transactionRecordRepository: TransactionRecordRepository
+trait PersistenceFacade[F[_]] {
+  def transactionRecordRepository: TransactionRecordRepository[F]
 
-  def operationComputationService: OperationComputationService
+  def operationComputationService: OperationComputationService[F]
 
-  def postSyncCheckService: PostSyncCheckService
+  def postSyncCheckService: PostSyncCheckService[F]
 
-  def operationRepository: OperationRepository
+  def operationRepository: OperationRepository[F]
 }

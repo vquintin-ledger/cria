@@ -26,7 +26,7 @@ import shapeless.tag.@@
 class WDOperationComputationService(criaExtra: Transactor[IO] @@ DBType.Temporary)(implicit
     cs: ContextShift[IO]
 ) extends ContextLogging
-    with OperationComputationService {
+    with OperationComputationService[IO] {
 
   override def getUncomputedOperations(
       accountId: AccountUid,

@@ -20,7 +20,7 @@ import fs2.Stream
 class LamaOperationComputationService(
     db: Transactor[IO]
 )(implicit cs: ContextShift[IO])
-    extends OperationComputationService
+    extends OperationComputationService[IO]
     with ContextLogging {
 
   override def getUncomputedOperations(

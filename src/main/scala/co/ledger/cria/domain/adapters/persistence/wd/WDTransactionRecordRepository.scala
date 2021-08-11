@@ -21,7 +21,7 @@ final class WDTransactionRecordRepository(
 )(implicit
     cs: ContextShift[IO]
 ) extends ContextLogging
-    with TransactionRecordRepository {
+    with TransactionRecordRepository[IO] {
 
   override def saveTransactions(implicit lc: CriaLogContext): Pipe[IO, AccountTxView, Unit] =
     _.chunkN(100)

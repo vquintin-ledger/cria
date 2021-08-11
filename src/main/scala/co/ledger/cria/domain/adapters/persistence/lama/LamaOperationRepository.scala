@@ -16,7 +16,7 @@ import doobie.implicits._
 
 final class LamaOperationRepository(
     db: Transactor[IO]
-) extends OperationRepository {
+) extends OperationRepository[IO] {
 
   override def saveTransaction(
       coin: Coin,

@@ -37,7 +37,7 @@ trait Interpreter {
 
 }
 
-class InterpreterImpl(explorer: Coin => ExplorerClient, persistenceFacade: PersistenceFacade)(
+class InterpreterImpl(explorer: Coin => ExplorerClient, persistenceFacade: PersistenceFacade[IO])(
     implicit t: Timer[IO]
 ) extends Interpreter
     with ContextLogging {

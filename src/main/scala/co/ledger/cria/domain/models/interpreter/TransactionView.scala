@@ -2,6 +2,7 @@ package co.ledger.cria.domain.models.interpreter
 
 import cats.MonadError
 import cats.data.{Validated, ValidatedNel}
+import cats.Eq
 import co.ledger.cria.domain.models.TxHash
 import cats.implicits._
 
@@ -20,6 +21,8 @@ final case class TransactionView private (
 )
 
 object TransactionView {
+
+  implicit val eqTransactionView: Eq[TransactionView] = Eq.fromUniversalEquals
 
   def apply(
       id: String,

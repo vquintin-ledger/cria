@@ -9,7 +9,7 @@ import co.ledger.cria.logging.{ContextLogging, CriaLogContext}
 import doobie._
 import doobie.implicits._
 
-class WDPostSyncCheckService(db: Transactor[IO]) extends ContextLogging with PostSyncCheckService {
+class WDPostSyncCheckService(db: Transactor[IO]) extends ContextLogging with PostSyncCheckService[IO] {
 
   override def check(accountId: AccountUid): IO[Unit] = {
     implicit val lc: CriaLogContext = CriaLogContext().withAccountId(accountId)

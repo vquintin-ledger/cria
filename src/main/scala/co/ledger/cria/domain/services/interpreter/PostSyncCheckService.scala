@@ -1,9 +1,8 @@
 package co.ledger.cria.domain.services.interpreter
 
-import cats.effect.IO
 import co.ledger.cria.domain.models.account.AccountUid
 
-trait PostSyncCheckService {
+trait PostSyncCheckService[F[_]] {
 
-  def check(accountId: AccountUid): IO[Unit]
+  def check(accountId: AccountUid): F[Unit]
 }

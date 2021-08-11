@@ -31,6 +31,12 @@ lazy val ITest = config("it") extend Test
 scalaSource in ITest := baseDirectory.value / "src/it/scala"
 unmanagedResourceDirectories in ITest += baseDirectory.value / "src" / "it" / "resources"
 
+// pbt tests
+lazy val PropertyBasedTest = config("pbt") extend ITest
+scalaSource in PropertyBasedTest := baseDirectory.value / "src/pbt/scala"
+unmanagedResourceDirectories in PropertyBasedTest += baseDirectory.value / "src" / "pbt" / "resources"
+parallelExecution in PropertyBasedTest := false
+
 // e2e tests
 lazy val End2EndTest = config("e2e") extend Test
 scalaSource in End2EndTest := baseDirectory.value / "src/it/scala"
@@ -38,8 +44,10 @@ unmanagedResourceDirectories in End2EndTest += baseDirectory.value / "src" / "it
 parallelExecution in End2EndTest := false
 
 // Assign the proper tests to each test conf
+def basicFilter(name: String): Boolean = name endsWith "Test"
 def e2eFilter(name: String): Boolean = name endsWith "E2ETest"
 def itFilter(name: String): Boolean  = (name endsWith "IT") && !e2eFilter(name)
+testOptions in PropertyBasedTest := Seq(Tests.Filter(basicFilter))
 testOptions in ITest := Seq(Tests.Filter(itFilter))
 testOptions in End2EndTest := Seq(Tests.Filter(e2eFilter))
 
@@ -83,6 +91,8 @@ lazy val cria = (project in file("."))
   .settings(inConfig(ITest)(Defaults.testSettings))
   .configs(End2EndTest)
   .settings(inConfig(End2EndTest)(Defaults.testSettings))
+  .configs(PropertyBasedTest)
+  .settings(inConfig(PropertyBasedTest)(Defaults.testSettings))
   .settings(buildInfoSettings)
   .settings(
     name := "cria",

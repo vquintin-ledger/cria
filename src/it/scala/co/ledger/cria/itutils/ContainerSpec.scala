@@ -106,15 +106,19 @@ trait ContainerSpec extends ForAllTestContainer with DefaultContextLogging { s: 
       testUtils: TestUtils
   )
 
+  def modifyConfig(config: Config): Config = config
+
   lazy val conf: Config = {
     val defaultConf = ConfigSource.default.loadOrThrow[Config]
-    defaultConf.copy(
-      keychain = new GrpcClientConfig(
-        container.getServiceHost("bitcoin-keychain_1", keychainPort),
-        container.getServicePort("bitcoin-keychain_1", keychainPort),
-        false
-      ),
-      persistence = adaptedPersistenceConfig(defaultConf.persistence)
+    modifyConfig(
+      defaultConf.copy(
+        keychain = new GrpcClientConfig(
+          container.getServiceHost("bitcoin-keychain_1", keychainPort),
+          container.getServicePort("bitcoin-keychain_1", keychainPort),
+          false
+        ),
+        persistence = adaptedPersistenceConfig(defaultConf.persistence)
+      )
     )
   }
 

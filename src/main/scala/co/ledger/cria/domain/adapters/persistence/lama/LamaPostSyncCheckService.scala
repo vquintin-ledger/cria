@@ -10,7 +10,7 @@ import doobie._
 import doobie.implicits._
 
 class LamaPostSyncCheckService(db: Transactor[IO])
-    extends PostSyncCheckService
+    extends PostSyncCheckService[IO]
     with ContextLogging {
 
   def check(accountId: AccountUid): IO[Unit] = {

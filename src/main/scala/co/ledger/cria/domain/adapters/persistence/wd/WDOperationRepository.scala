@@ -17,7 +17,7 @@ import doobie.implicits._
 class WDOperationRepository(
     db: Transactor[IO]
 ) extends DefaultContextLogging
-    with OperationRepository {
+    with OperationRepository[IO] {
 
   override def saveOperation(
       coin: Coin,

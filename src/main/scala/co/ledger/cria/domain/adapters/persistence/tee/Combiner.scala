@@ -5,13 +5,13 @@ import cats.effect.{ContextShift, IO}
 import cats.~>
 import co.ledger.cria.logging.{IOLogger, LogContext}
 
-trait Combiner {
-  def combineAction[A](l: IO[A], r: IO[A]): IO[A]
+trait Combiner[F[_]] {
+  def combineAction[A](l: F[A], r: F[A]): F[A]
 
-  def combineStream[A](l: fs2.Stream[IO, A], r: fs2.Stream[IO, A]): fs2.Stream[IO, A]
+  def combineStream[A](l: fs2.Stream[F, A], r: fs2.Stream[F, A]): fs2.Stream[F, A]
 
-  def combinePipe[A, B](l: fs2.Pipe[IO, A, B], r: fs2.Pipe[IO, A, B]): fs2.Pipe[IO, A, B] =
-    (a: fs2.Stream[IO, A]) => combineStream(l.apply(a), r.apply(a))
+  def combinePipe[A, B](l: fs2.Pipe[F, A, B], r: fs2.Pipe[F, A, B]): fs2.Pipe[F, A, B] =
+    (a: fs2.Stream[F, A]) => combineStream(l.apply(a), r.apply(a))
 }
 
 object Combiner {
@@ -19,8 +19,8 @@ object Combiner {
   type SideEffect[A] = IO[Unit]
   type OnDiff        = Pair ~> SideEffect
 
-  def parallel(onDiff: OnDiff)(implicit cs: ContextShift[IO]): Combiner =
-    new Combiner {
+  def parallel(onDiff: OnDiff)(implicit cs: ContextShift[IO]): Combiner[IO] =
+    new Combiner[IO] {
       override def combineAction[A](l: IO[A], r: IO[A]): IO[A] =
         l.parProduct(r).flatMap { case (leftA, rightA) =>
           IO.whenA(leftA != rightA)(onDiff(leftA, rightA)).as(leftA)
@@ -33,8 +33,8 @@ object Combiner {
           .unNone
     }
 
-  def sequential(onDiff: OnDiff): Combiner =
-    new Combiner {
+  def sequential(onDiff: OnDiff): Combiner[IO] =
+    new Combiner[IO] {
       override def combineAction[A](l: IO[A], r: IO[A]): IO[A] =
         for {
           leftA  <- l

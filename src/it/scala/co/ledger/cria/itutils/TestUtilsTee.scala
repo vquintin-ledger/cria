@@ -13,7 +13,7 @@ import co.ledger.cria.domain.models.interpreter.CurrentBalance
 import co.ledger.cria.itutils.models.GetUtxosResult
 import co.ledger.cria.logging.{IOLogger, LogContext}
 
-final class TestUtilsTee private (primary: TestUtils, secondary: TestUtils, combiner: Combiner)
+final class TestUtilsTee private (primary: TestUtils, secondary: TestUtils, combiner: Combiner[IO])
     extends TestUtils {
   override def setupAccount(accountUid: AccountUid, walletUid: WalletUid): IO[Int] =
     combiner.combineAction(

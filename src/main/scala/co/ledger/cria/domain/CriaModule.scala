@@ -8,7 +8,7 @@ import co.ledger.cria.domain.services.interpreter.{InterpreterImpl, PersistenceF
 import co.ledger.cria.domain.services.keychain.KeychainClient
 
 final class CriaModule(
-    persistence: PersistenceFacade,
+    persistence: PersistenceFacade[IO],
     keychainClient: KeychainClient,
     getExplorerClient: Coin => ExplorerClient
 )(implicit timer: Timer[IO]) {

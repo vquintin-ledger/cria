@@ -10,43 +10,43 @@ import co.ledger.cria.domain.services.interpreter.{
 }
 import co.ledger.cria.logging.{IOLogger, LogContext}
 
-final class PersistenceFacadeTee private (
-    primary: PersistenceFacade,
-    secondary: PersistenceFacade,
-    combiner: Combiner
-) extends PersistenceFacade {
-  override val transactionRecordRepository: TransactionRecordRepository =
+final class PersistenceFacadeTee[F[_]] private (
+    primary: PersistenceFacade[F],
+    secondary: PersistenceFacade[F],
+    combiner: Combiner[F]
+) extends PersistenceFacade[F] {
+  override val transactionRecordRepository: TransactionRecordRepository[F] =
     new TransactionRecordRepositoryTee(
       primary.transactionRecordRepository,
       secondary.transactionRecordRepository,
       combiner
     )
 
-  override val operationComputationService: OperationComputationService =
+  override val operationComputationService: OperationComputationService[F] =
     new OperationComputationServiceTee(
       primary.operationComputationService,
       secondary.operationComputationService,
       combiner
     )
 
-  override val postSyncCheckService: PostSyncCheckService =
+  override val postSyncCheckService: PostSyncCheckService[F] =
     new PostSyncCheckServiceTee(
       primary.postSyncCheckService,
       secondary.postSyncCheckService,
       combiner
     )
 
-  override val operationRepository: OperationRepository =
+  override val operationRepository: OperationRepository[F] =
     new OperationRepositoryTee(primary.operationRepository, secondary.operationRepository, combiner)
 }
 
 object PersistenceFacadeTee {
   def apply(
-      primary: PersistenceFacade,
-      secondary: PersistenceFacade,
+      primary: PersistenceFacade[IO],
+      secondary: PersistenceFacade[IO],
       teeConfig: TeeConfig,
       log: IOLogger
-  )(implicit lc: LogContext, cs: ContextShift[IO]): PersistenceFacade = {
+  )(implicit lc: LogContext, cs: ContextShift[IO]): PersistenceFacade[IO] = {
     val onDiff = teeConfig.onDiff match {
       case OnDiffAction.Fail => Combiner.failOnDiff
       case OnDiffAction.Log  => Combiner.logOnDiff(log)

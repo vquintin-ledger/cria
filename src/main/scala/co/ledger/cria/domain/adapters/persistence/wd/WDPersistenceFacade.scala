@@ -20,25 +20,25 @@ final class WDPersistenceFacade private (
     maxConcurrent: Int
 )(implicit
     cs: ContextShift[IO]
-) extends PersistenceFacade {
+) extends PersistenceFacade[IO] {
 
-  override val transactionRecordRepository: TransactionRecordRepository =
+  override val transactionRecordRepository: TransactionRecordRepository[IO] =
     new WDTransactionRecordRepository(walletDaemonTransactor, temporaryTransactor, maxConcurrent)
 
-  override val operationComputationService: OperationComputationService =
+  override val operationComputationService: OperationComputationService[IO] =
     new WDOperationComputationService(temporaryTransactor)
 
-  override val postSyncCheckService: PostSyncCheckService =
+  override val postSyncCheckService: PostSyncCheckService[IO] =
     new WDPostSyncCheckService(walletDaemonTransactor)
 
-  override val operationRepository: OperationRepository =
+  override val operationRepository: OperationRepository[IO] =
     new WDOperationRepository(walletDaemonTransactor)
 }
 
 object WDPersistenceFacade {
   def apply(
       db: WalletDaemonDb
-  )(implicit cs: ContextShift[IO], timer: Timer[IO]): Resource[IO, PersistenceFacade] = {
+  )(implicit cs: ContextShift[IO], timer: Timer[IO]): Resource[IO, PersistenceFacade[IO]] = {
     for {
       walletDaemonTransactor <- ResourceUtils.postgresTransactor(db.walletDaemon)
       _                      <- migratedCriaDB(db.criaExtra)

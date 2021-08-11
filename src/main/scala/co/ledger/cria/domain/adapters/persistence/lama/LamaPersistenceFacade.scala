@@ -13,25 +13,25 @@ import doobie.Transactor
 
 final class LamaPersistenceFacade private (transactor: Transactor[IO], maxConcurrent: Int)(implicit
     cs: ContextShift[IO]
-) extends PersistenceFacade {
+) extends PersistenceFacade[IO] {
 
-  override val transactionRecordRepository: TransactionRecordRepository =
+  override val transactionRecordRepository: TransactionRecordRepository[IO] =
     new LamaTransactionRecordRepository(transactor, maxConcurrent)
 
-  override val operationComputationService: OperationComputationService =
+  override val operationComputationService: OperationComputationService[IO] =
     new LamaOperationComputationService(transactor)
 
-  override val postSyncCheckService: PostSyncCheckService =
+  override val postSyncCheckService: PostSyncCheckService[IO] =
     new LamaPostSyncCheckService(transactor)
 
-  override val operationRepository: OperationRepository =
+  override val operationRepository: OperationRepository[IO] =
     new LamaOperationRepository(transactor)
 }
 
 object LamaPersistenceFacade {
   def apply(
       config: LamaDb
-  )(implicit cs: ContextShift[IO], t: Timer[IO]): Resource[IO, PersistenceFacade] =
+  )(implicit cs: ContextShift[IO], t: Timer[IO]): Resource[IO, PersistenceFacade[IO]] =
     for {
       _  <- migratedDatabase(config)
       db <- ResourceUtils.postgresTransactor(config.postgres)

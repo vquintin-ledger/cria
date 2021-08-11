@@ -28,7 +28,7 @@ object App extends IOApp with DefaultContextLogging {
   case class ClientResources(
       explorerClient: Coin => ExplorerClient,
       keychainClient: KeychainClient,
-      persistenceFacade: PersistenceFacade
+      persistenceFacade: PersistenceFacade[IO]
   )
 
   case class WorkerResources(
@@ -116,11 +116,11 @@ object App extends IOApp with DefaultContextLogging {
   def makeKeychainClient(config: GrpcClientConfig): Resource[IO, KeychainClient] =
     grpcManagedChannel(config).map(new KeychainGrpcClient(_))
 
-  def makePersistenceFacade(config: PersistenceConfig): Resource[IO, PersistenceFacade] =
-    PersistenceConfig.foldM[Resource[IO, *], PersistenceFacade](
+  def makePersistenceFacade(config: PersistenceConfig): Resource[IO, PersistenceFacade[IO]] =
+    PersistenceConfig.foldM[Resource[IO, *], PersistenceFacade[IO]](
       wd.WDPersistenceFacade.apply,
       lama.LamaPersistenceFacade.apply,
       (f1, f2, conf) =>
-        Resource.pure[IO, PersistenceFacade](tee.PersistenceFacadeTee(f1, f2, conf, log))
+        Resource.pure[IO, PersistenceFacade[IO]](tee.PersistenceFacadeTee(f1, f2, conf, log))
     )(config)
 }
