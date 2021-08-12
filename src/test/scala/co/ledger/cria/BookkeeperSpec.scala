@@ -1,18 +1,18 @@
 package co.ledger.cria
 
 import java.time.Instant
-
 import cats.effect.{ContextShift, IO, Timer}
 import co.ledger.cria.domain.mocks.{ExplorerClientMock, InterpreterClientMock}
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
-import java.util.UUID
 
+import java.util.UUID
 import co.ledger.cria.logging.DefaultContextLogging
 import co.ledger.cria.domain.models.account.AccountUid
 import co.ledger.cria.domain.models.interpreter.Coin.Btc
 import co.ledger.cria.domain.models.interpreter.{
   BlockHash,
+  BlockHeight,
   BlockView,
   Coin,
   Confirmation,
@@ -232,7 +232,7 @@ class BookkeeperSpec extends AnyFlatSpec with Matchers with DefaultContextLoggin
               BlockHash.fromStringUnsafe(
                 "00000000eb3abe7272f133b99a919e106d964778a9092478ef9e2e5bc26a009b"
               ),
-              1L,
+              BlockHeight.fromLongUnsafe(1L),
               Instant.now()
             )
           )

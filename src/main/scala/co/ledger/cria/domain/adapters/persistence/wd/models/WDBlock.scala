@@ -15,7 +15,7 @@ object WDBlock {
     WDBlock(
       uid = computeUid(block.hash, coin),
       hash = block.hash.asString,
-      height = block.height,
+      height = block.height.value,
       time = block.time.toString,
       currencyName = coin.name
     )

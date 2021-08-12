@@ -6,6 +6,7 @@ import co.ledger.cria.domain.models.account.{AccountUid, WalletUid}
 import co.ledger.cria.domain.models.interpreter.{
   AccountTxView,
   BlockHash,
+  BlockHeight,
   BlockView,
   Coin,
   Derivation,
@@ -55,7 +56,7 @@ class OperationComputationServiceIT
 
   val block: BlockView = BlockView(
     BlockHash.fromStringUnsafe("00000000000000000008c76a28e115319fb747eb29a7e0794526d0fe47608379"),
-    570153,
+    BlockHeight.fromLongUnsafe(570153),
     time
   )
 

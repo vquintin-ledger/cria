@@ -29,6 +29,6 @@ object WDOperationToSave {
       op.fees,
       op.time,
       op.transaction.block.map(_.hash.asString),
-      op.blockHeight
+      op.blockHeight.map(_.value)
     )
 }

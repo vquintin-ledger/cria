@@ -9,7 +9,7 @@ case class TransactionAmounts(
     accountId: AccountUid,
     hash: TxHash,
     blockHash: Option[String],
-    blockHeight: Option[Long],
+    blockHeight: Option[BlockHeight],
     blockTime: Option[Instant],
     fees: BigInt,
     inputAmount: BigInt,

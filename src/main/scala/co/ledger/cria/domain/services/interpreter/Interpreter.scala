@@ -24,12 +24,12 @@ trait Interpreter {
 
   def removeDataFromCursor(
       accountId: AccountUid,
-      blockHeight: Long
+      blockHeight: BlockHeight
   )(implicit lc: CriaLogContext): IO[Int]
 
   def getLastBlocks(accountId: AccountUid)(implicit lc: CriaLogContext): IO[List[BlockView]]
 
-  def compute(account: Account, walletUid: WalletUid, fromBlockHeight: Option[Long])(
+  def compute(account: Account, walletUid: WalletUid, fromBlockHeight: Option[BlockHeight])(
       addresses: List[AccountAddress]
   )(implicit lc: CriaLogContext): IO[Int]
 
@@ -69,7 +69,7 @@ class InterpreterImpl(explorer: Coin => ExplorerClient, persistenceFacade: Persi
 
   def removeDataFromCursor(
       accountId: AccountUid,
-      blockHeight: Long
+      blockHeight: BlockHeight
   )(implicit lc: CriaLogContext): IO[Int] = {
     for {
       _     <- log.info(s"""Deleting data with parameters:
@@ -79,7 +79,7 @@ class InterpreterImpl(explorer: Coin => ExplorerClient, persistenceFacade: Persi
     } yield txRes
   }
 
-  def compute(account: Account, walletUid: WalletUid, fromBlockHeight: Option[Long])(
+  def compute(account: Account, walletUid: WalletUid, fromBlockHeight: Option[BlockHeight])(
       addresses: List[AccountAddress]
   )(implicit lc: CriaLogContext): IO[Int] = {
     for {
@@ -106,7 +106,7 @@ class InterpreterImpl(explorer: Coin => ExplorerClient, persistenceFacade: Persi
       accountId: AccountUid,
       coin: Coin,
       walletUid: WalletUid,
-      fromBlockHeight: Option[Long]
+      fromBlockHeight: Option[BlockHeight]
   )(implicit
       lc: CriaLogContext
   ): Stream[IO, Int] =
@@ -138,7 +138,7 @@ class InterpreterImpl(explorer: Coin => ExplorerClient, persistenceFacade: Persi
         }
     }
 
-  private def getUncomputedTxs(accountId: AccountUid, fromBlockHeight: Option[Long])(
+  private def getUncomputedTxs(accountId: AccountUid, fromBlockHeight: Option[BlockHeight])(
       chunkSize: Int
   )(implicit
       lc: CriaLogContext

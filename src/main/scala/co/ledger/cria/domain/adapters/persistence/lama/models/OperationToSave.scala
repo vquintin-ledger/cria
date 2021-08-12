@@ -3,7 +3,7 @@ package co.ledger.cria.domain.adapters.persistence.lama.models
 import java.time.Instant
 import co.ledger.cria.domain.models._
 import co.ledger.cria.domain.models.account.AccountUid
-import co.ledger.cria.domain.models.interpreter.{Operation, OperationType}
+import co.ledger.cria.domain.models.interpreter.{BlockHeight, Operation, OperationType}
 
 case class OperationToSave(
     uid: Operation.UID,
@@ -14,7 +14,7 @@ case class OperationToSave(
     fees: BigInt,
     time: Instant,
     blockHash: Option[String],
-    blockHeight: Option[Long]
+    blockHeight: Option[BlockHeight]
 )
 
 object OperationToSave {

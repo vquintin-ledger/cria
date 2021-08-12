@@ -1,7 +1,6 @@
 package co.ledger.cria.domain.mocks
 
 import java.time.Instant
-
 import cats.effect.IO
 import co.ledger.cria.domain.models.account.{Account, AccountUid, WalletUid}
 import co.ledger.cria.domain.models.interpreter._
@@ -11,6 +10,7 @@ import co.ledger.cria.logging.CriaLogContext
 import fs2._
 
 import scala.collection.mutable
+import scala.math.Ordering.Implicits.infixOrderingOps
 
 class InterpreterClientMock extends Interpreter {
 
@@ -54,12 +54,12 @@ class InterpreterClientMock extends Interpreter {
   //TODO: fix?
   def removeDataFromCursor(
       accountId: AccountUid,
-      blockHeight: Long
+      blockHeight: BlockHeight
   )(implicit lc: CriaLogContext): IO[Int] = {
     savedTransactions.update(
       accountId,
       savedTransactions(accountId)
-        .filter(tx => tx.block.map(_.height).getOrElse(0L) < blockHeight)
+        .filter(tx => tx.block.map(_.height).getOrElse(BlockHeight.genesis) < blockHeight)
     )
 
     transactions.update(
@@ -87,12 +87,12 @@ class InterpreterClientMock extends Interpreter {
         )
       }
       .distinct
-      .sortBy(_.height)(Ordering[Long].reverse)
+      .sortBy(_.height)(Ordering[BlockHeight].reverse)
 
     IO(lastBlocks)
   }
 
-  def compute(account: Account, walletUid: WalletUid, fromBlockHeight: Option[Long])(
+  def compute(account: Account, walletUid: WalletUid, fromBlockHeight: Option[BlockHeight])(
       addresses: List[AccountAddress]
   )(implicit lc: CriaLogContext): IO[Int] = {
 

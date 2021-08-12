@@ -1,8 +1,11 @@
 package co.ledger.cria.domain.adapters.persistence.lama.queries
 
-import co.ledger.cria.domain.models.interpreter.Derivation
+import co.ledger.cria.domain.models.interpreter.{BlockHeight, Derivation}
 import doobie.postgres.implicits._
 import doobie.{Meta, _}
+import doobie.refined.implicits.refinedMeta
+import eu.timepit.refined.api.Refined
+import eu.timepit.refined.numeric.NonNegative
 
 object LamaQueryImplicits {
 
@@ -14,4 +17,7 @@ object LamaQueryImplicits {
     }
     new Meta(get, put)
   }
+
+  implicit val metaBlockHeight: Meta[BlockHeight] =
+    refinedMeta[Long, NonNegative, Refined].timap[BlockHeight](BlockHeight(_))(_.height)
 }

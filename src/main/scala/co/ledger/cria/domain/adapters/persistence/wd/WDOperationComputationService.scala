@@ -9,7 +9,7 @@ import co.ledger.cria.domain.adapters.persistence.wd.queries.{
 }
 import co.ledger.cria.domain.models.{Sort, TxHash}
 import co.ledger.cria.domain.models.account.AccountUid
-import co.ledger.cria.domain.models.interpreter.{TransactionAmounts, TransactionView}
+import co.ledger.cria.domain.models.interpreter.{BlockHeight, TransactionAmounts, TransactionView}
 import co.ledger.cria.domain.models.keychain.{AccountAddress, ChangeType}
 import co.ledger.cria.domain.services.interpreter.OperationComputationService
 import co.ledger.cria.logging.ContextLogging
@@ -26,10 +26,10 @@ class WDOperationComputationService(criaExtra: Transactor[IO] @@ DBType.Temporar
   override def getUncomputedOperations(
       accountId: AccountUid,
       sort: Sort,
-      fromBlockHeight: Option[Long]
+      fromBlockHeight: Option[BlockHeight]
   ): fs2.Stream[IO, TransactionAmounts] =
     WDOperationQueries
-      .fetchUncomputedTransactionAmounts(accountId, sort, fromBlockHeight)
+      .fetchUncomputedTransactionAmounts(accountId, sort, fromBlockHeight.map(_.value))
       .transact(criaExtra)
 
   override def fetchTransactions(

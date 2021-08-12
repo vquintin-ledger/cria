@@ -9,7 +9,7 @@ import co.ledger.cria.domain.adapters.persistence.lama.queries.{
 }
 import co.ledger.cria.domain.models.{Sort, TxHash}
 import co.ledger.cria.domain.models.account.AccountUid
-import co.ledger.cria.domain.models.interpreter.{BlockView, TransactionView}
+import co.ledger.cria.domain.models.interpreter.{BlockHeight, BlockView, TransactionView}
 import co.ledger.cria.domain.models.keychain.{AccountAddress, ChangeType}
 import co.ledger.cria.domain.services.interpreter.OperationComputationService
 import co.ledger.cria.logging.ContextLogging
@@ -26,10 +26,10 @@ class LamaOperationComputationService(
   override def getUncomputedOperations(
       accountId: AccountUid,
       sort: Sort,
-      fromBlockHeight: Option[Long]
+      fromBlockHeight: Option[BlockHeight]
   ) =
     LamaOperationQueries
-      .fetchUncomputedTransactionAmounts(accountId, sort, fromBlockHeight)
+      .fetchUncomputedTransactionAmounts(accountId, sort, fromBlockHeight.map(_.height.value))
       .transact(db)
 
   override def fetchTransactions(
@@ -45,6 +45,9 @@ class LamaOperationComputationService(
           .map((row, _))
       )
       .map { case (row, details) =>
+        val blockHeight = row.blockHeight
+          .flatMap(h => BlockHeight.fromLong(h).toOption)
+
         TransactionView(
           id = row.id,
           hash = row.hash,
@@ -53,7 +56,8 @@ class LamaOperationComputationService(
           fees = row.fees,
           inputs = details.inputs,
           outputs = details.outputs,
-          block = (row.blockHash, row.blockHeight, row.blockTime).mapN(BlockView(_, _, _)),
+          block = (row.blockHash, blockHeight, row.blockTime)
+            .mapN(BlockView(_, _, _)),
           confirmations = row.confirmations
         )
       }

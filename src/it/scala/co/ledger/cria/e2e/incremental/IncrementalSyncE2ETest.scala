@@ -8,6 +8,7 @@ import co.ledger.cria.domain.CriaModule
 import co.ledger.cria.domain.models.{SynchronizationParameters, TxHash}
 import co.ledger.cria.domain.models.interpreter.{
   BlockHash,
+  BlockHeight,
   BlockView,
   Coin,
   Confirmation,
@@ -24,6 +25,7 @@ import org.scalatest.propspec.AnyPropSpec
 import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
 import shapeless.tag.@@
 import cats.implicits._
+import org.scalacheck.Gen.Choose
 
 final class IncrementalSyncE2ETest()
     extends AnyPropSpec
@@ -35,7 +37,7 @@ final class IncrementalSyncE2ETest()
 
   private val testCase: TestCase = TestCase.readJson("test-accounts-btc.json")(1)
 
-  private type Range = (Min[Long], Max[Long])
+  private type Range = (Min[BlockHeight], Max[BlockHeight])
 
   private val blockRange: Ref[IO, Option[Range]] = Ref[IO].of[Option[Range]](None).unsafeRunSync()
 
@@ -45,7 +47,13 @@ final class IncrementalSyncE2ETest()
     getBlockRange(testCase.registerRequest).unsafeRunSync()
   }
 
-  private val blockLimitGen: Gen[Long] =
+  private implicit val blockHeightChoose: Choose[BlockHeight] =
+    new Choose[BlockHeight] {
+      override def choose(min: BlockHeight, max: BlockHeight): Gen[BlockHeight] =
+        implicitly[Choose[Long]].choose(min.value, max.value).map(BlockHeight.fromLongUnsafe)
+    }
+
+  private val blockLimitGen: Gen[BlockHeight] =
     Gen
       .delay(Gen.const(blockRange.get.unsafeRunSync()))
       .flatMap((opt: Option[Range]) => opt.fold(Gen.fail[Range])(Gen.const))
@@ -71,7 +79,10 @@ final class IncrementalSyncE2ETest()
     }
   }
 
-  private def runCriaUpTo(syncParams: SynchronizationParameters, blockHeight: Long): IO[Unit] =
+  private def runCriaUpTo(
+      syncParams: SynchronizationParameters,
+      blockHeight: BlockHeight
+  ): IO[Unit] =
     appResources.use { cr =>
       val module = new CriaModule(
         cr.persistenceFacade,
@@ -155,7 +166,10 @@ final class IncrementalSyncE2ETest()
         client.getTransaction(transactionHash)
     }
 
-  private def limitedExplorerClient(getExplorerClient: Coin => ExplorerClient, blockHeight: Long)(
+  private def limitedExplorerClient(
+      getExplorerClient: Coin => ExplorerClient,
+      blockHeight: BlockHeight
+  )(
       c: Coin
   ): ExplorerClient =
     new ExplorerClient {

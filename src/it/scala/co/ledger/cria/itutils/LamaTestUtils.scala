@@ -11,7 +11,12 @@ import co.ledger.cria.domain.adapters.persistence.lama.queries.{
   LamaOperationQueries
 }
 import co.ledger.cria.domain.models.account.{AccountUid, WalletUid}
-import co.ledger.cria.domain.models.interpreter.{CurrentBalance, Operation, TransactionView}
+import co.ledger.cria.domain.models.interpreter.{
+  BlockHeight,
+  CurrentBalance,
+  Operation,
+  TransactionView
+}
 import co.ledger.cria.domain.models.{Sort, TxHash}
 import co.ledger.cria.itutils.models._
 import co.ledger.cria.itutils.queries.LamaOperationTestQueries
@@ -72,7 +77,7 @@ final class LamaTestUtils private (conf: LamaDb, db: Transactor[IO]) extends Tes
               case true =>
                 Some(
                   PaginationToken(
-                    OperationPaginationState(o.uid, o.blockHeight.getOrElse(0)),
+                    OperationPaginationState(o.uid, o.blockHeight.fold(0L)(_.value)),
                     isNext = false
                   )
                 )
@@ -91,7 +96,7 @@ final class LamaTestUtils private (conf: LamaDb, db: Transactor[IO]) extends Tes
               case true =>
                 Some(
                   PaginationToken(
-                    OperationPaginationState(o.uid, o.blockHeight.getOrElse(0)),
+                    OperationPaginationState(o.uid, o.blockHeight.fold(0L)(_.value)),
                     isNext = true
                   )
                 )
@@ -158,7 +163,7 @@ final class LamaTestUtils private (conf: LamaDb, db: Transactor[IO]) extends Tes
       amount = emptyOperation.op.amount,
       fees = emptyOperation.op.fees,
       time = emptyOperation.op.time,
-      blockHeight = emptyOperation.op.blockHeight
+      blockHeight = emptyOperation.op.blockHeight.map(BlockHeight.fromLongUnsafe)
     )
 
   def getUtxos(

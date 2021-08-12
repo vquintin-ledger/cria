@@ -16,7 +16,7 @@ case class Operation(
     amount: BigInt,
     fees: BigInt,
     time: Instant,
-    blockHeight: Option[Long]
+    blockHeight: Option[BlockHeight]
 )
 
 object Operation {
@@ -31,7 +31,7 @@ object Operation {
       accountId: AccountUid,
       txId: TxHash,
       operationType: OperationType,
-      blockHeight: Option[Long]
+      blockHeight: Option[BlockHeight]
   ): UID = {
 
     val libcoreType = operationType match {
@@ -39,7 +39,7 @@ object Operation {
       case OperationType.Receive => "RECEIVE"
     }
 
-    val blockHeightPrefix = blockHeight.getOrElse(0L)
+    val blockHeightPrefix = blockHeight.getOrElse(BlockHeight.genesis).value
     val txIdPrefix        = txId.asString.take(2).toList.map(_.toLong).mkString.toLong.toHexString
 
     // This prefix ensures to have a sequential uid

@@ -12,24 +12,29 @@ object TypeHelper {
     def toExplorer(b: BlockView): explorer.Block =
       Block(
         b.hash.asString,
-        b.height,
+        b.height.height.value,
         b.time
       )
 
     def fromExplorer[F[_]](b: explorer.Block)(implicit me: MonadError[F, Throwable]): F[BlockView] =
-      me
-        .fromEither(
-          BlockHash
-            .fromString(b.hash)
-            .leftMap(s => new RuntimeException(s"Invalid block hash from explorer: $s"))
-        )
-        .map(hash =>
-          BlockView(
-            hash,
-            b.height,
-            b.time
+      for {
+        hash <- me
+          .fromEither(
+            BlockHash
+              .fromString(b.hash)
+              .leftMap(s => new RuntimeException(s"Invalid block hash from explorer: $s"))
           )
-        )
+        height <- me
+          .fromEither(
+            BlockHeight
+              .fromLong(b.height)
+              .leftMap(s => new RuntimeException(s"Invalid block height from explorer: $s"))
+          )
+      } yield BlockView(
+        hash,
+        height,
+        b.time
+      )
   }
 
   object coin {

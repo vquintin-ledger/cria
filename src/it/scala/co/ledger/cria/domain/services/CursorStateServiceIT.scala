@@ -12,6 +12,7 @@ import co.ledger.cria.logging.DefaultContextLogging
 import co.ledger.cria.domain.models.account.{Account, AccountUid}
 import co.ledger.cria.domain.models.interpreter.{
   BlockHash,
+  BlockHeight,
   BlockView,
   Coin,
   SyncId,
@@ -51,7 +52,7 @@ class CursorStateServiceIT extends AnyFlatSpecLike with Matchers with DefaultCon
       val lastValidHash = BlockHash.fromStringUnsafe(
         "00000000000000000008c76a28e115319fb747eb29a7e0794526d0fe47608379"
       )
-      val lastValidHeight = 559033L
+      val lastValidHeight = BlockHeight.fromLongUnsafe(559033L)
       val invalidHash = BlockHash.fromStringUnsafe(
         "00000000000000000008c76a28e115319fb747eb29a7e0794526d0fe47608376"
       )
@@ -84,7 +85,7 @@ class CursorStateServiceIT extends AnyFlatSpecLike with Matchers with DefaultCon
 
         block <- cursorStateService.getLastValidState(
           account,
-          BlockView(invalidHash, 0L, Instant.now()),
+          BlockView(invalidHash, BlockHeight.genesis, Instant.now()),
           syncId
         )
       } yield {
@@ -104,7 +105,13 @@ class CursorStateServiceIT extends AnyFlatSpecLike with Matchers with DefaultCon
       1,
       Nil,
       Nil,
-      Some(BlockView(BlockHash.fromStringUnsafe(blockHash), height, Instant.now())),
+      Some(
+        BlockView(
+          BlockHash.fromStringUnsafe(blockHash),
+          BlockHeight.fromLongUnsafe(height),
+          Instant.now()
+        )
+      ),
       0
     )
 

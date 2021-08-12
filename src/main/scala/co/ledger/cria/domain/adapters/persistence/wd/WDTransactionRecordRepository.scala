@@ -5,7 +5,7 @@ import cats.implicits._
 import cats.effect.{ContextShift, IO}
 import co.ledger.cria.domain.adapters.persistence.wd.queries.{WDQueries, WDTransactionQueries}
 import co.ledger.cria.domain.models.account.AccountUid
-import co.ledger.cria.domain.models.interpreter.{AccountTxView, BlockView}
+import co.ledger.cria.domain.models.interpreter.{AccountTxView, BlockHeight, BlockView}
 import co.ledger.cria.domain.services.interpreter.TransactionRecordRepository
 import co.ledger.cria.logging.{ContextLogging, CriaLogContext}
 import doobie.Transactor
@@ -37,16 +37,16 @@ final class WDTransactionRecordRepository(
           }
       }
 
-  override def removeFromCursor(accountUid: AccountUid, blockHeight: Long): IO[Int] = {
+  override def removeFromCursor(accountUid: AccountUid, blockHeight: BlockHeight): IO[Int] = {
     // remove block & operations & transactions & inputs
     // search inputs attached to blocks to remove
     (for {
-      inUids <- WDQueries.getInputUidsFromBlockHeight(blockHeight)
+      inUids <- WDQueries.getInputUidsFromBlockHeight(blockHeight.value)
       _ <- inUids match {
         case Nil          => connection.pure[Int](0)
         case head :: tail => WDQueries.deleteInputs(NonEmptyList(head, tail))
       }
-      blocks <- WDQueries.deleteBlock(blockHeight)
+      blocks <- WDQueries.deleteBlock(blockHeight.value)
     } yield blocks).transact(walletDaemon)
   }
 

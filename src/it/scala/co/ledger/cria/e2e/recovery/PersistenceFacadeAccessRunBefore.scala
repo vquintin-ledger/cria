@@ -20,7 +20,7 @@ final class PersistenceFacadeAccessRunBefore(persistenceFacade: PersistenceFacad
       override def saveTransactions(implicit lc: CriaLogContext): Pipe[IO, AccountTxView, Unit] =
         doBeforePipe(delegate.saveTransactions)
 
-      override def removeFromCursor(accountId: AccountUid, blockHeight: Long): IO[Int] =
+      override def removeFromCursor(accountId: AccountUid, blockHeight: BlockHeight): IO[Int] =
         doBeforeAction(delegate.removeFromCursor(accountId, blockHeight))
 
       override def getLastBlocks(accountId: AccountUid): fs2.Stream[IO, BlockView] =
@@ -40,7 +40,7 @@ final class PersistenceFacadeAccessRunBefore(persistenceFacade: PersistenceFacad
       override def getUncomputedOperations(
           accountId: AccountUid,
           sort: Sort,
-          fromBlockHeight: Option[Long]
+          fromBlockHeight: Option[BlockHeight]
       ): fs2.Stream[IO, TransactionAmounts] =
         doBeforeStream(delegate.getUncomputedOperations(accountId, sort, fromBlockHeight))
 

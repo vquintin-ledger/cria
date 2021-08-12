@@ -2,7 +2,7 @@ package co.ledger.cria.domain.adapters.persistence.tee
 
 import cats.effect.IO
 import co.ledger.cria.domain.models.account.AccountUid
-import co.ledger.cria.domain.models.interpreter.{AccountTxView, BlockView}
+import co.ledger.cria.domain.models.interpreter.{AccountTxView, BlockHeight, BlockView}
 import co.ledger.cria.domain.services.interpreter.TransactionRecordRepository
 import co.ledger.cria.logging.CriaLogContext
 import fs2.Pipe
@@ -18,7 +18,7 @@ class TransactionRecordRepositoryTee(
   ): Pipe[IO, AccountTxView, Unit] =
     combiner.combinePipe(primary.saveTransactions, secondary.saveTransactions)
 
-  override def removeFromCursor(accountId: AccountUid, blockHeight: Long): IO[Int] =
+  override def removeFromCursor(accountId: AccountUid, blockHeight: BlockHeight): IO[Int] =
     combiner.combineAction(
       primary.removeFromCursor(accountId, blockHeight),
       secondary.removeFromCursor(accountId, blockHeight)

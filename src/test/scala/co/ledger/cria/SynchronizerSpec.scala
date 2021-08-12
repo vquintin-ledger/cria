@@ -5,6 +5,7 @@ import co.ledger.cria.domain.mocks.{ExplorerClientMock, InterpreterClientMock}
 import co.ledger.cria.domain.models.SynchronizationParameters
 import co.ledger.cria.domain.models.interpreter.{
   BlockHash,
+  BlockHeight,
   BlockView,
   Coin,
   SyncId,
@@ -12,9 +13,9 @@ import co.ledger.cria.domain.models.interpreter.{
 }
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
+
 import java.time.Instant
 import java.util.UUID
-
 import co.ledger.cria.domain.models.account.{Account, AccountUid, WalletUid}
 import co.ledger.cria.domain.models.keychain.KeychainId
 import co.ledger.cria.domain.services.{CursorStateService, ExplorerClient, Synchronizer}
@@ -42,7 +43,7 @@ class SynchronizerSpec extends AnyFlatSpec with Matchers {
   val blockchain = LazyList
     .from(0)
     .map { i =>
-      val block   = BlockView(randomBlockHash(), i, Instant.now())
+      val block   = BlockView(randomBlockHash(), BlockHeight.fromLongUnsafe(i), Instant.now())
       val address = i.toString
       block -> List(address -> List(TransactionFixture.confirmed.receive(address, inBlock = block)))
     }

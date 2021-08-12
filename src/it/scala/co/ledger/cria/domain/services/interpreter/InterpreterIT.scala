@@ -1,5 +1,7 @@
 package co.ledger.cria.domain.services.interpreter
 
+import co.ledger.cria.domain.models.interpreter.BlockHeight
+
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import java.util.UUID
@@ -60,7 +62,7 @@ class InterpreterIT extends AnyFlatSpec with ContainerSpec with Matchers {
 
   val block: BlockView = BlockView(
     BlockHash.fromStringUnsafe("00000000000000000008c76a28e115319fb747eb29a7e0794526d0fe47608379"),
-    570153,
+    BlockHeight.fromLongUnsafe(570153),
     time
   )
 
@@ -127,7 +129,7 @@ class InterpreterIT extends AnyFlatSpec with ContainerSpec with Matchers {
           BlockHash.fromStringUnsafe(
             "0000000000000000000cc9cc204cf3b314d106e69afbea68f2ae7f9e5047ba74"
           ),
-          block.height + 1,
+          block.height.succ,
           time
         )
 
@@ -177,7 +179,7 @@ class InterpreterIT extends AnyFlatSpec with ContainerSpec with Matchers {
           blocksAfterDelete <- interpreter.getLastBlocks(accountUid)
         } yield {
           withClue(s"${blocksToSave.size} blocks should be saved, found: ${blocks.size}") {
-            blocks should be(blocksToSave.sortBy(_.height)(Ordering[Long].reverse))
+            blocks should be(blocksToSave.sortBy(_.height)(Ordering[BlockHeight].reverse))
           }
           withClue(s"There should be 2 ops before delete") {
             opsBeforeDeletionTotal shouldBe 2
@@ -391,7 +393,7 @@ class InterpreterIT extends AnyFlatSpec with ContainerSpec with Matchers {
                     BlockHash.fromStringUnsafe(
                       "90a9c00424e06c9074ed6e70a33005046767682c2a077e1b9ee02a3adc336e9f"
                     ),
-                    1L,
+                    BlockHeight.fromLongUnsafe(1L),
                     time
                   )
                 )
@@ -414,7 +416,7 @@ class InterpreterIT extends AnyFlatSpec with ContainerSpec with Matchers {
                     BlockHash.fromStringUnsafe(
                       "cbbeeea984ca073ef0275d74b15cc581dd12e608bd60ae7964f32bb37771848f"
                     ),
-                    2L,
+                    BlockHeight.fromLongUnsafe(2L),
                     time.plus(10, ChronoUnit.MINUTES)
                   )
                 )

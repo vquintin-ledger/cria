@@ -4,7 +4,7 @@ import java.time.Instant
 
 case class BlockView(
     hash: BlockHash,
-    height: Long,
+    height: BlockHeight,
     time: Instant
 )
 

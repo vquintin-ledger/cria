@@ -4,7 +4,7 @@ import cats.data.NonEmptyList
 import cats.effect.IO
 import co.ledger.cria.domain.models.{Sort, TxHash}
 import co.ledger.cria.domain.models.account.AccountUid
-import co.ledger.cria.domain.models.interpreter.{TransactionAmounts, TransactionView}
+import co.ledger.cria.domain.models.interpreter.{BlockHeight, TransactionAmounts, TransactionView}
 import co.ledger.cria.domain.models.keychain.AccountAddress
 import co.ledger.cria.domain.services.interpreter.OperationComputationService
 
@@ -26,7 +26,7 @@ final class OperationComputationServiceTee(
   override def getUncomputedOperations(
       accountId: AccountUid,
       sort: Sort,
-      fromBlockHeight: Option[Long]
+      fromBlockHeight: Option[BlockHeight]
   ): fs2.Stream[IO, TransactionAmounts] =
     combiner.combineStream(
       primary.getUncomputedOperations(accountId, sort, fromBlockHeight),

@@ -13,7 +13,7 @@ import co.ledger.cria.domain.mocks.InterpreterClientMock
 import co.ledger.cria.domain.models.SynchronizationParameters
 import co.ledger.cria.domain.models.SynchronizationResult.SynchronizationSuccess
 import co.ledger.cria.domain.models.account.{Account, AccountUid, WalletUid}
-import co.ledger.cria.domain.models.interpreter.{Coin, SyncId}
+import co.ledger.cria.domain.models.interpreter.{BlockHeight, Coin, SyncId}
 import co.ledger.cria.domain.models.keychain.KeychainId
 import co.ledger.cria.domain.services
 import co.ledger.cria.domain.services.{CursorStateService, Synchronizer}
@@ -77,7 +77,7 @@ class SynchronizerIT extends AnyFlatSpecLike with Matchers {
             }
 
             val expectedTxsSize         = 73
-            val expectedLastBlockHeight = 644553L
+            val expectedLastBlockHeight = BlockHeight.fromLongUnsafe(644553L)
 
             it should s"have synchronized $expectedTxsSize txs with last blockHeight > $expectedLastBlockHeight" in {
               interpreterClient.getSavedTransaction(

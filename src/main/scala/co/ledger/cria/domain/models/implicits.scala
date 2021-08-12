@@ -1,7 +1,6 @@
 package co.ledger.cria.domain.models
 
 import java.time.Instant
-
 import cats.data.NonEmptyList
 import co.ledger.cria.domain.models.account.{AccountUid, WalletUid}
 import co.ledger.cria.domain.models.interpreter.{OperationType, TransactionView}
@@ -9,6 +8,9 @@ import co.ledger.cria.domain.models.interpreter._
 import co.ledger.cria.domain.models.keychain.ChangeType
 import doobie._
 import doobie.postgres.implicits._
+import doobie.refined.implicits.refinedMeta
+import eu.timepit.refined.api.Refined
+import eu.timepit.refined.numeric.NonNegative
 
 import scala.math.BigDecimal.javaBigDecimal2bigDecimal
 
@@ -35,9 +37,23 @@ object implicits {
   implicit val doobieMetaWalletUid: Meta[WalletUid] =
     Meta[String].timap[WalletUid](WalletUid)(_.value)
 
-  implicit lazy val readTransactionView: Read[TransactionView] =
+  implicit lazy val readTransactionView: Read[TransactionView] = {
+    implicit val metaBlockHeight: Meta[BlockHeight] =
+      refinedMeta[Long, NonNegative, Refined].timap[BlockHeight](BlockHeight(_))(_.height)
+    val _ = metaBlockHeight
+
     Read[
-      (String, TxHash, Option[BlockHash], Option[Long], Option[Instant], Instant, Long, BigInt, Int)
+      (
+          String,
+          TxHash,
+          Option[BlockHash],
+          Option[BlockHeight],
+          Option[Instant],
+          Instant,
+          Long,
+          BigInt,
+          Int
+      )
     ].map {
       case (
             id,
@@ -63,4 +79,5 @@ object implicits {
           confirmations = confirmations
         )
     }
+  }
 }
