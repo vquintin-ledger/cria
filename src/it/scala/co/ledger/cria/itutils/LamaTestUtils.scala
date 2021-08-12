@@ -148,7 +148,7 @@ final class LamaTestUtils private (conf: LamaDb, db: Transactor[IO]) extends Tes
       uid = emptyOperation.op.uid,
       accountId = emptyOperation.op.accountId,
       hash = emptyOperation.op.hash,
-      transaction = TransactionView(
+      transaction = TransactionView.unsafe(
         id = emptyOperation.tx.id,
         hash = emptyOperation.tx.hash,
         receivedAt = emptyOperation.tx.receivedAt,

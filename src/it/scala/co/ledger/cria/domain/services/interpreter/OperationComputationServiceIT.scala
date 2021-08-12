@@ -79,7 +79,7 @@ class OperationComputationServiceIT
   )
 
   val insertTx1: TransactionView =
-    TransactionView(
+    TransactionView.unsafe(
       "txId",
       TxHash.fromStringUnsafe("a8a935c6bc2bd8b3a7c20f107a9eb5f10a315ce27de9d72f3f4e27ac9ec1eb1f"),
       time,

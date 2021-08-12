@@ -84,21 +84,24 @@ class InterpreterIT extends AnyFlatSpec with ContainerSpec with Matchers {
     )
   )
 
+  val someTxHash =
+    TxHash.fromStringUnsafe("cafee5f1b12078495a9e80c6e0d77af3d674cfe6096bb6e7909993a53b6e1664")
+
   val coinbaseTx: TransactionView =
-    TransactionView(
+    TransactionView.unsafe(
       "txId",
       TxHash.fromStringUnsafe("0f38e5f1b12078495a9e80c6e0d77af3d674cfe6096bb6e7909993a53b6e8386"),
       time,
       0,
       0,
-      Nil,
+      List(InputView(someTxHash, 0, 0, 80000, "toto", "sig", Nil, 0, None)),
       List(OutputView(0, 80000, inputAddress.accountAddress, "script", None, None)),
       Some(block),
       1
     )
 
   val insertTx: TransactionView =
-    TransactionView(
+    TransactionView.unsafe(
       "txId",
       TxHash.fromStringUnsafe("a8a935c6bc2bd8b3a7c20f107a9eb5f10a315ce27de9d72f3f4e27ac9ec1eb1f"),
       time,
@@ -207,7 +210,7 @@ class InterpreterIT extends AnyFlatSpec with ContainerSpec with Matchers {
 
         val utils = tr.testUtils
 
-        val uTx = TransactionView(
+        val uTx = TransactionView.unsafe(
           "txId",
           TxHash.fromStringUnsafe(
             "a8a935c6bc2bd8b3a7c20f107a9eb5f10a315ce27de9d72f3f4e27ac9ec1eb1f"
@@ -259,7 +262,7 @@ class InterpreterIT extends AnyFlatSpec with ContainerSpec with Matchers {
 
         val utils = tr.testUtils
 
-        val uTx = TransactionView(
+        val uTx = TransactionView.unsafe(
           "txId",
           TxHash.fromStringUnsafe(
             "a8a935c6bc2bd8b3a7c20f107a9eb5f10a315ce27de9d72f3f4e27ac9ec1eb1f"
@@ -274,7 +277,7 @@ class InterpreterIT extends AnyFlatSpec with ContainerSpec with Matchers {
         )
         explorer.addToBC(uTx)
 
-        val tx = TransactionView(
+        val tx = TransactionView.unsafe(
           "txId",
           TxHash.fromStringUnsafe(
             "a8a935c6bc2bd8b3a7c20f107a9eb5f10a315ce27de9d72f3f4e27ac9ec1eb1f"
@@ -315,7 +318,7 @@ class InterpreterIT extends AnyFlatSpec with ContainerSpec with Matchers {
           "d0a75f8295419c72782aadb8de23b4d8ed095c9ec3c26a144b8e8f9ab0c11730"
         )
 
-        val uTx1 = TransactionView(
+        val uTx1 = TransactionView.unsafe(
           "tx1",
           TxHash.fromStringUnsafe(
             "b23ed6a7362a45ed880d29aa601baed2ee718b440a562daf31473a65fc99d0c7"
@@ -351,7 +354,8 @@ class InterpreterIT extends AnyFlatSpec with ContainerSpec with Matchers {
           ),
           outputs = List(
             OutputView(0, 5000, outputAddress2.accountAddress, "script", None, None)
-          ) // receive
+          ), // receive
+          fees = 96000
         )
         explorer.addToBC(uTx2)
 
@@ -459,7 +463,7 @@ class InterpreterIT extends AnyFlatSpec with ContainerSpec with Matchers {
 
         val uTx1 = AccountTxView(
           accountUid,
-          TransactionView(
+          TransactionView.unsafe(
             "utx1",
             TxHash.fromStringUnsafe(
               "a99c7e333b287e7ecb017b33b7faf028a7eba69ae716114401e398f568f6ad9b"

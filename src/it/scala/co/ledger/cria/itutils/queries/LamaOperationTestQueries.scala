@@ -45,8 +45,8 @@ object LamaOperationTestQueries extends DoobieLogHandler {
         case ((txhash1, i), (txHash2, o)) if txhash1 == txHash2 =>
           OperationDetails(
             txhash1,
-            inputs = i.toList.flatten.sortBy(i => (i.outputHash, i.outputIndex)),
-            outputs = o.toList.flatten.sortBy(_.outputIndex)
+            inputs = i.toList.flatten.sortBy(i => i.inputIndex).distinct,
+            outputs = o.toList.flatten.sortBy(_.outputIndex).distinct
           )
       }
   }
