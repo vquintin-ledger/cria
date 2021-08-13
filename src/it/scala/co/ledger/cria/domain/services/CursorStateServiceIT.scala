@@ -16,7 +16,7 @@ import co.ledger.cria.domain.models.interpreter.{
   BlockView,
   Coin,
   SyncId,
-  TransactionView
+  TransactionViewTestHelper
 }
 import co.ledger.cria.domain.models.keychain.KeychainId
 import co.ledger.cria.utils.IOAssertion
@@ -97,12 +97,12 @@ class CursorStateServiceIT extends AnyFlatSpecLike with Matchers with DefaultCon
   }
 
   private def createTx(blockHash: String, height: Long) =
-    TransactionView(
+    TransactionViewTestHelper.unsafe(
       "id",
       TxHash.fromStringUnsafe("b55ba601af2e705c11f8a62dc72c34b052b4f0be0eaf6ba2025e513d86194de9"),
       Instant.now(),
       0L,
-      1,
+      0,
       Nil,
       Nil,
       Some(

@@ -6,7 +6,7 @@
       },
       "scheme": "BIP44",
       "lookahead_size": 20,
-      "coin": "btc_testnet",
+      "coin": "bitcoin_testnet",
       "sync_id": "f124f9df-507a-450e-a74c-7ff78c583ed7",
       "account_uid": "a59deed9-a6c8-4a57-9dbd-e3b1cf7a9428",
       "wallet_uid": "a7f01c2b-fd4b-45a8-b836-b8106448b189",
@@ -14,12 +14,9 @@
       "metadata": "nolibcore:testworkspace"
     },
     "expected": {
-      "extended_public_key": "tpubDCrucad5KpPS3AD91ZXsSrTbiCCkXJPPo6qHsSuJCbnhSn9MCNaqsY6mvHPaMoCNSS2RHmT36qXhUqTJxqfidfLpM3oRdJJAgveXAfMXUGW",
       "ops_size": 4,
       "utxos_size": 2,
-      "last_tx_hash": "f01ca5b85b3c754ca6f685342b2f17c2ca0d00c562e0864c3bf489738f30e49c",
       "balance": 35480,
-      "balance_history_size": 2,
       "amount_received": 110000,
       "amount_sent": 74520
     }

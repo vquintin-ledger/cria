@@ -67,15 +67,14 @@ object TypeHelper {
       for {
         inputs <- t.inputs.collect { case i: DefaultInput => i }.traverse(input.fromDefaultInput[F])
         block  <- t.block.traverse(block.fromExplorer[F])
-      } yield {
-        TransactionView(
-          t.hash,
-          txHash,
-          t.receivedAt,
-          t.lockTime,
-          t.fees,
-          inputs,
-          t.outputs.map { o =>
+        result <- TransactionView.asMonadError[F](
+          id = t.hash,
+          hash = txHash,
+          receivedAt = t.receivedAt,
+          lockTime = t.lockTime,
+          fees = t.fees,
+          inputs = inputs,
+          outputs = t.outputs.map { o =>
             OutputView(
               o.outputIndex,
               o.value,
@@ -85,10 +84,10 @@ object TypeHelper {
               None
             )
           },
-          block,
-          t.confirmations
+          block = block,
+          confirmations = t.confirmations
         )
-      }
+      } yield result
     }
   }
 

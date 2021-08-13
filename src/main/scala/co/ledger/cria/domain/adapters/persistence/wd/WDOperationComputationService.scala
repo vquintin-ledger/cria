@@ -9,7 +9,12 @@ import co.ledger.cria.domain.adapters.persistence.wd.queries.{
 }
 import co.ledger.cria.domain.models.{Sort, TxHash}
 import co.ledger.cria.domain.models.account.AccountUid
-import co.ledger.cria.domain.models.interpreter.{BlockHeight, TransactionAmounts, TransactionView}
+import co.ledger.cria.domain.models.interpreter.{
+  BlockHeight,
+  BlockView,
+  TransactionAmounts,
+  TransactionView
+}
 import co.ledger.cria.domain.models.keychain.{AccountAddress, ChangeType}
 import co.ledger.cria.domain.services.interpreter.OperationComputationService
 import co.ledger.cria.logging.ContextLogging
@@ -38,16 +43,28 @@ class WDOperationComputationService(criaExtra: Transactor[IO] @@ DBType.Temporar
       hashes: NonEmptyList[TxHash]
   ): Stream[IO, TransactionView] = {
     val txStream =
-      WDTransactionQueries.fetchTransaction(accountId, sort, hashes).transact(criaExtra)
+      WDTransactionQueries.fetchTransaction(accountId, sort, hashes)
     val txDetailsStream =
-      WDTransactionQueries.fetchTransactionDetails(accountId, sort, hashes).transact(criaExtra)
+      WDTransactionQueries.fetchTransactionDetails(accountId, sort, hashes)
 
     txStream
       .zip(txDetailsStream)
       .collect {
         case (tx, details) if tx.hash == details.txHash =>
-          tx.copy(inputs = details.inputs, outputs = details.outputs)
+          TransactionView.asMonadError[ConnectionIO](
+            id = tx.id,
+            hash = tx.hash,
+            receivedAt = tx.receivedAt,
+            lockTime = tx.lockTime,
+            fees = tx.fees,
+            inputs = details.inputs,
+            outputs = details.outputs,
+            block = (tx.blockHash, tx.blockHeight, tx.blockTime).mapN(BlockView.apply),
+            confirmations = tx.confirmations
+          )
       }
+      .evalMap(identity)
+      .transact(criaExtra)
 
   }
 

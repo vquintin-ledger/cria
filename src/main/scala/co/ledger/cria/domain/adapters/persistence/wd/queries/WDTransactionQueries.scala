@@ -11,6 +11,7 @@ import doobie.implicits._
 import doobie.postgres.implicits._
 import fs2._
 import WDQueryImplicits._
+import co.ledger.cria.domain.adapters.persistence.wd.models.WDTransactionRow
 
 object WDTransactionQueries extends DoobieLogHandler {
 
@@ -128,7 +129,7 @@ object WDTransactionQueries extends DoobieLogHandler {
       accountId: AccountUid,
       sort: Sort,
       txHashes: NonEmptyList[TxHash]
-  ): Stream[doobie.ConnectionIO, TransactionView] = {
+  ): Stream[doobie.ConnectionIO, WDTransactionRow] = {
     log.logger.debug(
       s"Fetching transactions for accountId $accountId and hashes in $txHashes"
     )
@@ -150,7 +151,7 @@ object WDTransactionQueries extends DoobieLogHandler {
          WHERE t.account_uid = $accountId
            AND $belongsToTxs
        """ ++ transactionOrder(sort))
-      .query[TransactionView]
+      .query[WDTransactionRow]
       .stream
   }
 

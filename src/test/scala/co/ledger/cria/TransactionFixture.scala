@@ -1,6 +1,7 @@
 package co.ledger.cria
 
 import cats.data.NonEmptyList
+import cats.implicits.toFoldableOps
 import co.ledger.cria.clients.explorer.v3.ExplorerClient.Address
 import co.ledger.cria.domain.models.TxHash
 import co.ledger.cria.domain.models.interpreter.{
@@ -8,7 +9,8 @@ import co.ledger.cria.domain.models.interpreter.{
   Confirmation,
   InputView,
   OutputView,
-  TransactionView
+  TransactionView,
+  TransactionViewTestHelper
 }
 import co.ledger.cria.utils.HexUtils
 import shapeless.tag
@@ -78,12 +80,12 @@ object TransactionFixture {
       inputs: NonEmptyList[InputView],
       outputs: NonEmptyList[OutputView]
   ): TransactionView @@ Confirmation.Unconfirmed = tag[Confirmation.Unconfirmed](
-    TransactionView(
+    TransactionViewTestHelper.unsafe(
       id = s"id-${Random.nextInt(100)}",
       hash = randomTxHash(),
       receivedAt = Instant.now(),
       lockTime = 0L,
-      fees = 1,
+      fees = inputs.foldMap(_.value) - outputs.foldMap(_.value),
       inputs = inputs.toList,
       outputs = outputs.toList,
       None,
@@ -96,12 +98,12 @@ object TransactionFixture {
       outputs: NonEmptyList[OutputView],
       block: BlockView
   ): TransactionView @@ Confirmation.Confirmed = tag[Confirmation.Confirmed](
-    TransactionView(
+    TransactionViewTestHelper.unsafe(
       id = s"id-${Random.nextInt(100) + 100}",
       hash = randomTxHash(),
       receivedAt = Instant.now(),
       lockTime = 0L,
-      fees = 1,
+      fees = inputs.foldMap(_.value) - outputs.foldMap(_.value),
       inputs = inputs.toList,
       outputs = outputs.toList,
       confirmations = 1,

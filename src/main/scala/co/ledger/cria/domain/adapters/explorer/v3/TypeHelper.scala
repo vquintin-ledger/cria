@@ -70,15 +70,14 @@ object TypeHelper {
     ): F[TransactionView] = {
       for {
         inputs <- t.inputs.collect { case i: DefaultInput => i }.traverse(input.fromDefaultInput[F])
-      } yield {
-        TransactionView(
-          t.id,
-          txHash,
-          t.receivedAt,
-          t.lockTime,
-          t.fees,
-          inputs,
-          t.outputs.map { o =>
+        result <- TransactionView.asMonadError[F](
+          id = t.hash,
+          hash = txHash,
+          receivedAt = t.receivedAt,
+          lockTime = t.lockTime,
+          fees = t.fees,
+          inputs = inputs,
+          outputs = t.outputs.map { o =>
             OutputView(
               o.outputIndex,
               o.value,
@@ -88,10 +87,10 @@ object TypeHelper {
               None
             )
           },
-          None,
-          t.confirmations
+          block = None,
+          confirmations = t.confirmations
         )
-      }
+      } yield result
     }
 
     private def confirmedTransaction[F[_]](t: explorer.ConfirmedTransaction, txHash: TxHash)(
@@ -100,15 +99,14 @@ object TypeHelper {
       for {
         blockView <- block.fromExplorer[F](t.block)
         inputs    <- t.inputs.collect { case i: DefaultInput => i }.traverse(input.fromDefaultInput[F])
-      } yield {
-        TransactionView(
-          t.id,
-          txHash,
-          t.receivedAt,
-          t.lockTime,
-          t.fees,
-          inputs,
-          t.outputs.map { o =>
+        result <- TransactionView.asMonadError[F](
+          id = t.hash,
+          hash = txHash,
+          receivedAt = t.receivedAt,
+          lockTime = t.lockTime,
+          fees = t.fees,
+          inputs = inputs,
+          outputs = t.outputs.map { o =>
             OutputView(
               o.outputIndex,
               o.value,
@@ -118,10 +116,10 @@ object TypeHelper {
               None
             )
           },
-          Some(blockView),
-          t.confirmations
+          block = Some(blockView),
+          confirmations = t.confirmations
         )
-      }
+      } yield result
     }
   }
 

@@ -59,8 +59,7 @@ class CriaE2ETest
   def readTestCases(): List[TestCase] =
     List(
       "test-accounts-btc.json",
-      // TODO Uncomment me when the explorers are stable (maybe ?)
-      //"test-accounts-btc_testnet.json",
+      "test-accounts-btc_testnet.json",
       "test-accounts-ltc.json"
     ).flatMap(TestCase.readJson)
 

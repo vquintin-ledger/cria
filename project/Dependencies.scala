@@ -76,7 +76,7 @@ object Dependencies extends DependencyBuilders with LibraryManagementSyntax {
     "org.tpolecat"            %% "doobie-scalatest"               % doobieVersion              % "it, test, e2e",
     "com.opentable.components" % "otj-pg-embedded"                % otjPgEmbeddedVersion       % Test,
     "it.ozimov"                % "embedded-redis"                 % embeddedRedisVersion       % Test,
-    "com.dimafeng"            %% "testcontainers-scala-scalatest" % testcontainersScalaVersion % "it, e2e"
+    "com.dimafeng"            %% "testcontainers-scala-scalatest" % testcontainersScalaVersion % "test, it, e2e"
   )
 
   // https://scalapb.github.io/docs/faq/#i-am-getting-import-was-not-found-or-had-errors

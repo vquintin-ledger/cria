@@ -44,11 +44,11 @@ class LamaOperationComputationService(
           .fetchTransactionDetails(accountId, sort, NonEmptyList.one(row.hash))
           .map((row, _))
       )
-      .map { case (row, details) =>
+      .flatMap { case (row, details) =>
         val blockHeight = row.blockHeight
           .flatMap(h => BlockHeight.fromLong(h).toOption)
 
-        TransactionView(
+        TransactionView.asMonadError[fs2.Stream[ConnectionIO, *]](
           id = row.id,
           hash = row.hash,
           receivedAt = row.receivedAt,

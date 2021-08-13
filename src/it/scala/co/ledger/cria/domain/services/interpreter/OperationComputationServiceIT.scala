@@ -14,7 +14,8 @@ import co.ledger.cria.domain.models.interpreter.{
   Operation,
   OperationType,
   OutputView,
-  TransactionView
+  TransactionView,
+  TransactionViewTestHelper
 }
 import co.ledger.cria.domain.models.{Sort, TxHash, keychain}
 import co.ledger.cria.domain.models.keychain.{AccountAddress, ChangeType}
@@ -79,7 +80,7 @@ class OperationComputationServiceIT
   )
 
   val insertTx1: TransactionView =
-    TransactionView(
+    TransactionViewTestHelper.unsafe(
       "txId",
       TxHash.fromStringUnsafe("a8a935c6bc2bd8b3a7c20f107a9eb5f10a315ce27de9d72f3f4e27ac9ec1eb1f"),
       time,
