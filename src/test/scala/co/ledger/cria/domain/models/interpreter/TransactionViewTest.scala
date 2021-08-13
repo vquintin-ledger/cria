@@ -79,7 +79,7 @@ class TransactionViewTest extends AnyFunSuite {
     val tx = makeTx(
       fees = 300,
       List(input0, input1),
-      List(output0, output2) // No output at index 2
+      List(output0, output2) // No output at index 1
     )
 
     assert(tx.isLeft)
@@ -98,7 +98,7 @@ class TransactionViewTest extends AnyFunSuite {
       lockTime = 0,
       fees = fees,
       inputs = inputs,
-      outputs = outputs, // No output at index 2
+      outputs = outputs,
       None,
       0
     )

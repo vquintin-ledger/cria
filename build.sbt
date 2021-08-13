@@ -26,6 +26,11 @@ scalacOptions ++= CompilerFlags.all
 resolvers += Resolver.sonatypeRepo("releases")
 addCompilerPlugin("org.typelevel" %% "kind-projector" % "0.10.3")
 
+// it tests
+lazy val ITest = config("it") extend Test
+scalaSource in ITest := baseDirectory.value / "src/it/scala"
+unmanagedResourceDirectories in ITest += baseDirectory.value / "src" / "it" / "resources"
+
 // e2e tests
 lazy val End2EndTest = config("e2e") extend Test
 scalaSource in End2EndTest := baseDirectory.value / "src/it/scala"
@@ -35,7 +40,7 @@ parallelExecution in End2EndTest := false
 // Assign the proper tests to each test conf
 def e2eFilter(name: String): Boolean = name endsWith "E2ETest"
 def itFilter(name: String): Boolean  = (name endsWith "IT") && !e2eFilter(name)
-testOptions in IntegrationTest := Seq(Tests.Filter(itFilter))
+testOptions in ITest := Seq(Tests.Filter(itFilter))
 testOptions in End2EndTest := Seq(Tests.Filter(e2eFilter))
 
 lazy val buildInfoSettings = Seq(
@@ -73,7 +78,8 @@ lazy val bitcoinProtobuf = (project in file("protobuf"))
 
 lazy val cria = (project in file("."))
   .enablePlugins(JavaAgent, JavaServerAppPackaging, DockerPlugin)
-  .configs(IntegrationTest)
+  .configs(ITest)
+  .settings(inConfig(ITest)(Defaults.testSettings))
   .configs(End2EndTest)
   .settings(inConfig(End2EndTest)(Defaults.testSettings))
   .settings(buildInfoSettings)

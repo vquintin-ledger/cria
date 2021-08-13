@@ -9,7 +9,8 @@ import co.ledger.cria.domain.models.interpreter.{
   Confirmation,
   InputView,
   OutputView,
-  TransactionView
+  TransactionView,
+  TransactionViewTestHelper
 }
 import co.ledger.cria.utils.HexUtils
 import shapeless.tag
@@ -79,7 +80,7 @@ object TransactionFixture {
       inputs: NonEmptyList[InputView],
       outputs: NonEmptyList[OutputView]
   ): TransactionView @@ Confirmation.Unconfirmed = tag[Confirmation.Unconfirmed](
-    TransactionView.unsafe(
+    TransactionViewTestHelper.unsafe(
       id = s"id-${Random.nextInt(100)}",
       hash = randomTxHash(),
       receivedAt = Instant.now(),
@@ -97,7 +98,7 @@ object TransactionFixture {
       outputs: NonEmptyList[OutputView],
       block: BlockView
   ): TransactionView @@ Confirmation.Confirmed = tag[Confirmation.Confirmed](
-    TransactionView.unsafe(
+    TransactionViewTestHelper.unsafe(
       id = s"id-${Random.nextInt(100) + 100}",
       hash = randomTxHash(),
       receivedAt = Instant.now(),

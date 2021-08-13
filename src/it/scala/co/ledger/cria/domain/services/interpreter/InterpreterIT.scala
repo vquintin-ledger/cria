@@ -1,6 +1,17 @@
 package co.ledger.cria.domain.services.interpreter
 
-import co.ledger.cria.domain.models.interpreter.BlockHeight
+import co.ledger.cria.domain.models.interpreter.{
+  AccountTxView,
+  BlockHash,
+  BlockHeight,
+  BlockView,
+  Coin,
+  Derivation,
+  InputView,
+  OutputView,
+  TransactionView,
+  TransactionViewTestHelper
+}
 
 import java.time.Instant
 import java.time.temporal.ChronoUnit
@@ -12,16 +23,6 @@ import co.ledger.cria.utils.IOAssertion
 import co.ledger.cria.logging.CriaLogContext
 import co.ledger.cria.domain.models.{Sort, TxHash, keychain}
 import co.ledger.cria.domain.models.account.{Account, AccountUid, WalletUid}
-import co.ledger.cria.domain.models.interpreter.{
-  AccountTxView,
-  BlockHash,
-  BlockView,
-  Coin,
-  Derivation,
-  InputView,
-  OutputView,
-  TransactionView
-}
 import co.ledger.cria.domain.models.keychain.{AccountAddress, ChangeType, KeychainId}
 import co.ledger.cria.itutils.models.GetUtxosResult
 import org.scalatest.matchers.should.Matchers
@@ -88,7 +89,7 @@ class InterpreterIT extends AnyFlatSpec with ContainerSpec with Matchers {
     TxHash.fromStringUnsafe("cafee5f1b12078495a9e80c6e0d77af3d674cfe6096bb6e7909993a53b6e1664")
 
   val coinbaseTx: TransactionView =
-    TransactionView.unsafe(
+    TransactionViewTestHelper.unsafe(
       "txId",
       TxHash.fromStringUnsafe("0f38e5f1b12078495a9e80c6e0d77af3d674cfe6096bb6e7909993a53b6e8386"),
       time,
@@ -101,7 +102,7 @@ class InterpreterIT extends AnyFlatSpec with ContainerSpec with Matchers {
     )
 
   val insertTx: TransactionView =
-    TransactionView.unsafe(
+    TransactionViewTestHelper.unsafe(
       "txId",
       TxHash.fromStringUnsafe("a8a935c6bc2bd8b3a7c20f107a9eb5f10a315ce27de9d72f3f4e27ac9ec1eb1f"),
       time,
@@ -210,7 +211,7 @@ class InterpreterIT extends AnyFlatSpec with ContainerSpec with Matchers {
 
         val utils = tr.testUtils
 
-        val uTx = TransactionView.unsafe(
+        val uTx = TransactionViewTestHelper.unsafe(
           "txId",
           TxHash.fromStringUnsafe(
             "a8a935c6bc2bd8b3a7c20f107a9eb5f10a315ce27de9d72f3f4e27ac9ec1eb1f"
@@ -262,7 +263,7 @@ class InterpreterIT extends AnyFlatSpec with ContainerSpec with Matchers {
 
         val utils = tr.testUtils
 
-        val uTx = TransactionView.unsafe(
+        val uTx = TransactionViewTestHelper.unsafe(
           "txId",
           TxHash.fromStringUnsafe(
             "a8a935c6bc2bd8b3a7c20f107a9eb5f10a315ce27de9d72f3f4e27ac9ec1eb1f"
@@ -277,7 +278,7 @@ class InterpreterIT extends AnyFlatSpec with ContainerSpec with Matchers {
         )
         explorer.addToBC(uTx)
 
-        val tx = TransactionView.unsafe(
+        val tx = TransactionViewTestHelper.unsafe(
           "txId",
           TxHash.fromStringUnsafe(
             "a8a935c6bc2bd8b3a7c20f107a9eb5f10a315ce27de9d72f3f4e27ac9ec1eb1f"
@@ -318,7 +319,7 @@ class InterpreterIT extends AnyFlatSpec with ContainerSpec with Matchers {
           "d0a75f8295419c72782aadb8de23b4d8ed095c9ec3c26a144b8e8f9ab0c11730"
         )
 
-        val uTx1 = TransactionView.unsafe(
+        val uTx1 = TransactionViewTestHelper.unsafe(
           "tx1",
           TxHash.fromStringUnsafe(
             "b23ed6a7362a45ed880d29aa601baed2ee718b440a562daf31473a65fc99d0c7"
@@ -463,7 +464,7 @@ class InterpreterIT extends AnyFlatSpec with ContainerSpec with Matchers {
 
         val uTx1 = AccountTxView(
           accountUid,
-          TransactionView.unsafe(
+          TransactionViewTestHelper.unsafe(
             "utx1",
             TxHash.fromStringUnsafe(
               "a99c7e333b287e7ecb017b33b7faf028a7eba69ae716114401e398f568f6ad9b"

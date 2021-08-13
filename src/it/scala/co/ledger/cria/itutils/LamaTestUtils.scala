@@ -15,7 +15,7 @@ import co.ledger.cria.domain.models.interpreter.{
   BlockHeight,
   CurrentBalance,
   Operation,
-  TransactionView
+  TransactionViewTestHelper
 }
 import co.ledger.cria.domain.models.{Sort, TxHash}
 import co.ledger.cria.itutils.models._
@@ -148,7 +148,7 @@ final class LamaTestUtils private (conf: LamaDb, db: Transactor[IO]) extends Tes
       uid = emptyOperation.op.uid,
       accountId = emptyOperation.op.accountId,
       hash = emptyOperation.op.hash,
-      transaction = TransactionView.unsafe(
+      transaction = TransactionViewTestHelper.unsafe(
         id = emptyOperation.tx.id,
         hash = emptyOperation.tx.hash,
         receivedAt = emptyOperation.tx.receivedAt,
