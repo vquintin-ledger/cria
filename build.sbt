@@ -53,6 +53,7 @@ lazy val dockerSettings = Seq(
   dockerRepository := Some("ghcr.io"),
   dockerUsername := Some("ledgerhq"),
   dockerUpdateLatest := true, //should always update latest
+  dockerAliases ++= Seq(dockerAlias.value.withTag(Option("main"))),
   javaAgents += "com.datadoghq" % "dd-java-agent" % "0.78.3"
 )
 
