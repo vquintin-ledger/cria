@@ -60,12 +60,19 @@ jobs:
             lama-docker-cache-${{github.ref}}-${{ hashFiles('build.sbt') }}
             lama-docker-cache-${{github.ref}}
             lama-docker-cache-
-      - name: Login to GitHub Container Registry
+      - name: Login to ghcr.io
+        uses: docker/login-action@v1
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Login to docker.pkg.github.com
         uses: docker/login-action@v1
         with:
           registry: docker.pkg.github.com
-          username: ${{ github.repository_owner }}
+          username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Run ${{ matrix.component }} it tests
         run: SBT_OPTS="-Xss512m" sbt -Dsbt.ivy.home=.ivy2 -sbt-dir .sbt clean coverage ${{ matrix.component }}/it:test coverageReport
 
@@ -93,11 +100,18 @@ jobs:
             lama-docker-cache-${{github.ref}}-${{ hashFiles('build.sbt') }}
             lama-docker-cache-${{github.ref}}
             lama-docker-cache-
-      - name: Login to GitHub Container Registry
+      - name: Login to ghcr.io
+        uses: docker/login-action@v1
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Login to docker.pkg.github.com
         uses: docker/login-action@v1
         with:
           registry: docker.pkg.github.com
-          username: ${{ github.repository_owner }}
+          username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Run ${{ matrix.component }} e2e tests
         run: SBT_OPTS="-Xss512m" sbt -Dsbt.ivy.home=.ivy2 -sbt-dir .sbt clean coverage ${{ matrix.component }}/e2e:test coverageReport
