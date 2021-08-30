@@ -6,7 +6,9 @@ import co.ledger.cria.logging.{ContextLogging, CriaLogContext}
 import co.ledger.cria.domain.models.account.AccountUid
 import co.ledger.cria.domain.models.interpreter.{BlockHash, Coin, Confirmation, TransactionView}
 import co.ledger.cria.domain.models.keychain.{AccountAddress, ChangeType, KeychainId}
+import co.ledger.cria.domain.services.explorer.ExplorerClient
 import co.ledger.cria.domain.services.interpreter.Interpreter
+import co.ledger.cria.domain.services.keychain.Keychain
 import shapeless.tag.@@
 
 trait Bookkeeper[F[_]] {

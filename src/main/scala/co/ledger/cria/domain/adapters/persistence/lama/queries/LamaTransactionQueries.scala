@@ -42,8 +42,8 @@ object LamaTransactionQueries extends DoobieLogHandler {
   )
 
   def fetchMostRecentBlocks(accountId: AccountUid): Stream[ConnectionIO, BlockView] = {
-    sql"""SELECT DISTINCT block_hash, block_height, block_time
-          FROM transaction
+    sql"""SELECT DISTINCT block_hash, block_height, time
+          FROM operation
           WHERE account_id = $accountId
           ORDER BY block_height DESC
           LIMIT 200 -- the biggest reorg that happened on bitcoin was 53 blocks long

@@ -9,7 +9,7 @@ import co.ledger.cria.domain.models.interpreter.{
   Confirmation,
   TransactionView
 }
-import co.ledger.cria.domain.services.ExplorerClient
+import co.ledger.cria.domain.services.explorer.ExplorerClient
 import co.ledger.cria.logging.CriaLogContext
 import shapeless.tag.@@
 

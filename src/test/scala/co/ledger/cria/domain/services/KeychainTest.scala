@@ -3,10 +3,11 @@ package co.ledger.cria.domain.services
 import cats.Id
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
-
 import java.util.UUID
+
 import co.ledger.cria.KeychainFixture
 import co.ledger.cria.domain.models.keychain.KeychainId
+import co.ledger.cria.domain.services.keychain.Keychain
 import co.ledger.cria.logging.DefaultContextLogging
 
 class KeychainTest extends AnyFlatSpec with Matchers with DefaultContextLogging {

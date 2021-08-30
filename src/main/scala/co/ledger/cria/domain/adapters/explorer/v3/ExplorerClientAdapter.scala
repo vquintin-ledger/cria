@@ -8,7 +8,7 @@ import co.ledger.cria.clients.explorer.{v3 => explorer}
 import co.ledger.cria.clients.protocol.http.Clients
 import co.ledger.cria.domain.models.TxHash
 import co.ledger.cria.domain.models.interpreter._
-import co.ledger.cria.domain.services.ExplorerClient
+import co.ledger.cria.domain.services.explorer.ExplorerClient
 import co.ledger.cria.logging.CriaLogContext
 import shapeless.tag
 import shapeless.tag.@@

@@ -17,8 +17,10 @@ import co.ledger.cria.domain.adapters.persistence.wd
 import co.ledger.cria.domain.adapters.persistence.tee
 import co.ledger.cria.domain.models.interpreter.Coin
 import co.ledger.cria.domain.models.{SynchronizationParameters, SynchronizationResult}
-import co.ledger.cria.domain.services.{ExplorerClient, HealthService, KeychainClient}
+import co.ledger.cria.domain.services.explorer.ExplorerClient
+import co.ledger.cria.domain.services.health.HealthService
 import co.ledger.cria.domain.services.interpreter.PersistenceFacade
+import co.ledger.cria.domain.services.keychain.KeychainClient
 import co.ledger.cria.utils.ResourceUtils
 
 object App extends IOApp with DefaultContextLogging {

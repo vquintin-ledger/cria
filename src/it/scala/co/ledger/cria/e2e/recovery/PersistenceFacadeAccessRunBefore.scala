@@ -25,6 +25,9 @@ final class PersistenceFacadeAccessRunBefore(persistenceFacade: PersistenceFacad
 
       override def getLastBlocks(accountId: AccountUid): fs2.Stream[IO, BlockView] =
         doBeforeStream(delegate.getLastBlocks(accountId))
+
+      override def getLastBlockHash(accountId: AccountUid): IO[Option[BlockHash]] =
+        doBeforeAction(delegate.getLastBlockHash(accountId))
     }
 
   override def operationComputationService: OperationComputationService =

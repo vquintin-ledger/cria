@@ -3,7 +3,7 @@ package co.ledger.cria.e2e.recovery
 import cats.effect.IO
 import cats.implicits.catsSyntaxFlatMapOps
 import co.ledger.cria.domain.models.keychain.{AccountAddress, ChangeType, KeychainId}
-import co.ledger.cria.domain.services.KeychainClient
+import co.ledger.cria.domain.services.keychain.KeychainClient
 
 final class KeychainClientRunBefore(keychainClient: KeychainClient, action: IO[Unit])
     extends KeychainClient {

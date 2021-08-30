@@ -6,7 +6,7 @@ import co.ledger.cria.clients.protocol.grpc.GrpcClient
 import co.ledger.cria.config.Config
 import co.ledger.cria.domain.models.interpreter.Coin
 import co.ledger.cria.domain.models.keychain.KeychainId
-import co.ledger.cria.domain.services.KeychainClient
+import co.ledger.cria.domain.services.keychain.KeychainClient
 import co.ledger.cria.itutils.TestUtils
 import co.ledger.cria.itutils.models.keychain.AccountKey.Xpub
 import co.ledger.cria.itutils.models.keychain.{KeychainInfo, Scheme}

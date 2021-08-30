@@ -5,7 +5,7 @@ import co.ledger.cria.domain.models.interpreter.Derivation
 import co.ledger.cria.domain.models.keychain
 import co.ledger.cria.domain.models.keychain.ChangeType.External
 import co.ledger.cria.domain.models.keychain.{AccountAddress, ChangeType, KeychainId}
-import co.ledger.cria.domain.services.KeychainClient
+import co.ledger.cria.domain.services.keychain.KeychainClient
 
 import scala.collection.mutable
 

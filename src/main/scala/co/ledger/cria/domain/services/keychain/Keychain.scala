@@ -1,10 +1,10 @@
-package co.ledger.cria.domain.services
+package co.ledger.cria.domain.services.keychain
 
 import cats.effect.IO
-import Keychain.{Address, addressesRanges}
 import co.ledger.cria.domain.models.keychain.{AccountAddress, ChangeType, KeychainId}
-import fs2.Stream
+import co.ledger.cria.domain.services.keychain.Keychain.{Address, addressesRanges}
 import co.ledger.cria.logging.{ContextLogging, CriaLogContext, DefaultContextLogging}
+import fs2.Stream
 
 class Keychain(client: KeychainClient) extends ContextLogging {
 

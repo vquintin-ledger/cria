@@ -78,18 +78,28 @@ class InterpreterClientMock extends Interpreter {
   }
 
   def getLastBlocks(accountId: AccountUid)(implicit lc: CriaLogContext): IO[List[BlockView]] = {
-    val lastBlocks: List[BlockView] = savedTransactions(accountId)
-      .collect { case TransactionView(_, _, _, _, _, _, _, Some(block), _) =>
-        BlockView(
-          block.hash,
-          block.height,
-          block.time
-        )
-      }
-      .distinct
-      .sortBy(_.height)(Ordering[BlockHeight].reverse)
+    val lastBlocks: List[BlockView] = savedTransactions.get(accountId) match {
+      case Some(blocks) =>
+        blocks
+          .collect { case TransactionView(_, _, _, _, _, _, _, Some(block), _) =>
+            BlockView(
+              block.hash,
+              block.height,
+              block.time
+            )
+          }
+          .distinct
+          .sortBy(_.height)(Ordering[BlockHeight].reverse)
+      case None => Nil
+    }
 
     IO(lastBlocks)
+  }
+
+  def getLastBlockHash(
+      accountId: AccountUid
+  )(implicit lc: CriaLogContext): IO[Option[BlockHash]] = {
+    getLastBlocks(accountId).map(_.headOption.map(_.hash))
   }
 
   def compute(account: Account, walletUid: WalletUid, fromBlockHeight: Option[BlockHeight])(

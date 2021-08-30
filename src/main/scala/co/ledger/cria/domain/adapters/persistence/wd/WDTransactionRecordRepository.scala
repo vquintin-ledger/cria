@@ -5,7 +5,7 @@ import cats.implicits._
 import cats.effect.{ContextShift, IO}
 import co.ledger.cria.domain.adapters.persistence.wd.queries.{WDQueries, WDTransactionQueries}
 import co.ledger.cria.domain.models.account.AccountUid
-import co.ledger.cria.domain.models.interpreter.{AccountTxView, BlockHeight, BlockView}
+import co.ledger.cria.domain.models.interpreter.{AccountTxView, BlockHash, BlockHeight, BlockView}
 import co.ledger.cria.domain.services.interpreter.TransactionRecordRepository
 import co.ledger.cria.logging.{ContextLogging, CriaLogContext}
 import doobie.Transactor
@@ -54,5 +54,13 @@ final class WDTransactionRecordRepository(
     WDTransactionQueries
       .fetchMostRecentBlocks(accountId)
       .transact(walletDaemon)
+
+  override def getLastBlockHash(accountId: AccountUid): IO[Option[BlockHash]] =
+    WDTransactionQueries
+      .fetchMostRecentBlocks(accountId)
+      .transact(walletDaemon)
+      .compile
+      .toList
+      .map(_.headOption.map(_.hash))
 
 }

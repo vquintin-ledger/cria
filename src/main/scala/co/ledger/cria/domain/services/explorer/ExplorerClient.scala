@@ -1,4 +1,4 @@
-package co.ledger.cria.domain.services
+package co.ledger.cria.domain.services.explorer
 
 import cats.effect.{ContextShift, IO, Timer}
 import co.ledger.cria.domain.models.TxHash

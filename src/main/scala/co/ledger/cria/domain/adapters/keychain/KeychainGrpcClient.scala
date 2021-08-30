@@ -3,7 +3,7 @@ package co.ledger.cria.domain.adapters.keychain
 import cats.effect.{ContextShift, IO}
 import co.ledger.cria.clients.protocol.grpc.GrpcClient
 import co.ledger.cria.domain.models.keychain.{AccountAddress, ChangeType, KeychainId}
-import co.ledger.cria.domain.services.KeychainClient
+import co.ledger.cria.domain.services.keychain.KeychainClient
 import co.ledger.cria.utils.UuidUtils
 import co.ledger.protobuf.bitcoin.keychain
 import io.grpc.{ManagedChannel, Metadata}

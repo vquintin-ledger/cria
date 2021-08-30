@@ -13,12 +13,13 @@ import co.ledger.cria.domain.models.interpreter.{
 }
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
-
 import java.time.Instant
 import java.util.UUID
+
 import co.ledger.cria.domain.models.account.{Account, AccountUid, WalletUid}
 import co.ledger.cria.domain.models.keychain.KeychainId
-import co.ledger.cria.domain.services.{CursorStateService, ExplorerClient, Synchronizer}
+import co.ledger.cria.domain.services.explorer.ExplorerClient
+import co.ledger.cria.domain.services.{CursorStateService, Synchronizer}
 import co.ledger.cria.domain.services.interpreter.Interpreter
 import co.ledger.cria.utils.{HexUtils, IOAssertion}
 
@@ -83,7 +84,7 @@ class SynchronizerSpec extends AnyFlatSpec with Matchers {
 
     interpreter.getSavedTransaction(accountIdentifier.accountUid) shouldBe empty
 
-    val syncParams = mkSyncParams(None)
+    val syncParams = mkSyncParams()
 
     for {
       _ <- worker(interpreter).run(syncParams)
@@ -130,7 +131,7 @@ class SynchronizerSpec extends AnyFlatSpec with Matchers {
   }
 
   def mkSyncParams(
-      cursor: Option[BlockView]
+      cursor: Option[BlockView] = None
   ): SynchronizationParameters =
     SynchronizationParameters(
       keychainId = keychainId,

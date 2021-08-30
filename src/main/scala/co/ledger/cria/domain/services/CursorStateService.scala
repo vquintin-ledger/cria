@@ -4,6 +4,7 @@ import cats.effect.{IO, Timer}
 import co.ledger.cria.logging.{ContextLogging, CriaLogContext}
 import co.ledger.cria.domain.models.account.{Account, AccountUid}
 import co.ledger.cria.domain.models.interpreter.{BlockView, SyncId}
+import co.ledger.cria.domain.services.explorer.ExplorerClient
 import co.ledger.cria.domain.services.interpreter.Interpreter
 import org.http4s.client.UnexpectedStatus
 

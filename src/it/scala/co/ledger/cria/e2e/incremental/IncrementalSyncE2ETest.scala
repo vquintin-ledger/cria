@@ -14,7 +14,6 @@ import co.ledger.cria.domain.models.interpreter.{
   Confirmation,
   TransactionView
 }
-import co.ledger.cria.domain.services.ExplorerClient
 import co.ledger.cria.e2e.{E2EHelper, KeychainHelper, RegisterRequest, SyncResult, TestCase}
 import co.ledger.cria.itutils.ContainerSpec
 import co.ledger.cria.logging.CriaLogContext
@@ -25,6 +24,7 @@ import org.scalatest.propspec.AnyPropSpec
 import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
 import shapeless.tag.@@
 import cats.implicits._
+import co.ledger.cria.domain.services.explorer.ExplorerClient
 import org.scalacheck.Gen.Choose
 
 final class IncrementalSyncE2ETest()

@@ -1,4 +1,4 @@
-package co.ledger.cria.domain.services
+package co.ledger.cria.domain.services.health
 
 import buildinfo.BuildInfo
 import cats.effect.{ConcurrentEffect, IO}

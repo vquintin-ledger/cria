@@ -1,4 +1,4 @@
-package co.ledger.cria.domain.services
+package co.ledger.cria.domain.services.keychain
 
 import cats.effect.IO
 import co.ledger.cria.domain.models.keychain.{AccountAddress, ChangeType, KeychainId}

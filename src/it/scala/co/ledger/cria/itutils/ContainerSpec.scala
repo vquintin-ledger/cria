@@ -10,7 +10,6 @@ import co.ledger.cria.domain.adapters.persistence.lama.LamaDb
 import co.ledger.cria.domain.adapters.persistence.tee.TeeConfig
 import co.ledger.cria.domain.adapters.persistence.wd.WalletDaemonDb
 import co.ledger.cria.domain.models.account.{AccountUid, WalletUid}
-import co.ledger.cria.domain.services.KeychainClient
 import co.ledger.cria.domain.services.interpreter.{Interpreter, InterpreterImpl}
 import co.ledger.cria.e2e.RegisterRequest
 import co.ledger.cria.logging.DefaultContextLogging
@@ -26,8 +25,10 @@ import com.dimafeng.testcontainers.{
 import io.grpc.Metadata
 import org.scalatest.Suite
 import pureconfig.ConfigSource
-
 import java.io.File
+
+import co.ledger.cria.domain.services.keychain.KeychainClient
+
 import scala.concurrent.ExecutionContext
 
 trait ContainerSpec extends ForAllTestContainer with DefaultContextLogging { s: Suite =>
@@ -124,9 +125,11 @@ trait ContainerSpec extends ForAllTestContainer with DefaultContextLogging { s: 
       PersistenceConfig.WalletDaemon(
         db.copy(
           walletDaemon = db.walletDaemon
-            .copy(url = s"jdbc:postgresql://$mappedPostgresHost:$mappedPostgresPort/wd_local_pool"),
+            .copy(url =
+              s"jdbc:postgresql://$mappedPostgresHost:$mappedPostgresPort/wd_local_pool?currentSchema=public"
+            ),
           criaExtra = db.walletDaemon.copy(url =
-            s"jdbc:postgresql://$mappedPostgresHost:$mappedPostgresPort/wd_cria_extra"
+            s"jdbc:postgresql://$mappedPostgresHost:$mappedPostgresPort/wd_local_pool?currentSchema=cria"
           )
         )
       )
@@ -138,7 +141,7 @@ trait ContainerSpec extends ForAllTestContainer with DefaultContextLogging { s: 
       PersistenceConfig.Lama(
         db.copy(postgres =
           db.postgres.copy(url =
-            s"jdbc:postgresql://$mappedPostgresHost:$mappedPostgresPort/test_lama_btc"
+            s"jdbc:postgresql://$mappedPostgresHost:$mappedPostgresPort/wd_local_pool?currentSchema=lama"
           )
         )
       )

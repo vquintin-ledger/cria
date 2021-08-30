@@ -2,13 +2,10 @@ package co.ledger.cria.domain
 
 import cats.effect.{IO, Timer}
 import co.ledger.cria.domain.models.interpreter.Coin
-import co.ledger.cria.domain.services.{
-  CursorStateService,
-  ExplorerClient,
-  KeychainClient,
-  Synchronizer
-}
+import co.ledger.cria.domain.services.explorer.ExplorerClient
+import co.ledger.cria.domain.services.{CursorStateService, Synchronizer}
 import co.ledger.cria.domain.services.interpreter.{InterpreterImpl, PersistenceFacade}
+import co.ledger.cria.domain.services.keychain.KeychainClient
 
 final class CriaModule(
     persistence: PersistenceFacade,

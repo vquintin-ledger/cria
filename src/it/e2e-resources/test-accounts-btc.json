@@ -8,7 +8,7 @@
       "lookahead_size": 20,
       "coin": "bitcoin",
       "sync_id": "9e4669c2-f7ed-48cb-86e6-c4727be8ddbc",
-      "account_uid": "a59deed9-a6c8-4a57-9dbd-e3b1cf7a9428",
+      "account_uid": "4c314000-86ae-4b41-9fc6-e5a04cd035e5",
       "wallet_uid": "a59deed9-a6c8-4a57-9dbd-e3b1cf7a9428",
       "account_index": 2,
       "metadata": "nolibcore:testworkspace"
@@ -30,7 +30,7 @@
       "lookahead_size": 20,
       "coin": "bitcoin",
       "sync_id": "2bbba9e6-aaa3-41f7-b855-bdae869cfd65",
-      "account_uid": "a59deed9-a6c8-4a57-9dbd-e3b1cf7a9428",
+      "account_uid": "fa36cece-7b51-4a57-834a-bb347dab1b69",
       "wallet_uid": "52580123-df98-4ead-bb4b-2ae4eeeab93b",
       "account_index": 3,
       "metadata": "nolibcore:testworkspace"
@@ -52,7 +52,7 @@
       "lookahead_size": 20,
       "coin": "bitcoin",
       "sync_id": "7d116618-aa85-42c5-b0c9-29ae5e2c7e78",
-      "account_uid": "a59deed9-a6c8-4a57-9dbd-e3b1cf7a9428",
+      "account_uid": "b8f38ceb-29be-4ad4-8278-4034283318ef",
       "wallet_uid": "1dc71640-5bd8-4034-849c-0247d4c4efdd",
       "account_index": 4,
       "metadata": "nolibcore:testworkspace"

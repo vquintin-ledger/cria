@@ -2,7 +2,7 @@ package co.ledger.cria.domain.adapters.persistence.tee
 
 import cats.effect.IO
 import co.ledger.cria.domain.models.account.AccountUid
-import co.ledger.cria.domain.models.interpreter.{AccountTxView, BlockHeight, BlockView}
+import co.ledger.cria.domain.models.interpreter.{AccountTxView, BlockHash, BlockHeight, BlockView}
 import co.ledger.cria.domain.services.interpreter.TransactionRecordRepository
 import co.ledger.cria.logging.CriaLogContext
 import fs2.Pipe
@@ -26,5 +26,11 @@ class TransactionRecordRepositoryTee(
 
   override def getLastBlocks(accountId: AccountUid): fs2.Stream[IO, BlockView] =
     combiner.combineStream(primary.getLastBlocks(accountId), secondary.getLastBlocks(accountId))
+
+  override def getLastBlockHash(accountId: AccountUid): IO[Option[BlockHash]] =
+    combiner.combineAction(
+      primary.getLastBlockHash(accountId),
+      secondary.getLastBlockHash(accountId)
+    )
 
 }

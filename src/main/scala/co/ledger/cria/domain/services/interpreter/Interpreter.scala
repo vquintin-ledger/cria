@@ -11,7 +11,7 @@ import co.ledger.cria.logging.{ContextLogging, CriaLogContext}
 import co.ledger.cria.domain.models.account.{Account, AccountUid, WalletUid}
 import co.ledger.cria.domain.models.interpreter._
 import co.ledger.cria.domain.models.keychain.AccountAddress
-import co.ledger.cria.domain.services.ExplorerClient
+import co.ledger.cria.domain.services.explorer.ExplorerClient
 import co.ledger.cria.utils.IOUtils
 import fs2._
 
@@ -28,6 +28,8 @@ trait Interpreter {
   )(implicit lc: CriaLogContext): IO[Int]
 
   def getLastBlocks(accountId: AccountUid)(implicit lc: CriaLogContext): IO[List[BlockView]]
+
+  def getLastBlockHash(accountId: AccountUid)(implicit lc: CriaLogContext): IO[Option[BlockHash]]
 
   def compute(account: Account, walletUid: WalletUid, fromBlockHeight: Option[BlockHeight])(
       addresses: List[AccountAddress]
@@ -56,7 +58,6 @@ class InterpreterImpl(explorer: Coin => ExplorerClient, persistenceFacade: Persi
       .void
   }
 
-  //FIXME: Fix to work with WD db
   def getLastBlocks(
       accountId: AccountUid
   )(implicit lc: CriaLogContext): IO[List[BlockView]] = {
@@ -65,6 +66,13 @@ class InterpreterImpl(explorer: Coin => ExplorerClient, persistenceFacade: Persi
         .getLastBlocks(accountId)
         .compile
         .toList
+  }
+
+  def getLastBlockHash(
+      accountId: AccountUid
+  )(implicit lc: CriaLogContext): IO[Option[BlockHash]] = {
+    log.info(s"Getting last known block") *>
+      transactionRecordRepository.getLastBlockHash(accountId)
   }
 
   def removeDataFromCursor(

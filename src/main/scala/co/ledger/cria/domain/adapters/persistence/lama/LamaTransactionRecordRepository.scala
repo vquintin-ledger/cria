@@ -4,7 +4,7 @@ import cats.effect.{ContextShift, IO}
 import co.ledger.cria.domain.adapters.persistence.lama.queries.LamaTransactionQueries
 import co.ledger.cria.logging.{ContextLogging, CriaLogContext}
 import co.ledger.cria.domain.models.account.AccountUid
-import co.ledger.cria.domain.models.interpreter.{AccountTxView, BlockHeight, BlockView}
+import co.ledger.cria.domain.models.interpreter.{AccountTxView, BlockHash, BlockHeight, BlockView}
 import co.ledger.cria.domain.services.interpreter.TransactionRecordRepository
 import doobie.Transactor
 import doobie.implicits._
@@ -41,5 +41,13 @@ final class LamaTransactionRecordRepository(db: Transactor[IO], maxConcurrent: I
     LamaTransactionQueries
       .fetchMostRecentBlocks(accountId)
       .transact(db)
+
+  override def getLastBlockHash(accountId: AccountUid): IO[Option[BlockHash]] =
+    LamaTransactionQueries
+      .fetchMostRecentBlocks(accountId)
+      .transact(db)
+      .compile
+      .toList
+      .map(_.headOption.map(_.hash))
 
 }
