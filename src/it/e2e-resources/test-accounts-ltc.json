@@ -14,11 +14,11 @@
       "metadata": "nolibcore:testworkspace"
     },
     "expected": {
-      "ops_size": 19,
-      "utxos_size": 4,
-      "balance": 74467599,
+      "ops_size": 21,
+      "utxos_size": 3,
+      "balance": 71466999,
       "amount_received": 96422825,
-      "amount_sent": 21955226
+      "amount_sent": 24955826
     }
   }
 ]
