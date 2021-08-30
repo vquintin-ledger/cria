@@ -2,16 +2,16 @@ package co.ledger.cria.domain.adapters.persistence.wd.models
 
 import java.math.BigInteger
 import java.security.MessageDigest
-import co.ledger.cria.domain.models.interpreter.InputView
+import co.ledger.cria.domain.models.interpreter.{InputView, Satoshis}
 import doobie.Write
-import co.ledger.cria.domain.models.implicits._
+import co.ledger.cria.domain.adapters.persistence.wd.queries.WDQueryImplicits._
 
 case class WDInput(
     uid: String,
     previousOutputIdx: Int,
     previousTxHash: String,
     previousTxUid: String,
-    amount: BigInt,
+    amount: Satoshis,
     inputIndex: Int,
     address: String,
     coinbase: Option[String],
@@ -65,7 +65,7 @@ object WDInput {
           Int,
           String,
           String,
-          BigInt,
+          Satoshis,
           String,
           Option[String],
           Long

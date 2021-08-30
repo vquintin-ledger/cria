@@ -69,24 +69,17 @@ object TypeHelper {
         implicit me: MonadError[F, Throwable]
     ): F[TransactionView] = {
       for {
-        inputs <- t.inputs.collect { case i: DefaultInput => i }.traverse(input.fromDefaultInput[F])
+        fees    <- Satoshis.asMonadError[F](t.fees)
+        inputs  <- t.inputs.collect { case i: DefaultInput => i }.traverse(input.fromDefaultInput[F])
+        outputs <- t.outputs.traverse(output.fromExplorer[F])
         result <- TransactionView.asMonadError[F](
           id = t.hash,
           hash = txHash,
           receivedAt = t.receivedAt,
           lockTime = t.lockTime,
-          fees = t.fees,
+          fees = fees,
           inputs = inputs,
-          outputs = t.outputs.map { o =>
-            OutputView(
-              o.outputIndex,
-              o.value,
-              o.address,
-              o.scriptHex,
-              None,
-              None
-            )
-          },
+          outputs = outputs,
           block = None,
           confirmations = t.confirmations
         )
@@ -98,24 +91,17 @@ object TypeHelper {
     ): F[TransactionView] = {
       for {
         blockView <- block.fromExplorer[F](t.block)
+        fees      <- Satoshis.asMonadError[F](t.fees)
         inputs    <- t.inputs.collect { case i: DefaultInput => i }.traverse(input.fromDefaultInput[F])
+        outputs   <- t.outputs.traverse(output.fromExplorer[F])
         result <- TransactionView.asMonadError[F](
           id = t.hash,
           hash = txHash,
           receivedAt = t.receivedAt,
           lockTime = t.lockTime,
-          fees = t.fees,
+          fees = fees,
           inputs = inputs,
-          outputs = t.outputs.map { o =>
-            OutputView(
-              o.outputIndex,
-              o.value,
-              o.address,
-              o.scriptHex,
-              None,
-              None
-            )
-          },
+          outputs = outputs,
           block = Some(blockView),
           confirmations = t.confirmations
         )
@@ -133,12 +119,13 @@ object TypeHelper {
             .fromString(i.outputHash)
             .leftMap(s => new RuntimeException(s"Not a valid txHash from explorer: $s"))
         )
+        value <- Satoshis.asMonadError[F](i.value)
       } yield {
         InputView(
           outputHash,
           i.outputIndex,
           i.inputIndex,
-          i.value,
+          value,
           i.address,
           i.scriptSignature,
           i.txinwitness,
@@ -146,5 +133,23 @@ object TypeHelper {
           None
         )
       }
+  }
+
+  object output {
+    def fromExplorer[F[_]](
+        o: explorer.Output
+    )(implicit me: MonadError[F, Throwable]): F[OutputView] =
+      Satoshis
+        .asMonadError[F](o.value)
+        .map(value =>
+          OutputView(
+            o.outputIndex,
+            value,
+            o.address,
+            o.scriptHex,
+            None,
+            None
+          )
+        )
   }
 }

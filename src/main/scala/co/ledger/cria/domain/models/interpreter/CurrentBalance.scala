@@ -1,17 +1,19 @@
 package co.ledger.cria.domain.models.interpreter
 
 case class BlockchainBalance(
-    balance: BigInt,
+    balance: Satoshis,
     utxos: Int,
-    received: BigInt,
-    netSent: BigInt,
-    fees: BigInt
+    received: Satoshis,
+    netSent: Satoshis,
+    fees: Satoshis
 )
 
 case class CurrentBalance(
-    balance: BigInt,
+    balance: Satoshis,
     utxos: Int,
-    received: BigInt,
-    sent: BigInt,
+    received: Satoshis,
+    sent: Satoshis,
+    // Actually a balance delta (can be negative)
+    // TODO: change to an unconfirmed balance typed as Satoshis
     unconfirmedBalance: BigInt
 )

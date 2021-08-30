@@ -65,25 +65,18 @@ object TypeHelper {
         me: MonadError[F, Throwable]
     ): F[TransactionView] = {
       for {
-        inputs <- t.inputs.collect { case i: DefaultInput => i }.traverse(input.fromDefaultInput[F])
-        block  <- t.block.traverse(block.fromExplorer[F])
+        inputs  <- t.inputs.collect { case i: DefaultInput => i }.traverse(input.fromDefaultInput[F])
+        outputs <- t.outputs.traverse(output.fromExplorer[F])
+        block   <- t.block.traverse(block.fromExplorer[F])
+        fees    <- Satoshis.asMonadError[F](t.fees)
         result <- TransactionView.asMonadError[F](
           id = t.hash,
           hash = txHash,
           receivedAt = t.receivedAt,
           lockTime = t.lockTime,
-          fees = t.fees,
+          fees = fees,
           inputs = inputs,
-          outputs = t.outputs.map { o =>
-            OutputView(
-              o.outputIndex,
-              o.value,
-              o.address,
-              o.scriptHex,
-              None,
-              None
-            )
-          },
+          outputs = outputs,
           block = block,
           confirmations = t.confirmations
         )
@@ -101,12 +94,13 @@ object TypeHelper {
             .fromString(i.outputHash)
             .leftMap(s => new RuntimeException(s"Not a valid txHash from explorer: $s"))
         )
+        value <- Satoshis.asMonadError[F](i.value)
       } yield {
         InputView(
           outputHash,
           i.outputIndex,
           i.inputIndex,
-          i.value,
+          value,
           i.address,
           i.scriptSignature,
           List.empty,
@@ -114,5 +108,23 @@ object TypeHelper {
           None
         )
       }
+  }
+
+  object output {
+    def fromExplorer[F[_]](
+        o: explorer.Output
+    )(implicit me: MonadError[F, Throwable]): F[OutputView] =
+      Satoshis
+        .asMonadError[F](o.value)
+        .map(value =>
+          OutputView(
+            o.outputIndex,
+            value,
+            o.address,
+            o.scriptHex,
+            None,
+            None
+          )
+        )
   }
 }

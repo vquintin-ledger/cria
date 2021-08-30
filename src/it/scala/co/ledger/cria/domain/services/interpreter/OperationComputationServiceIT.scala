@@ -14,6 +14,7 @@ import co.ledger.cria.domain.models.interpreter.{
   Operation,
   OperationType,
   OutputView,
+  SatoshisTestHelper,
   TransactionView,
   TransactionViewTestHelper
 }
@@ -53,6 +54,14 @@ class OperationComputationServiceIT
       Derivation(1, 1)
     )
 
+  private val sats80k = SatoshisTestHelper.unsafe(80000)
+
+  private val sats50k = SatoshisTestHelper.unsafe(50000)
+
+  private val sats9k = SatoshisTestHelper.unsafe(9434)
+
+  private val sats21k = (sats80k - (sats50k + sats9k)).get
+
   private val time: Instant = Instant.parse("2019-04-04T10:03:22Z")
 
   val block: BlockView = BlockView(
@@ -62,15 +71,15 @@ class OperationComputationServiceIT
   )
 
   val outputs = List(
-    OutputView(0, 50000, outputAddress1.accountAddress, "script", None, None),
-    OutputView(1, 9434, outputAddress2.accountAddress, "script", None, None)
+    OutputView(0, sats50k, outputAddress1.accountAddress, "script", None, None),
+    OutputView(1, sats9k, outputAddress2.accountAddress, "script", None, None)
   )
   val inputs = List(
     InputView(
       TxHash.fromStringUnsafe("0f38e5f1b12078495a9e80c6e0d77af3d674cfe6096bb6e7909993a53b6e8386"),
       0,
       0,
-      80000,
+      sats80k,
       inputAddress.accountAddress,
       "script",
       List(),
@@ -85,7 +94,7 @@ class OperationComputationServiceIT
       TxHash.fromStringUnsafe("a8a935c6bc2bd8b3a7c20f107a9eb5f10a315ce27de9d72f3f4e27ac9ec1eb1f"),
       time,
       0,
-      20566,
+      sats21k,
       inputs,
       outputs,
       Some(block),
@@ -105,8 +114,8 @@ class OperationComputationServiceIT
     insertTx1.hash,
     insertTx1,
     OperationType.Receive,
-    10,
-    10,
+    SatoshisTestHelper.unsafe(10),
+    SatoshisTestHelper.unsafe(10),
     insertTx1.receivedAt,
     Some(block.height)
   )

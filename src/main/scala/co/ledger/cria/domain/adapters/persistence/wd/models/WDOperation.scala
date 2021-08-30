@@ -48,8 +48,10 @@ object WDOperation {
       date = operation.time.toString,
       senders = tx.inputs.map(_.address).distinct.mkString(","),
       recipients = getRecipients(operation.operationType, view.outputs).mkString(","),
-      amount = toHexString(netAmount(operation.operationType, operation.amount, operation.fees)),
-      fees = toHexString(operation.fees),
+      amount = toHexString(
+        netAmount(operation.operationType, operation.amount.asBigInt, operation.fees.asBigInt)
+      ),
+      fees = toHexString(operation.fees.asBigInt),
       blockUid = tx.blockUid,
       currencyName = coin.name,
       trust = "",

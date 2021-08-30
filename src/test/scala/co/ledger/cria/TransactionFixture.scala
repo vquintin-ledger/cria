@@ -9,6 +9,7 @@ import co.ledger.cria.domain.models.interpreter.{
   Confirmation,
   InputView,
   OutputView,
+  SatoshisTestHelper,
   TransactionView,
   TransactionViewTestHelper
 }
@@ -23,7 +24,7 @@ object TransactionFixture {
 
   def output(address: Address) = OutputView(
     outputIndex = 0,
-    value = 1L,
+    value = SatoshisTestHelper.unsafe(1),
     address,
     scriptHex = "",
     None,
@@ -35,7 +36,7 @@ object TransactionFixture {
       TxHash.fromStringUnsafe("0eb14f1817ad99446764f190479b8e7f987127113ab3af1504dc4603655f987a"),
     outputIndex = 0,
     inputIndex = 0,
-    value = 1L,
+    value = SatoshisTestHelper.unsafe(1),
     address = address,
     scriptSignature = "",
     txinwitness = List.empty,
@@ -85,7 +86,7 @@ object TransactionFixture {
       hash = randomTxHash(),
       receivedAt = Instant.now(),
       lockTime = 0L,
-      fees = inputs.foldMap(_.value) - outputs.foldMap(_.value),
+      fees = (inputs.foldMap(_.value) - outputs.foldMap(_.value)).get,
       inputs = inputs.toList,
       outputs = outputs.toList,
       None,
@@ -103,7 +104,7 @@ object TransactionFixture {
       hash = randomTxHash(),
       receivedAt = Instant.now(),
       lockTime = 0L,
-      fees = inputs.foldMap(_.value) - outputs.foldMap(_.value),
+      fees = (inputs.foldMap(_.value) - outputs.foldMap(_.value)).get,
       inputs = inputs.toList,
       outputs = outputs.toList,
       confirmations = 1,

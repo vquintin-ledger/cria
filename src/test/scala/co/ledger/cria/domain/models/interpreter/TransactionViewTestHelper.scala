@@ -11,7 +11,7 @@ object TransactionViewTestHelper {
       hash: TxHash,
       receivedAt: Instant,
       lockTime: Long,
-      fees: BigInt,
+      fees: Satoshis,
       inputs: Seq[InputView],
       outputs: Seq[OutputView],
       block: Option[BlockView],

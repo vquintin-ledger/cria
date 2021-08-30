@@ -1,15 +1,18 @@
 package co.ledger.cria.domain.models
 
+import co.ledger.cria.domain.models.interpreter.Satoshis
+import cats.implicits._
+
 sealed trait TransactionType
 
 object TransactionType {
-  def fromAmounts(input: BigInt, output: BigInt, change: BigInt): TransactionType = {
-    (input > 0, output > 0) match {
-      case (true, false)   => SendType
-      case (false, true)   => ReceiveType
-      case (true, true)    => BothType
-      case _ if change > 0 => ChangeOnlyType
-      case _               => NoneType
+  def fromAmounts(input: Satoshis, output: Satoshis, change: Satoshis): TransactionType = {
+    (input > Satoshis.zero, output > Satoshis.zero) match {
+      case (true, false)               => SendType
+      case (false, true)               => ReceiveType
+      case (true, true)                => BothType
+      case _ if change > Satoshis.zero => ChangeOnlyType
+      case _                           => NoneType
     }
   }
 }

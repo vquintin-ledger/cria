@@ -3,9 +3,10 @@ package co.ledger.cria.domain.adapters.persistence.lama.queries
 import co.ledger.cria.logging.DoobieLogHandler
 import co.ledger.cria.domain.models.account.AccountUid
 import co.ledger.cria.domain.models.implicits._
-import co.ledger.cria.domain.models.interpreter.BlockchainBalance
+import co.ledger.cria.domain.models.interpreter.{BlockchainBalance, Satoshis}
 import doobie._
 import doobie.implicits._
+import LamaQueryImplicits._
 
 object LamaBalanceQueries extends DoobieLogHandler {
 
@@ -39,7 +40,7 @@ object LamaBalanceQueries extends DoobieLogHandler {
           SELECT COALESCE(SUM(value), 0), COALESCE(COUNT(value), 0)
           FROM confirmed_utxos
       """
-        .query[(BigInt, Int)]
+        .query[(Satoshis, Int)]
         .unique
 
     val receivedAndSentQuery =
@@ -53,7 +54,7 @@ object LamaBalanceQueries extends DoobieLogHandler {
               AND tx.block_hash IS NOT NULL
             WHERE op.account_id = $accountId
          """
-        .query[(BigInt, BigInt)]
+        .query[(Satoshis, Satoshis)]
         .unique
 
     for {
@@ -62,7 +63,7 @@ object LamaBalanceQueries extends DoobieLogHandler {
     } yield {
       val (balance, utxos) = result1
       val (received, sent) = result2
-      BlockchainBalance(balance, utxos, received, sent, 0)
+      BlockchainBalance(balance, utxos, received, sent, Satoshis.zero)
     }
   }
 

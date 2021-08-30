@@ -89,25 +89,30 @@ class TransactionViewTest extends AnyFunSuite {
       fees: BigInt,
       inputs: List[InputView],
       outputs: List[OutputView]
-  ): Either[Throwable, TransactionView] =
-    TransactionView.asMonadError[Either[Throwable, *]](
-      id = "tx",
-      hash =
-        TxHash.fromStringUnsafe("edc8e160364384332a2c95dd17d0d66612d53a8711739416d6372e75474d40ab"),
-      receivedAt = Instant.now(),
-      lockTime = 0,
-      fees = fees,
-      inputs = inputs,
-      outputs = outputs,
-      None,
-      0
-    )
+  ): Either[Throwable, TransactionView] = {
+    Satoshis
+      .asMonadError[Either[Throwable, *]](fees)
+      .flatMap { fees =>
+        TransactionView.asMonadError[Either[Throwable, *]](
+          id = "tx",
+          hash = TxHash
+            .fromStringUnsafe("edc8e160364384332a2c95dd17d0d66612d53a8711739416d6372e75474d40ab"),
+          receivedAt = Instant.now(),
+          lockTime = 0,
+          fees = fees,
+          inputs = inputs,
+          outputs = outputs,
+          None,
+          0
+        )
+      }
+  }
 
   private lazy val input0 = InputView(
     TxHash.fromStringUnsafe("c569d424111eaa8d66c7a1124c203c65649197b9855e54563dfc2799da928c1c"),
     0,
     0,
-    1000,
+    SatoshisTestHelper.unsafe(1000),
     "address0",
     "SIG",
     Nil,
@@ -119,7 +124,7 @@ class TransactionViewTest extends AnyFunSuite {
     TxHash.fromStringUnsafe("c849117bf6203c900e649f46bb35f5e8b939c5cc89cc39086c7c09ff202acda3"),
     0,
     1,
-    2000,
+    SatoshisTestHelper.unsafe(2000),
     "address1",
     "SIG",
     Nil,
@@ -129,7 +134,7 @@ class TransactionViewTest extends AnyFunSuite {
 
   private lazy val output0 = OutputView(
     0,
-    900,
+    SatoshisTestHelper.unsafe(900),
     "out_address_0",
     "script0",
     None,
@@ -138,7 +143,7 @@ class TransactionViewTest extends AnyFunSuite {
 
   private lazy val output1 = OutputView(
     1,
-    1800,
+    SatoshisTestHelper.unsafe(1800),
     "out_address_1",
     "script0",
     None,

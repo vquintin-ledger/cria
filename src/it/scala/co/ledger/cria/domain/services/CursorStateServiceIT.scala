@@ -15,6 +15,7 @@ import co.ledger.cria.domain.models.interpreter.{
   BlockHeight,
   BlockView,
   Coin,
+  Satoshis,
   SyncId,
   TransactionViewTestHelper
 }
@@ -102,7 +103,7 @@ class CursorStateServiceIT extends AnyFlatSpecLike with Matchers with DefaultCon
       TxHash.fromStringUnsafe("b55ba601af2e705c11f8a62dc72c34b052b4f0be0eaf6ba2025e513d86194de9"),
       Instant.now(),
       0L,
-      0,
+      Satoshis.zero,
       Nil,
       Nil,
       Some(

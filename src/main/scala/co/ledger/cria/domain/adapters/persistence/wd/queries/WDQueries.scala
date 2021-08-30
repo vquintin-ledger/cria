@@ -4,10 +4,10 @@ import cats.data.NonEmptyList
 import cats.implicits._
 import co.ledger.cria.domain.adapters.persistence.wd.models._
 import co.ledger.cria.domain.models.TxHash
-import co.ledger.cria.domain.models.implicits._
 import co.ledger.cria.logging.DoobieLogHandler
 import doobie._
 import doobie.implicits._
+import WDQueryImplicits._
 
 object WDQueries extends DoobieLogHandler {
 

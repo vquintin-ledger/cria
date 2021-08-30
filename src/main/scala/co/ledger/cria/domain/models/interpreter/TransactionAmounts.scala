@@ -1,8 +1,11 @@
 package co.ledger.cria.domain.models.interpreter
 
+import cats.MonadError
+import cats.implicits._
+
 import java.time.Instant
 import co.ledger.cria.domain.models._
-import co.ledger.cria.logging.{ContextLogging, CriaLogContext}
+import co.ledger.cria.logging.ContextLogging
 import co.ledger.cria.domain.models.account.AccountUid
 
 case class TransactionAmounts(
@@ -11,40 +14,54 @@ case class TransactionAmounts(
     blockHash: Option[String],
     blockHeight: Option[BlockHeight],
     blockTime: Option[Instant],
-    fees: BigInt,
-    inputAmount: BigInt,
-    outputAmount: BigInt,
-    changeAmount: BigInt
+    fees: Satoshis,
+    inputAmount: Satoshis,
+    outputAmount: Satoshis,
+    changeAmount: Satoshis
 ) extends ContextLogging {
 
-  def computeOperations(
+  def computeOperations[F[_]](
       transaction: TransactionView
-  )(implicit lc: CriaLogContext): List[Operation] = {
+  )(implicit F: MonadError[F, Throwable]): F[List[Operation]] = {
     TransactionType.fromAmounts(inputAmount, outputAmount, changeAmount) match {
       case SendType =>
-        List(makeOperationToSave(inputAmount - changeAmount, OperationType.Send, transaction))
+        netInput[F](inputAmount, changeAmount).map(netInput =>
+          List(makeOperationToSave(netInput, OperationType.Send, transaction))
+        )
       case ReceiveType =>
-        List(makeOperationToSave(outputAmount + changeAmount, OperationType.Receive, transaction))
+        F.pure(
+          List(makeOperationToSave(outputAmount + changeAmount, OperationType.Receive, transaction))
+        )
       case ChangeOnlyType =>
-        List(makeOperationToSave(changeAmount, OperationType.Receive, transaction))
+        F.pure(
+          List(makeOperationToSave(changeAmount, OperationType.Receive, transaction))
+        )
       case BothType =>
-        List(
-          makeOperationToSave(inputAmount - changeAmount, OperationType.Send, transaction),
-          makeOperationToSave(outputAmount, OperationType.Receive, transaction)
+        netInput[F](inputAmount, changeAmount).map(netInput =>
+          List(
+            makeOperationToSave(netInput, OperationType.Send, transaction),
+            makeOperationToSave(outputAmount, OperationType.Receive, transaction)
+          )
         )
       case NoneType =>
-        log
-          .error(
+        F.raiseError(
+          new RuntimeException(
             s"Error on tx : $hash, no transaction type found for amounts : input: $inputAmount, output: $outputAmount, change: $changeAmount"
           )
-          .unsafeRunSync()
-        Nil
-
+        )
     }
   }
 
+  private def netInput[F[_]](input: Satoshis, change: Satoshis)(implicit
+      F: MonadError[F, Throwable]
+  ): F[Satoshis] =
+    F.fromOption(
+      input - change,
+      new RuntimeException(s"More change than input in transaction ${hash.asString}")
+    )
+
   private def makeOperationToSave(
-      amount: BigInt,
+      amount: Satoshis,
       operationType: OperationType,
       transaction: TransactionView
   ) = {

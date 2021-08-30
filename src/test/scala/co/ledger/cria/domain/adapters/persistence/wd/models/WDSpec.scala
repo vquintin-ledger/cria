@@ -7,7 +7,8 @@ import co.ledger.cria.domain.models.interpreter.{
   Coin,
   Derivation,
   OperationType,
-  OutputView
+  OutputView,
+  Satoshis
 }
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
@@ -53,8 +54,8 @@ class WDSpec extends AnyFlatSpec with Matchers {
   "an operations recipients" should "depend on the operationType" in {
     val belongAddess     = "address1"
     val notBelongAddress = "address2"
-    val belongOutput     = OutputView(0, 0, belongAddess, "", None, Some(Derivation(1, 0)))
-    val notBelongOutput  = OutputView(0, 0, notBelongAddress, "", None, None)
+    val belongOutput     = OutputView(0, Satoshis.zero, belongAddess, "", None, Some(Derivation(1, 0)))
+    val notBelongOutput  = OutputView(0, Satoshis.zero, notBelongAddress, "", None, None)
     WDOperation.getRecipients(
       OperationType.Receive,
       List(belongOutput, notBelongOutput)

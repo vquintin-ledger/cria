@@ -32,9 +32,9 @@ trait E2EHelper { cfs: ContainerSpec =>
       } yield SyncResult(
         opsSize,
         utxosSize.total,
-        balance.balance.longValue,
-        balance.received.longValue,
-        balance.sent.longValue
+        balance.balance.asBigInt.longValue,
+        balance.received.asBigInt.longValue,
+        balance.sent.asBigInt.longValue
       )
     }
 

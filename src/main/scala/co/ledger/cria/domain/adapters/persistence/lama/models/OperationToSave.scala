@@ -3,15 +3,15 @@ package co.ledger.cria.domain.adapters.persistence.lama.models
 import java.time.Instant
 import co.ledger.cria.domain.models._
 import co.ledger.cria.domain.models.account.AccountUid
-import co.ledger.cria.domain.models.interpreter.{BlockHeight, Operation, OperationType}
+import co.ledger.cria.domain.models.interpreter.{BlockHeight, Operation, OperationType, Satoshis}
 
 case class OperationToSave(
     uid: Operation.UID,
     accountId: AccountUid,
     hash: TxHash,
     operationType: OperationType,
-    value: BigInt,
-    fees: BigInt,
+    value: Satoshis,
+    fees: Satoshis,
     time: Instant,
     blockHash: Option[String],
     blockHeight: Option[BlockHeight]

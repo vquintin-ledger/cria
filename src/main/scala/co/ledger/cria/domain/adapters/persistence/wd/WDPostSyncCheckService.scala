@@ -35,7 +35,7 @@ class WDPostSyncCheckService(db: Transactor[IO]) extends ContextLogging with Pos
 
   private def checkBalance(balance: CurrentBalance): IO[Unit] = {
     val balanceFromFlow = balance.received - balance.sent
-    IO.raiseUnless(balanceFromFlow == balance.balance)(
+    IO.raiseUnless(balanceFromFlow.contains(balance.balance))(
       new RuntimeException(
         s"Balance invariant is not respected. received - sent = ${balanceFromFlow}. balance = ${balance.balance}"
       )

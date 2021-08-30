@@ -2,6 +2,7 @@ package co.ledger.cria.domain.mocks
 
 import java.time.Instant
 import cats.effect.IO
+import cats.implicits.toFoldableOps
 import co.ledger.cria.domain.models.account.{Account, AccountUid, WalletUid}
 import co.ledger.cria.domain.models.interpreter._
 import co.ledger.cria.domain.models.keychain.{AccountAddress, ChangeType}
@@ -133,41 +134,23 @@ class InterpreterClientMock extends Interpreter {
 
     val operationToSave = transactions(account.accountUid).flatMap { tx =>
       val inputAmount =
-        tx.inputs.filter(i => addresses.exists(_.accountAddress == i.address)).map(_.value).sum
+        tx.inputs.filter(i => addresses.exists(_.accountAddress == i.address)).foldMap(_.value)
       val outputAmount = tx.outputs
         .filter(o => o.belongs && o.changeType.contains(ChangeType.External))
-        .map(_.value)
-        .sum
+        .foldMap(_.value)
       val changeAmount = tx.outputs
         .filter(o => o.belongs && o.changeType.contains(ChangeType.Internal))
-        .map(_.value)
-        .sum
+        .foldMap(_.value)
 
-      (inputAmount > 0, outputAmount > 0) match {
-        // only input, consider changeAmount as deducted from spent
-        case (true, false) =>
-          List(
-            makeOperation(account.accountUid, tx, inputAmount - changeAmount, OperationType.Send)
-          )
-        // only output, consider changeAmount as received
-        case (false, true) =>
-          List(
-            makeOperation(
-              account.accountUid,
-              tx,
-              outputAmount + changeAmount,
-              OperationType.Receive
-            )
-          )
-        // both input and output, consider change as deducted from spend
-        case (true, true) =>
-          List(
-            makeOperation(account.accountUid, tx, inputAmount - changeAmount, OperationType.Send),
-            makeOperation(account.accountUid, tx, outputAmount, OperationType.Receive)
-          )
-        case _ => Nil
-      }
-
+      List(
+        makeOperation(
+          account.accountUid,
+          tx,
+          (inputAmount - changeAmount).get,
+          OperationType.Send
+        ),
+        makeOperation(account.accountUid, tx, outputAmount, OperationType.Receive)
+      )
     }
 
     operations.update(
@@ -181,7 +164,7 @@ class InterpreterClientMock extends Interpreter {
   private def makeOperation(
       accountId: AccountUid,
       tx: TransactionView,
-      amount: BigInt,
+      amount: Satoshis,
       operationType: OperationType
   ) = {
     Operation(

@@ -1,6 +1,7 @@
 package co.ledger.cria.domain.adapters.persistence.lama.queries
 
-import co.ledger.cria.domain.models.interpreter.{BlockHeight, Derivation}
+import co.ledger.cria.domain.models.implicits._
+import co.ledger.cria.domain.models.interpreter.{BlockHeight, Derivation, Satoshis}
 import doobie.postgres.implicits._
 import doobie.{Meta, _}
 import doobie.refined.implicits.refinedMeta
@@ -20,4 +21,7 @@ object LamaQueryImplicits {
 
   implicit val metaBlockHeight: Meta[BlockHeight] =
     refinedMeta[Long, NonNegative, Refined].timap[BlockHeight](BlockHeight(_))(_.height)
+
+  implicit val metaSatoshis: Meta[Satoshis] =
+    refinedMeta[BigInt, NonNegative, Refined].timap(Satoshis(_))(_.refined)
 }

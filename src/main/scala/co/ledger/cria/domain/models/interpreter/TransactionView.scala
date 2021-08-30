@@ -12,7 +12,7 @@ final case class TransactionView private (
     hash: TxHash,
     receivedAt: Instant,
     lockTime: Long,
-    fees: BigInt,
+    fees: Satoshis,
     inputs: Seq[InputView],
     outputs: Seq[OutputView],
     block: Option[BlockView],
@@ -26,7 +26,7 @@ object TransactionView {
       hash: TxHash,
       receivedAt: Instant,
       lockTime: Long,
-      fees: BigInt,
+      fees: Satoshis,
       inputs: Seq[InputView],
       outputs: Seq[OutputView],
       block: Option[BlockView],
@@ -53,13 +53,12 @@ object TransactionView {
         )
       }.void
 
-    val checkFees: ValidatedNel[String, BigInt] = {
+    val checkFees: ValidatedNel[String, Unit] = {
       val computedFees = inputs.foldMap(_.value) - outputs.foldMap(_.value)
-      Validated.condNel(fees >= 0, (), s"Fees should be non negative. Got $fees") *>
-        Validated.condNel(fees == computedFees, fees, s"Fees does not match inputs/outputs")
+      Validated.condNel(computedFees.contains(fees), (), s"Fees does not match inputs/outputs")
     }
 
-    def mkTxView(fees: BigInt): TransactionView =
+    lazy val txView: TransactionView =
       new TransactionView(
         id = id,
         hash = hash,
@@ -72,7 +71,7 @@ object TransactionView {
         confirmations = confirmations
       )
 
-    (checkInputs *> checkOutputs *> checkFees).map(mkTxView)
+    (checkInputs *> checkOutputs *> checkFees).as(txView)
   }
 
   def asMonadError[F[_]](
@@ -80,7 +79,7 @@ object TransactionView {
       hash: TxHash,
       receivedAt: Instant,
       lockTime: Long,
-      fees: BigInt,
+      fees: Satoshis,
       inputs: Seq[InputView],
       outputs: Seq[OutputView],
       block: Option[BlockView],

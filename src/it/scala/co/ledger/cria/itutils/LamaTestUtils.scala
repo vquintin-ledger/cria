@@ -15,6 +15,7 @@ import co.ledger.cria.domain.models.interpreter.{
   BlockHeight,
   CurrentBalance,
   Operation,
+  SatoshisTestHelper,
   TransactionViewTestHelper
 }
 import co.ledger.cria.domain.models.{Sort, TxHash}
@@ -153,15 +154,15 @@ final class LamaTestUtils private (conf: LamaDb, db: Transactor[IO]) extends Tes
         hash = emptyOperation.tx.hash,
         receivedAt = emptyOperation.tx.receivedAt,
         lockTime = emptyOperation.tx.lockTime,
-        fees = emptyOperation.tx.fees,
+        fees = SatoshisTestHelper.unsafe(emptyOperation.tx.fees),
         inputs = inputsWithOutputsByTxHash.inputs,
         outputs = inputsWithOutputsByTxHash.outputs,
         block = emptyOperation.tx.block,
         confirmations = emptyOperation.tx.confirmations
       ),
       operationType = emptyOperation.op.operationType,
-      amount = emptyOperation.op.amount,
-      fees = emptyOperation.op.fees,
+      amount = SatoshisTestHelper.unsafe(emptyOperation.op.amount),
+      fees = SatoshisTestHelper.unsafe(emptyOperation.op.fees),
       time = emptyOperation.op.time,
       blockHeight = emptyOperation.op.blockHeight.map(BlockHeight.fromLongUnsafe)
     )

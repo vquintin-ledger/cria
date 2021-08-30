@@ -9,6 +9,8 @@ import co.ledger.cria.domain.models.interpreter.{
   Derivation,
   InputView,
   OutputView,
+  Satoshis,
+  SatoshisTestHelper,
   TransactionView,
   TransactionViewTestHelper
 }
@@ -59,6 +61,14 @@ class InterpreterIT extends AnyFlatSpec with ContainerSpec with Matchers {
       Derivation(1, 1)
     )
 
+  private val sats80k = SatoshisTestHelper.unsafe(80000)
+
+  private val sats50k = SatoshisTestHelper.unsafe(50000)
+
+  private val sats9k = SatoshisTestHelper.unsafe(9434)
+
+  private val sats21k = (sats80k - (sats50k + sats9k)).get
+
   private val time: Instant = Instant.parse("2019-04-04T10:03:22Z")
 
   val block: BlockView = BlockView(
@@ -68,15 +78,15 @@ class InterpreterIT extends AnyFlatSpec with ContainerSpec with Matchers {
   )
 
   val outputs = List(
-    OutputView(0, 50000, outputAddress1.accountAddress, "script", None, None),
-    OutputView(1, 9434, outputAddress2.accountAddress, "script", None, None)
+    OutputView(0, sats50k, outputAddress1.accountAddress, "script", None, None),
+    OutputView(1, sats9k, outputAddress2.accountAddress, "script", None, None)
   )
   val inputs = List(
     InputView(
       TxHash.fromStringUnsafe("0f38e5f1b12078495a9e80c6e0d77af3d674cfe6096bb6e7909993a53b6e8386"),
       0,
       0,
-      80000,
+      sats80k,
       inputAddress.accountAddress,
       "script",
       List(),
@@ -94,9 +104,9 @@ class InterpreterIT extends AnyFlatSpec with ContainerSpec with Matchers {
       TxHash.fromStringUnsafe("0f38e5f1b12078495a9e80c6e0d77af3d674cfe6096bb6e7909993a53b6e8386"),
       time,
       0,
-      0,
-      List(InputView(someTxHash, 0, 0, 80000, "toto", "sig", Nil, 0, None)),
-      List(OutputView(0, 80000, inputAddress.accountAddress, "script", None, None)),
+      Satoshis.zero,
+      List(InputView(someTxHash, 0, 0, sats80k, "toto", "sig", Nil, 0, None)),
+      List(OutputView(0, sats80k, inputAddress.accountAddress, "script", None, None)),
       Some(block),
       1
     )
@@ -107,7 +117,7 @@ class InterpreterIT extends AnyFlatSpec with ContainerSpec with Matchers {
       TxHash.fromStringUnsafe("a8a935c6bc2bd8b3a7c20f107a9eb5f10a315ce27de9d72f3f4e27ac9ec1eb1f"),
       time,
       0,
-      20566,
+      sats21k,
       inputs,
       outputs,
       Some(block),
@@ -218,7 +228,7 @@ class InterpreterIT extends AnyFlatSpec with ContainerSpec with Matchers {
           ),
           time,
           0,
-          20566,
+          sats21k,
           inputs,
           outputs,
           None,
@@ -244,7 +254,7 @@ class InterpreterIT extends AnyFlatSpec with ContainerSpec with Matchers {
           operationCount <- utils.getOperationCount(accountUid)
           currentBalance <- utils.getBalance(accountUid)
         } yield {
-          currentBalance.balance should be(0)
+          currentBalance.balance should be(Satoshis.zero)
           currentBalance.unconfirmedBalance should be(100000)
 
           operationCount shouldBe 2
@@ -270,7 +280,7 @@ class InterpreterIT extends AnyFlatSpec with ContainerSpec with Matchers {
           ),
           time,
           0,
-          20566,
+          sats21k,
           inputs,
           outputs,
           None,
@@ -285,7 +295,7 @@ class InterpreterIT extends AnyFlatSpec with ContainerSpec with Matchers {
           ),
           time,
           0,
-          20566,
+          sats21k,
           inputs,
           outputs,
           Some(block),
@@ -319,6 +329,10 @@ class InterpreterIT extends AnyFlatSpec with ContainerSpec with Matchers {
           "d0a75f8295419c72782aadb8de23b4d8ed095c9ec3c26a144b8e8f9ab0c11730"
         )
 
+        val sats100k = SatoshisTestHelper.unsafe(100000)
+        val sats1k   = SatoshisTestHelper.unsafe(1000)
+        val sats5k   = SatoshisTestHelper.unsafe(5000)
+
         val uTx1 = TransactionViewTestHelper.unsafe(
           "tx1",
           TxHash.fromStringUnsafe(
@@ -326,13 +340,13 @@ class InterpreterIT extends AnyFlatSpec with ContainerSpec with Matchers {
           ),
           time,
           0,
-          1000,
+          sats1k,
           List(
             InputView(
               txHash0,
               0,
               0,
-              101000,
+              sats100k + sats1k,
               inputAddress.accountAddress,
               "script",
               List(),
@@ -341,7 +355,7 @@ class InterpreterIT extends AnyFlatSpec with ContainerSpec with Matchers {
             )
           ),
           List(
-            OutputView(0, 100000, outputAddress1.accountAddress, "script", None, None)
+            OutputView(0, sats100k, outputAddress1.accountAddress, "script", None, None)
           ), // receive
           None,
           1
@@ -354,9 +368,9 @@ class InterpreterIT extends AnyFlatSpec with ContainerSpec with Matchers {
             "8f6ffe55e14c78025c9ee5e9a31f3562dedb6d36157c7cc1eda9dae7b6b25a7e"
           ),
           outputs = List(
-            OutputView(0, 5000, outputAddress2.accountAddress, "script", None, None)
+            OutputView(0, sats5k, outputAddress2.accountAddress, "script", None, None)
           ), // receive
-          fees = 96000
+          fees = ((sats100k + sats1k) - sats5k).get
         )
         explorer.addToBC(uTx2)
 
@@ -370,7 +384,7 @@ class InterpreterIT extends AnyFlatSpec with ContainerSpec with Matchers {
               uTx1.hash,
               0,
               0,
-              100000,
+              sats100k,
               outputAddress1.accountAddress,
               "script",
               List(),
@@ -378,7 +392,16 @@ class InterpreterIT extends AnyFlatSpec with ContainerSpec with Matchers {
               None
             ) // send utxo from tx1
           ),
-          outputs = List(OutputView(0, 99000, inputAddress.accountAddress, "script", None, None))
+          outputs = List(
+            OutputView(
+              0,
+              (sats100k - sats1k).get,
+              inputAddress.accountAddress,
+              "script",
+              None,
+              None
+            )
+          )
         )
         explorer.addToBC(uTx3)
 
@@ -437,13 +460,13 @@ class InterpreterIT extends AnyFlatSpec with ContainerSpec with Matchers {
         } yield {
 
           firstOperationCount shouldBe 1
-          firstBalance.balance shouldBe 0
+          firstBalance.balance.asBigInt shouldBe 0
           firstBalance.unconfirmedBalance shouldBe 100000
           secondOperationCount shouldBe 2
-          secondBalance.balance shouldBe 100000
+          secondBalance.balance.asBigInt shouldBe 100000
           secondBalance.unconfirmedBalance shouldBe 5000;
           lastOperationCount shouldBe 3
-          lastBalance.balance shouldBe 105000
+          lastBalance.balance.asBigInt shouldBe 105000
           lastBalance.unconfirmedBalance shouldBe -100000
         }
       }
@@ -462,6 +485,9 @@ class InterpreterIT extends AnyFlatSpec with ContainerSpec with Matchers {
           "6a7a2a7365343ac22a30e4971ec9699af7d01d61e33f6b4381b745d556ddc92c"
         )
 
+        val sats100k = SatoshisTestHelper.unsafe(100000)
+        val sats1k   = SatoshisTestHelper.unsafe(1000)
+
         val uTx1 = AccountTxView(
           accountUid,
           TransactionViewTestHelper.unsafe(
@@ -471,13 +497,13 @@ class InterpreterIT extends AnyFlatSpec with ContainerSpec with Matchers {
             ),
             time,
             0,
-            1000,
+            sats1k,
             List(
               InputView(
                 txHash0,
                 0,
                 0,
-                101000,
+                sats100k + sats1k,
                 inputAddress.accountAddress,
                 "script",
                 List(),
@@ -486,7 +512,7 @@ class InterpreterIT extends AnyFlatSpec with ContainerSpec with Matchers {
               )
             ),
             List(
-              OutputView(0, 100000, outputAddress1.accountAddress, "script", None, None)
+              OutputView(0, sats100k, outputAddress1.accountAddress, "script", None, None)
             ),
             None,
             1

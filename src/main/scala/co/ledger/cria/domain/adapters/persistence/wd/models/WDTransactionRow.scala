@@ -1,10 +1,9 @@
 package co.ledger.cria.domain.adapters.persistence.wd.models
 
 import co.ledger.cria.domain.models.TxHash
-import co.ledger.cria.domain.models.interpreter.{BlockHash, BlockHeight}
+import co.ledger.cria.domain.models.interpreter.{BlockHash, BlockHeight, Satoshis}
 import doobie.Read
 import doobie.postgres.implicits._
-import co.ledger.cria.domain.models.implicits._
 import co.ledger.cria.domain.adapters.persistence.wd.queries.WDQueryImplicits._
 
 import java.time.Instant
@@ -17,7 +16,7 @@ case class WDTransactionRow(
     blockTime: Option[Instant],
     receivedAt: Instant,
     lockTime: Long,
-    fees: BigInt,
+    fees: Satoshis,
     confirmations: Int
 )
 
@@ -32,7 +31,7 @@ object WDTransactionRow {
           Option[Instant],
           Instant,
           Long,
-          BigInt,
+          Satoshis,
           Int
       )
     ].map {

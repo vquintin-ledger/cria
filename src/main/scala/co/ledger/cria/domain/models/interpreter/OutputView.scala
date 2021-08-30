@@ -4,7 +4,7 @@ import co.ledger.cria.domain.models.keychain.ChangeType
 
 case class OutputView(
     outputIndex: Int,
-    value: BigInt,
+    value: Satoshis,
     address: String,
     scriptHex: String,
     changeType: Option[ChangeType],

@@ -8,6 +8,7 @@ import co.ledger.cria.domain.models.interpreter.{
   BlockView,
   InputView,
   OutputView,
+  Satoshis,
   TransactionView
 }
 import co.ledger.cria.domain.models.{Sort, TxHash}
@@ -37,7 +38,7 @@ object LamaTransactionQueries extends DoobieLogHandler {
       blockTime: Option[Instant],
       receivedAt: Instant,
       lockTime: Long,
-      fees: BigInt,
+      fees: Satoshis,
       confirmations: Int
   )
 

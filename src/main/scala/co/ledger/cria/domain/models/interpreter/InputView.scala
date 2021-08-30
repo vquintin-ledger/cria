@@ -6,7 +6,7 @@ case class InputView(
     outputHash: TxHash,
     outputIndex: Int,
     inputIndex: Int,
-    value: BigInt,
+    value: Satoshis,
     address: String,
     scriptSignature: String,
     txinwitness: List[String],

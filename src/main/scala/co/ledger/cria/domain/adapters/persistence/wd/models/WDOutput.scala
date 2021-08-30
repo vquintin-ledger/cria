@@ -1,11 +1,11 @@
 package co.ledger.cria.domain.adapters.persistence.wd.models
 
 import cats.implicits._
-import co.ledger.cria.domain.models.interpreter.OutputView
+import co.ledger.cria.domain.models.interpreter.{OutputView, Satoshis}
 
 case class WDOutput(
     idx: Int,
-    amount: BigInt,
+    amount: Satoshis,
     script: String,
     address: String,
     accountUid: Option[String],

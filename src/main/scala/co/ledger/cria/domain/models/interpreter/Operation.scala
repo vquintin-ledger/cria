@@ -13,8 +13,8 @@ case class Operation(
     hash: TxHash,
     transaction: TransactionView,
     operationType: OperationType,
-    amount: BigInt,
-    fees: BigInt,
+    amount: Satoshis,
+    fees: Satoshis,
     time: Instant,
     blockHeight: Option[BlockHeight]
 )

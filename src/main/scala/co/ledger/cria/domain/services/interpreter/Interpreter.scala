@@ -148,8 +148,6 @@ class InterpreterImpl(explorer: Coin => ExplorerClient, persistenceFacade: Persi
 
   private def getUncomputedTxs(accountId: AccountUid, fromBlockHeight: Option[BlockHeight])(
       chunkSize: Int
-  )(implicit
-      lc: CriaLogContext
   ): Stream[IO, List[Operation]] = {
     val sort = Sort.Ascending
     operationComputationService
@@ -162,7 +160,7 @@ class InterpreterImpl(explorer: Coin => ExplorerClient, persistenceFacade: Persi
       accountId: AccountUid,
       sort: Sort,
       uncomputedTransactions: List[TransactionAmounts]
-  )(implicit lc: CriaLogContext): IO[List[Operation]] = {
+  ): IO[List[Operation]] = {
     for {
 
       txToSaveMap <- NonEmptyList
@@ -180,11 +178,10 @@ class InterpreterImpl(explorer: Coin => ExplorerClient, persistenceFacade: Persi
         )
         .getOrElse(IO.pure(Map.empty[TxHash, TransactionView]))
 
-      operationMap = uncomputedTransactions.flatMap { opToSave =>
+      operationMap <- uncomputedTransactions.flatTraverse { opToSave =>
         val txView = txToSaveMap(opToSave.hash)
-        opToSave.computeOperations(txView)
+        opToSave.computeOperations[IO](txView)
       }
-
     } yield operationMap
   }
 

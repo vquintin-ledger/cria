@@ -2,7 +2,7 @@ package co.ledger.cria.domain.adapters.persistence.wd.models
 
 import co.ledger.cria.domain.models.TxHash
 import co.ledger.cria.domain.models.account.AccountUid
-import co.ledger.cria.domain.models.interpreter.{Operation, OperationType}
+import co.ledger.cria.domain.models.interpreter.{Operation, OperationType, Satoshis}
 
 import java.time.Instant
 
@@ -11,8 +11,8 @@ case class WDOperationToSave(
     accountId: AccountUid,
     hash: TxHash,
     operationType: OperationType,
-    value: BigInt,
-    fees: BigInt,
+    value: Satoshis,
+    fees: Satoshis,
     time: Instant,
     blockHash: Option[String],
     blockHeight: Option[Long]
