@@ -20,13 +20,13 @@ services:
     command: redis-server --requirepass ${REDIS_PASSWORD}
 
   bitcoin-lib-grpc:
-    image: docker.pkg.github.com/ledgerhq/bitcoin-lib-grpc/bitcoin-lib-grpc:${BITCOIN_LIB_GRPC_VERSION}
+    image: ghcr.io/ledgerhq/bitcoin-lib-grpc:${BITCOIN_LIB_GRPC_VERSION}
     environment:
       BITCOIN_HOST: ${BITCOIN_LIB_GRPC_HOST}
       BITCOIN_PORT: ${BITCOIN_LIB_GRPC_PORT}
 
   bitcoin-keychain:
-    image: docker.pkg.github.com/ledgerhq/bitcoin-keychain/bitcoin-keychain:${BITCOIN_KEYCHAIN_VERSION}
+    image: ghcr.io/ledgerhq/bitcoin-keychain:${BITCOIN_KEYCHAIN_VERSION}
     environment:
       BITCOIN_KEYCHAIN_HOST: ${BITCOIN_KEYCHAIN_HOST}
       BITCOIN_KEYCHAIN_PORT: ${BITCOIN_KEYCHAIN_PORT}
